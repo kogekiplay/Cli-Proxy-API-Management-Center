@@ -1,3 +1,5 @@
+import type { ApiKeyAccessRules } from './config';
+
 export type PayloadParamValueType = 'string' | 'number' | 'boolean' | 'json';
 export type DisableImageGenerationMode = 'false' | 'true' | 'chat';
 export type PayloadParamValidationErrorCode =
@@ -80,6 +82,7 @@ export type VisualConfigValues = {
   rmPanelRepo: string;
   authDir: string;
   apiKeysText: string;
+  apiKeyAccessRules: ApiKeyAccessRules;
   debug: boolean;
   commercialMode: boolean;
   loggingToFile: boolean;
@@ -141,6 +144,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   rmPanelRepo: '',
   authDir: '',
   apiKeysText: '',
+  apiKeyAccessRules: {},
   debug: false,
   commercialMode: false,
   loggingToFile: false,

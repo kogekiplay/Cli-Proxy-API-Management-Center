@@ -12,6 +12,7 @@ import type {
   PayloadParamValidationErrorCode,
 } from '@/types/visualConfig';
 import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
+import type { ApiKeyAccessRule, ApiKeyAccessRules } from '@/types/config';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -47,6 +48,65 @@ function parseApiKeysText(raw: unknown): string {
     if (key) keys.push(key);
   }
   return keys.join('\n');
+}
+
+function normalizeStringList(raw: unknown, lowercase = false): string[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of raw) {
+    const value = String(item ?? '').trim();
+    const normalized = lowercase ? value.toLowerCase() : value;
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    out.push(normalized);
+  }
+  return out;
+}
+
+function parseApiKeyAccessRules(raw: unknown): ApiKeyAccessRules {
+  const record = asRecord(raw);
+  if (!record) return {};
+  const out: ApiKeyAccessRules = {};
+  Object.entries(record).forEach(([rawKey, rawRule]) => {
+    const key = rawKey.trim();
+    if (!key) return;
+    const ruleRecord = asRecord(rawRule) ?? {};
+    const accessRaw = typeof ruleRecord.access === 'string' ? ruleRecord.access.trim().toLowerCase() : '';
+    const rule: ApiKeyAccessRule = {};
+    if (accessRaw === 'all') {
+      rule.access = 'all';
+    } else {
+      const providers = normalizeStringList(ruleRecord.providers, true);
+      const authFiles = normalizeStringList(ruleRecord['auth-files'] ?? ruleRecord.authFiles, false);
+      if (providers.length > 0) rule.providers = providers;
+      if (authFiles.length > 0) rule.authFiles = authFiles;
+    }
+    out[key] = rule;
+  });
+  return out;
+}
+
+function canonicalApiKeyAccessRules(rules: ApiKeyAccessRules | undefined): ApiKeyAccessRules {
+  const parsed = parseApiKeyAccessRules(rules ?? {});
+  const canonical: ApiKeyAccessRules = {};
+  Object.entries(parsed)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .forEach(([key, rule]) => {
+      if (rule.access === 'all') {
+        canonical[key] = { access: 'all' };
+        return;
+      }
+      canonical[key] = {
+        providers: [...(rule.providers ?? [])].sort(),
+        authFiles: [...(rule.authFiles ?? [])].sort(),
+      };
+    });
+  return canonical;
+}
+
+function areApiKeyAccessRulesEqual(left: ApiKeyAccessRules, right: ApiKeyAccessRules): boolean {
+  return JSON.stringify(canonicalApiKeyAccessRules(left)) === JSON.stringify(canonicalApiKeyAccessRules(right));
 }
 
 function resolveApiKeysText(parsed: Record<string, unknown>): string {
@@ -155,6 +215,32 @@ function setDisableImageGenerationInDoc(
   }
 
   if (docHas(doc, path)) doc.setIn(path, false);
+}
+
+function setApiKeyAccessRulesInDoc(doc: YamlDocument, rules: ApiKeyAccessRules): void {
+  const entries = Object.entries(rules)
+    .map(([key, rule]) => [key.trim(), rule] as const)
+    .filter(([key]) => key.length > 0);
+
+  if (entries.length === 0) {
+    if (docHas(doc, ['api-key-access'])) doc.deleteIn(['api-key-access']);
+    return;
+  }
+
+  const serialized: Record<string, unknown> = {};
+  entries.forEach(([key, rule]) => {
+    if (rule.access === 'all') {
+      serialized[key] = { access: 'all' };
+      return;
+    }
+    const value: Record<string, unknown> = {};
+    const providers = normalizeStringList(rule.providers, true);
+    const authFiles = normalizeStringList(rule.authFiles, false);
+    if (providers.length > 0) value.providers = providers;
+    if (authFiles.length > 0) value['auth-files'] = authFiles;
+    serialized[key] = value;
+  });
+  doc.setIn(['api-key-access'], serialized);
 }
 
 function getNonNegativeIntegerError(value: string): 'non_negative_integer' | undefined {
@@ -784,6 +870,12 @@ function getNextDirtyFields(
   if (Object.prototype.hasOwnProperty.call(patch, 'apiKeysText')) {
     updateDirty('apiKeysText', nextValues.apiKeysText === baselineValues.apiKeysText);
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'apiKeyAccessRules')) {
+    updateDirty(
+      'apiKeyAccessRules',
+      areApiKeyAccessRulesEqual(nextValues.apiKeyAccessRules, baselineValues.apiKeyAccessRules)
+    );
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'debug')) {
     updateDirty('debug', nextValues.debug === baselineValues.debug);
   }
@@ -1023,6 +1115,7 @@ export function useVisualConfig() {
 
         authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
         apiKeysText: resolveApiKeysText(parsed),
+        apiKeyAccessRules: parseApiKeyAccessRules(parsed['api-key-access']),
 
         debug: Boolean(parsed.debug),
         commercialMode: Boolean(parsed['commercial-mode']),
@@ -1182,6 +1275,7 @@ export function useVisualConfig() {
         } else if (docHas(doc, ['api-keys'])) {
           doc.deleteIn(['api-keys']);
         }
+        setApiKeyAccessRulesInDoc(doc, values.apiKeyAccessRules);
         deleteLegacyApiKeysProvider(doc);
 
         setBooleanInDoc(doc, ['debug'], values.debug);

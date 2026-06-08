@@ -24,6 +24,7 @@ export interface Config {
   forceModelPrefix?: boolean;
   routingStrategy?: string;
   apiKeys?: string[];
+  apiKeyAccess?: ApiKeyAccessRules;
   ampcode?: AmpcodeConfig;
   geminiApiKeys?: GeminiKeyConfig[];
   codexApiKeys?: ProviderKeyConfig[];
@@ -46,6 +47,7 @@ export type RawConfigSection =
   | 'force-model-prefix'
   | 'routing/strategy'
   | 'api-keys'
+  | 'api-key-access'
   | 'ampcode'
   | 'gemini-api-key'
   | 'codex-api-key'
@@ -58,3 +60,11 @@ export interface ConfigCache {
   data: Config;
   timestamp: number;
 }
+
+export interface ApiKeyAccessRule {
+  access?: 'all' | string;
+  providers?: string[];
+  authFiles?: string[];
+}
+
+export type ApiKeyAccessRules = Record<string, ApiKeyAccessRule>;
