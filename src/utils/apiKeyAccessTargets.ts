@@ -7,6 +7,8 @@ export interface ApiKeyAccessAuthTargetLike {
   filename?: string;
   label?: string;
   email?: string;
+  account_type?: string;
+  accountType?: string;
   'base-url'?: string;
   base_url?: string;
   'provider-target'?:
@@ -53,6 +55,18 @@ export function getApiKeyAccessAuthTargetBaseUrl(target: ApiKeyAccessAuthTargetL
     if (typeof nestedBaseUrl === 'string') return nestedBaseUrl.trim();
   }
   return firstNonEmpty(target['base-url'], target.base_url);
+}
+
+function getApiKeyAccessAuthTargetAccountType(target: ApiKeyAccessAuthTargetLike): string {
+  return firstNonEmpty(target.account_type, target.accountType).toLowerCase();
+}
+
+export function getApiKeyAccessAuthFileTargetsForPicker<T extends ApiKeyAccessAuthTargetLike>(
+  authTargets: T[] | undefined
+): T[] {
+  return (authTargets ?? []).filter(
+    (target) => getApiKeyAccessAuthTargetAccountType(target) !== 'api_key'
+  );
 }
 
 function normalizeProviderTarget(

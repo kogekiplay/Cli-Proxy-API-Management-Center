@@ -29,6 +29,7 @@ import { maskApiKey } from '@/utils/format';
 import { isValidApiKeyCharset } from '@/utils/validation';
 import type { ApiKeyAccessProviderTarget } from '@/types/config';
 import {
+  getApiKeyAccessAuthFileTargetsForPicker,
   getApiKeyAccessAuthTargetLabel,
   getApiKeyAccessAuthTargetValue,
   getApiKeyAccessProviderTargetsForPicker,
@@ -328,7 +329,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   }, [apiKeyAccessProviderTargets, apiKeyAccessTargets, t]);
   const authFileOptions = useMemo<AccessPickerOption[]>(() => {
     const seen = new Set<string>();
-    return apiKeyAccessTargets
+    return getApiKeyAccessAuthFileTargetsForPicker(apiKeyAccessTargets)
       .map((target) => ({
         value: getApiKeyAccessAuthTargetValue(target),
         label: getApiKeyAccessAuthTargetLabel(target),

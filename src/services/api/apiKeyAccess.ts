@@ -36,6 +36,8 @@ export interface ApiKeyAccessAuthTarget {
   email?: string;
   project_id?: string;
   'project-id'?: string;
+  account_type?: string;
+  accountType?: string;
   path?: string;
   status?: string;
   disabled?: boolean;

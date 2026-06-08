@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  getApiKeyAccessAuthFileTargetsForPicker,
   getApiKeyAccessAuthTargetBaseUrl,
   getApiKeyAccessAuthTargetLabel,
   getApiKeyAccessAuthTargetValue,
@@ -73,5 +74,24 @@ describe('api key access auth targets', () => {
     );
 
     expect(providerTargets).toEqual([]);
+  });
+
+  test('filters api key credentials from auth file picker targets', () => {
+    const authTargets = getApiKeyAccessAuthFileTargetsForPicker([
+      {
+        id: 'claude-apikey-1',
+        provider: 'claude',
+        name: 'claude-apikey',
+        account_type: 'api_key',
+      },
+      {
+        id: 'codex-user',
+        provider: 'codex',
+        filename: 'codex-user.json',
+        account_type: 'oauth',
+      },
+    ]);
+
+    expect(authTargets.map((target) => target.id)).toEqual(['codex-user']);
   });
 });
