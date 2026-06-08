@@ -18,7 +18,7 @@ import type {
   PayloadRule,
 } from '@/types/visualConfig';
 import type { ApiKeyAccessRule, ApiKeyAccessRules } from '@/types/config';
-import type { ApiKeyAccessAuthTarget } from '@/services/api';
+import type { ApiKeyAccessAuthTarget, ApiKeyAccessProviderTargetResponse } from '@/services/api';
 import { makeClientId } from '@/types/visualConfig';
 import {
   getPayloadParamValidationError,
@@ -29,9 +29,9 @@ import { maskApiKey } from '@/utils/format';
 import { isValidApiKeyCharset } from '@/utils/validation';
 import type { ApiKeyAccessProviderTarget } from '@/types/config';
 import {
-  getApiKeyAccessAuthTargetBaseUrl,
   getApiKeyAccessAuthTargetLabel,
   getApiKeyAccessAuthTargetValue,
+  getApiKeyAccessProviderTargetsForPicker,
 } from '@/utils/apiKeyAccessTargets';
 
 /** Minimum character count before the expand/collapse toggle appears. */
@@ -251,6 +251,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   value,
   apiKeyAccessRules = {},
   apiKeyAccessTargets = [],
+  apiKeyAccessProviderTargets,
   disabled,
   onChange,
   onApiKeyAccessChange,
@@ -258,6 +259,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   value: string;
   apiKeyAccessRules?: ApiKeyAccessRules;
   apiKeyAccessTargets?: ApiKeyAccessAuthTarget[];
+  apiKeyAccessProviderTargets?: ApiKeyAccessProviderTargetResponse[];
   disabled?: boolean;
   onChange: (nextValue: string) => void;
   onApiKeyAccessChange?: (nextRules: ApiKeyAccessRules) => void;
@@ -299,10 +301,10 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   );
   const providerTargetOptions = useMemo<AccessPickerOption[]>(() => {
     const seen = new Set<string>();
-    return apiKeyAccessTargets
+    return getApiKeyAccessProviderTargetsForPicker(apiKeyAccessProviderTargets, apiKeyAccessTargets)
       .map((target) => {
         const provider = target.provider.trim().toLowerCase();
-        const baseUrl = getApiKeyAccessAuthTargetBaseUrl(target);
+        const baseUrl = target.baseUrl.trim();
         const defaultBaseUrl = DEFAULT_PROVIDER_BASE_URLS[provider];
         const value = providerTargetValue({ provider, baseUrl });
         return {
@@ -323,7 +325,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
         return true;
       })
       .sort((left, right) => left.label.localeCompare(right.label));
-  }, [apiKeyAccessTargets, t]);
+  }, [apiKeyAccessProviderTargets, apiKeyAccessTargets, t]);
   const authFileOptions = useMemo<AccessPickerOption[]>(() => {
     const seen = new Set<string>();
     return apiKeyAccessTargets

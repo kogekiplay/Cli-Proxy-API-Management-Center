@@ -42,10 +42,19 @@ export interface ApiKeyAccessAuthTarget {
   unavailable?: boolean;
 }
 
+export interface ApiKeyAccessProviderTargetResponse {
+  provider?: string;
+  baseUrl?: string;
+  'base-url'?: string;
+  base_url?: string;
+}
+
 export interface ApiKeyAccessResponse {
   'api-key-access': ApiKeyAccessRules;
   'api-keys': ApiKeyAccessKeyView[];
   'auth-targets': ApiKeyAccessAuthTarget[];
+  'provider-targets'?: ApiKeyAccessProviderTargetResponse[];
+  provider_targets?: ApiKeyAccessProviderTargetResponse[];
 }
 
 export const apiKeyAccessApi = {

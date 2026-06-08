@@ -18,7 +18,11 @@ import { DiffModal } from '@/components/config/DiffModal';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useVisualConfig } from '@/hooks/useVisualConfig';
 import { useNotificationStore, useAuthStore, useThemeStore, useConfigStore } from '@/stores';
-import { apiKeyAccessApi, type ApiKeyAccessAuthTarget } from '@/services/api';
+import {
+  apiKeyAccessApi,
+  type ApiKeyAccessAuthTarget,
+  type ApiKeyAccessProviderTargetResponse,
+} from '@/services/api';
 import { configFileApi } from '@/services/api/configFile';
 import styles from './ConfigPage.module.scss';
 
@@ -81,6 +85,9 @@ export function ConfigPage() {
   const [serverYaml, setServerYaml] = useState('');
   const [mergedYaml, setMergedYaml] = useState('');
   const [apiKeyAccessTargets, setApiKeyAccessTargets] = useState<ApiKeyAccessAuthTarget[]>([]);
+  const [apiKeyAccessProviderTargets, setApiKeyAccessProviderTargets] = useState<
+    ApiKeyAccessProviderTargetResponse[] | undefined
+  >(undefined);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,6 +107,25 @@ export function ConfigPage() {
     activeTab === 'visual' &&
     (Object.values(visualValidationErrors).some(Boolean) || visualHasPayloadValidationErrors);
 
+  const refreshApiKeyAccessMetadata = useCallback(async () => {
+    try {
+      const response = await apiKeyAccessApi.get();
+      setApiKeyAccessTargets(
+        Array.isArray(response['auth-targets']) ? response['auth-targets'] : []
+      );
+      setApiKeyAccessProviderTargets(
+        Array.isArray(response['provider-targets'])
+          ? response['provider-targets']
+          : Array.isArray(response.provider_targets)
+            ? response.provider_targets
+            : undefined
+      );
+    } catch {
+      setApiKeyAccessTargets([]);
+      setApiKeyAccessProviderTargets(undefined);
+    }
+  }, []);
+
   const loadConfig = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -111,24 +137,16 @@ export function ConfigPage() {
       setServerYaml(data);
       setMergedYaml(data);
       loadVisualValuesFromYaml(data);
-      void apiKeyAccessApi
-        .get()
-        .then((response) => {
-          setApiKeyAccessTargets(
-            Array.isArray(response['auth-targets']) ? response['auth-targets'] : []
-          );
-        })
-        .catch(() => {
-          setApiKeyAccessTargets([]);
-        });
+      void refreshApiKeyAccessMetadata();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('notification.refresh_failed');
       setError(message);
       setApiKeyAccessTargets([]);
+      setApiKeyAccessProviderTargets(undefined);
     } finally {
       setLoading(false);
     }
-  }, [loadVisualValuesFromYaml, t]);
+  }, [loadVisualValuesFromYaml, refreshApiKeyAccessMetadata, t]);
 
   useEffect(() => {
     loadConfig();
@@ -160,6 +178,7 @@ export function ConfigPage() {
       setServerYaml(latestContent);
       setMergedYaml(latestContent);
       loadVisualValuesFromYaml(latestContent);
+      await refreshApiKeyAccessMetadata();
 
       // Keep the global config store in sync so sidebar / other pages reflect YAML changes immediately.
       try {
@@ -577,6 +596,7 @@ export function ConfigPage() {
               hasPayloadValidationErrors={visualHasPayloadValidationErrors}
               disabled={disableControls || loading}
               apiKeyAccessTargets={apiKeyAccessTargets}
+              apiKeyAccessProviderTargets={apiKeyAccessProviderTargets}
               onChange={setVisualValues}
             />
           ) : (

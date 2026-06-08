@@ -3,6 +3,7 @@ import {
   getApiKeyAccessAuthTargetBaseUrl,
   getApiKeyAccessAuthTargetLabel,
   getApiKeyAccessAuthTargetValue,
+  getApiKeyAccessProviderTargetsForPicker,
 } from '../src/utils/apiKeyAccessTargets';
 
 describe('api key access auth targets', () => {
@@ -31,5 +32,46 @@ describe('api key access auth targets', () => {
         },
       })
     ).toBe('https://aigw.c5y.moe/v1');
+  });
+
+  test('uses configured provider targets without mixing auth target defaults', () => {
+    const providerTargets = getApiKeyAccessProviderTargetsForPicker(
+      [
+        { provider: 'codex', 'base-url': 'https://aigw.c5y.moe/v1' },
+        { provider: 'codex', base_url: 'https://muyuan.do/v1' },
+      ],
+      [
+        {
+          id: 'codex-oauth-default',
+          provider: 'codex',
+          filename: 'codex-oauth-default.json',
+          provider_target: { provider: 'codex', base_url: '' },
+        },
+      ]
+    );
+
+    expect(providerTargets).toEqual([
+      { provider: 'codex', baseUrl: 'https://aigw.c5y.moe/v1' },
+      { provider: 'codex', baseUrl: 'https://muyuan.do/v1' },
+    ]);
+  });
+
+  test('honors an explicitly empty configured provider target list', () => {
+    const providerTargets = getApiKeyAccessProviderTargetsForPicker(
+      [],
+      [
+        {
+          id: 'codex-runtime',
+          provider: 'codex',
+          filename: 'codex-runtime.json',
+          provider_target: {
+            provider: 'codex',
+            base_url: 'https://chatgpt.com/backend-api/codex',
+          },
+        },
+      ]
+    );
+
+    expect(providerTargets).toEqual([]);
   });
 });

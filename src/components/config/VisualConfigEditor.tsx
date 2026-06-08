@@ -33,7 +33,7 @@ import type {
   VisualConfigValidationErrors,
   VisualConfigValues,
 } from '@/types/visualConfig';
-import type { ApiKeyAccessAuthTarget } from '@/services/api';
+import type { ApiKeyAccessAuthTarget, ApiKeyAccessProviderTargetResponse } from '@/services/api';
 import {
   ApiKeysCardEditor,
   PayloadFilterRulesEditor,
@@ -55,6 +55,7 @@ interface VisualConfigEditorProps {
   validationErrors?: VisualConfigValidationErrors;
   hasPayloadValidationErrors?: boolean;
   apiKeyAccessTargets?: ApiKeyAccessAuthTarget[];
+  apiKeyAccessProviderTargets?: ApiKeyAccessProviderTargetResponse[];
   disabled?: boolean;
   onChange: (values: Partial<VisualConfigValues>) => void;
 }
@@ -163,6 +164,7 @@ export function VisualConfigEditor({
   validationErrors,
   hasPayloadValidationErrors = false,
   apiKeyAccessTargets = [],
+  apiKeyAccessProviderTargets,
   disabled = false,
   onChange,
 }: VisualConfigEditorProps) {
@@ -627,6 +629,7 @@ export function VisualConfigEditor({
                   value={values.apiKeysText}
                   apiKeyAccessRules={values.apiKeyAccessRules}
                   apiKeyAccessTargets={apiKeyAccessTargets}
+                  apiKeyAccessProviderTargets={apiKeyAccessProviderTargets}
                   disabled={disabled}
                   onChange={handleApiKeysTextChange}
                   onApiKeyAccessChange={handleApiKeyAccessRulesChange}
