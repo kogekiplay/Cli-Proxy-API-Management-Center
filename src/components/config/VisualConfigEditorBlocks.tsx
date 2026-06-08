@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
+import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
+import { IconSearch } from '@/components/ui/icons';
 import { useNotificationStore } from '@/stores';
 import styles from './VisualConfigEditor.module.scss';
 import { copyToClipboard } from '@/utils/clipboard';
@@ -25,11 +27,18 @@ import {
 } from '@/hooks/useVisualConfig';
 import { maskApiKey } from '@/utils/format';
 import { isValidApiKeyCharset } from '@/utils/validation';
+import type { ApiKeyAccessProviderTarget } from '@/types/config';
 
 /** Minimum character count before the expand/collapse toggle appears. */
 const EXPAND_THRESHOLD = 30;
 
-type ApiKeyAccessListField = 'providers' | 'authFiles';
+type ApiKeyAccessListField = 'providerTargets' | 'authFiles';
+
+interface AccessPickerOption {
+  value: string;
+  label: string;
+  description?: string;
+}
 
 function readApiKeyAccessRule(
   rules: ApiKeyAccessRules | undefined,
@@ -56,12 +65,65 @@ function getAuthTargetLabel(target: ApiKeyAccessAuthTarget): string {
   return provider ? `${provider} / ${label}` : label;
 }
 
-function addAccessListValue(values: string[] | undefined, nextValue: string): string[] {
-  const trimmed = nextValue.trim();
-  if (!trimmed) return values ?? [];
-  const current = values ?? [];
-  if (current.some((item) => item.trim() === trimmed)) return current;
-  return [...current, trimmed];
+function getAuthTargetBaseUrl(target: ApiKeyAccessAuthTarget): string {
+  const providerTarget = target['provider-target'] ?? target.provider_target;
+  if (providerTarget && typeof providerTarget === 'object') {
+    const nestedBaseUrl =
+      'baseUrl' in providerTarget
+        ? providerTarget.baseUrl
+        : (providerTarget['base-url'] ?? providerTarget.base_url);
+    if (typeof nestedBaseUrl === 'string') return nestedBaseUrl.trim();
+  }
+  return (target['base-url'] ?? target.base_url ?? '').trim();
+}
+
+function providerTargetValue(target: ApiKeyAccessProviderTarget): string {
+  return `${target.provider.trim().toLowerCase()}\u0000${target.baseUrl.trim()}`;
+}
+
+function providerTargetFromValue(value: string): ApiKeyAccessProviderTarget | null {
+  const [provider = '', baseUrl = ''] = value.split('\u0000');
+  const normalizedProvider = provider.trim().toLowerCase();
+  if (!normalizedProvider) return null;
+  return { provider: normalizedProvider, baseUrl: baseUrl.trim() };
+}
+
+function providerTargetLabelFromValue(value: string, defaultBaseUrlLabel: string): string {
+  const target = providerTargetFromValue(value);
+  if (!target) return value;
+  return `${target.provider} / ${target.baseUrl || defaultBaseUrlLabel}`;
+}
+
+function providerTargetValuesForRule(
+  rule: ApiKeyAccessRule | undefined,
+  options: AccessPickerOption[]
+): string[] {
+  if (!rule || rule.access === 'all') return [];
+  const selected = new Set<string>();
+  (rule.providerTargets ?? []).forEach((target) => {
+    const value = providerTargetValue(target);
+    if (value) selected.add(value);
+  });
+  (rule.providers ?? []).forEach((provider) => {
+    const normalizedProvider = provider.trim().toLowerCase();
+    if (!normalizedProvider) return;
+    options.forEach((option) => {
+      const target = providerTargetFromValue(option.value);
+      if (target?.provider === normalizedProvider) selected.add(option.value);
+    });
+  });
+  return Array.from(selected);
+}
+
+function selectedOptionLabels(
+  values: string[],
+  options: AccessPickerOption[],
+  formatMissingValue?: (value: string) => string
+): string[] {
+  const optionByValue = new Map(options.map((option) => [option.value, option]));
+  return values.map(
+    (value) => optionByValue.get(value)?.label ?? formatMissingValue?.(value) ?? value
+  );
 }
 
 /** Auto-expanding textarea that collapses back to a single-line input on demand. */
@@ -246,15 +308,28 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     ],
     [t]
   );
-  const providerSuggestions = useMemo(() => {
-    const providers = new Set<string>();
-    apiKeyAccessTargets.forEach((target) => {
-      const provider = target.provider.trim().toLowerCase();
-      if (provider) providers.add(provider);
-    });
-    return Array.from(providers).sort((left, right) => left.localeCompare(right));
-  }, [apiKeyAccessTargets]);
-  const authFileSuggestions = useMemo(() => {
+  const providerTargetOptions = useMemo<AccessPickerOption[]>(() => {
+    const seen = new Set<string>();
+    return apiKeyAccessTargets
+      .map((target) => {
+        const provider = target.provider.trim().toLowerCase();
+        const baseUrl = getAuthTargetBaseUrl(target);
+        const value = providerTargetValue({ provider, baseUrl });
+        return {
+          value,
+          label: provider
+            ? `${provider} / ${baseUrl || t('config_management.visual.api_keys.default_base_url')}`
+            : baseUrl,
+        };
+      })
+      .filter((option) => {
+        if (!option.value || seen.has(option.value)) return false;
+        seen.add(option.value);
+        return true;
+      })
+      .sort((left, right) => left.label.localeCompare(right.label));
+  }, [apiKeyAccessTargets, t]);
+  const authFileOptions = useMemo<AccessPickerOption[]>(() => {
     const seen = new Set<string>();
     return apiKeyAccessTargets
       .map((target) => ({
@@ -344,7 +419,17 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     }
 
     const currentRule = readApiKeyAccessRule(apiKeyAccessRules, apiKey);
-    setAccessRule(apiKey, currentRule && currentRule.access !== 'all' ? currentRule : {});
+    if (currentRule && currentRule.access !== 'all') {
+      setAccessRule(apiKey, currentRule);
+      return;
+    }
+
+    setAccessRule(apiKey, {
+      providerTargets: providerTargetOptions
+        .map((option) => providerTargetFromValue(option.value))
+        .filter((target): target is ApiKeyAccessProviderTarget => Boolean(target)),
+      authFiles: authFileOptions.map((option) => option.value),
+    });
   };
 
   const updateRestrictedList = (
@@ -355,19 +440,16 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     const currentRule = readApiKeyAccessRule(apiKeyAccessRules, apiKey);
     const nextRule: ApiKeyAccessRule =
       currentRule && currentRule.access !== 'all' ? { ...currentRule } : {};
-    nextRule[field] = nextValues;
+    if (field === 'providerTargets') {
+      nextRule.providerTargets = nextValues
+        .map((value) => providerTargetFromValue(value))
+        .filter((target): target is ApiKeyAccessProviderTarget => Boolean(target));
+      delete nextRule.providers;
+    } else {
+      nextRule.authFiles = nextValues;
+    }
     delete nextRule.access;
     setAccessRule(apiKey, nextRule);
-  };
-
-  const addRestrictedListValue = (
-    apiKey: string,
-    field: ApiKeyAccessListField,
-    nextValue: string
-  ) => {
-    const currentRule = readApiKeyAccessRule(apiKeyAccessRules, apiKey);
-    const currentValues = currentRule && currentRule.access !== 'all' ? currentRule[field] : [];
-    updateRestrictedList(apiKey, field, addAccessListValue(currentValues, nextValue));
   };
 
   const handleDelete = (apiKeyId: string) => {
@@ -437,6 +519,22 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
           {apiKeys.map((key, index) => {
             const accessRule = readApiKeyAccessRule(apiKeyAccessRules, key);
             const isRestricted = Boolean(accessRule && accessRule.access !== 'all');
+            const providerTargetValues = providerTargetValuesForRule(
+              accessRule,
+              providerTargetOptions
+            );
+            const providerTargetLabels = selectedOptionLabels(
+              providerTargetValues,
+              providerTargetOptions,
+              (value) =>
+                providerTargetLabelFromValue(
+                  value,
+                  t('config_management.visual.api_keys.default_base_url')
+                )
+            );
+            const authFileValues =
+              accessRule && accessRule.access !== 'all' ? (accessRule.authFiles ?? []) : [];
+            const authFileLabels = selectedOptionLabels(authFileValues, authFileOptions);
 
             return (
               <div
@@ -500,62 +598,52 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
                         <div className={styles.blockLabel}>
                           {t('config_management.visual.api_keys.providers_label')}
                         </div>
-                        <StringListEditor
-                          value={accessRule?.providers ?? []}
+                        <AccessScopePickerField
+                          value={providerTargetValues}
+                          labels={providerTargetLabels}
+                          options={providerTargetOptions}
                           disabled={accessEditingDisabled}
-                          placeholder={t('config_management.visual.api_keys.provider_placeholder')}
-                          inputAriaLabel={t('config_management.visual.api_keys.providers_label')}
-                          onChange={(nextProviders) =>
-                            updateRestrictedList(key, 'providers', nextProviders)
+                          searchPlaceholder={t(
+                            'config_management.visual.api_keys.provider_search_placeholder'
+                          )}
+                          emptyText={t('config_management.visual.api_keys.providers_empty')}
+                          selectButtonLabel={t('config_management.visual.api_keys.select')}
+                          selectedCountLabel={(selected, total) =>
+                            t('config_management.visual.api_keys.selected_count', {
+                              selected,
+                              total,
+                            })
+                          }
+                          onChange={(nextProviderTargets) =>
+                            updateRestrictedList(key, 'providerTargets', nextProviderTargets)
                           }
                         />
-                        {providerSuggestions.length > 0 ? (
-                          <div className={styles.apiKeyAccessSuggestions}>
-                            {providerSuggestions.map((provider) => (
-                              <Button
-                                key={provider}
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => addRestrictedListValue(key, 'providers', provider)}
-                                disabled={accessEditingDisabled}
-                              >
-                                {provider}
-                              </Button>
-                            ))}
-                          </div>
-                        ) : null}
                       </div>
 
                       <div className={styles.apiKeyAccessPicker}>
                         <div className={styles.blockLabel}>
                           {t('config_management.visual.api_keys.auth_files_label')}
                         </div>
-                        <StringListEditor
-                          value={accessRule?.authFiles ?? []}
+                        <AccessScopePickerField
+                          value={authFileValues}
+                          labels={authFileLabels}
+                          options={authFileOptions}
                           disabled={accessEditingDisabled}
-                          placeholder={t('config_management.visual.api_keys.auth_file_placeholder')}
-                          inputAriaLabel={t('config_management.visual.api_keys.auth_files_label')}
+                          searchPlaceholder={t(
+                            'config_management.visual.api_keys.auth_file_search_placeholder'
+                          )}
+                          emptyText={t('config_management.visual.api_keys.auth_files_empty')}
+                          selectButtonLabel={t('config_management.visual.api_keys.select')}
+                          selectedCountLabel={(selected, total) =>
+                            t('config_management.visual.api_keys.selected_count', {
+                              selected,
+                              total,
+                            })
+                          }
                           onChange={(nextAuthFiles) =>
                             updateRestrictedList(key, 'authFiles', nextAuthFiles)
                           }
                         />
-                        {authFileSuggestions.length > 0 ? (
-                          <div className={styles.apiKeyAccessSuggestions}>
-                            {authFileSuggestions.map((target) => (
-                              <Button
-                                key={target.value}
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  addRestrictedListValue(key, 'authFiles', target.value)
-                                }
-                                disabled={accessEditingDisabled}
-                              >
-                                {target.label}
-                              </Button>
-                            ))}
-                          </div>
-                        ) : null}
                       </div>
                     </div>
                   ) : null}
@@ -624,6 +712,181 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
           )}
         </div>
       </Modal>
+    </div>
+  );
+});
+
+const AccessScopePickerField = memo(function AccessScopePickerField({
+  value,
+  labels,
+  options,
+  disabled,
+  searchPlaceholder,
+  emptyText,
+  selectButtonLabel,
+  selectedCountLabel,
+  onChange,
+}: {
+  value: string[];
+  labels: string[];
+  options: AccessPickerOption[];
+  disabled?: boolean;
+  searchPlaceholder: string;
+  emptyText: string;
+  selectButtonLabel: string;
+  selectedCountLabel: (selected: number, total: number) => string;
+  onChange: (nextValues: string[]) => void;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(value));
+
+  const filteredOptions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((option) =>
+      `${option.label} ${option.description ?? ''} ${option.value}`.toLowerCase().includes(q)
+    );
+  }, [options, search]);
+
+  const allFilteredChecked =
+    filteredOptions.length > 0 && filteredOptions.every((option) => selected.has(option.value));
+
+  const openPicker = () => {
+    setSelected(new Set(value));
+    setSearch('');
+    setOpen(true);
+  };
+
+  const toggle = (nextValue: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(nextValue)) next.delete(nextValue);
+      else next.add(nextValue);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allFilteredChecked) {
+        filteredOptions.forEach((option) => next.delete(option.value));
+      } else {
+        filteredOptions.forEach((option) => next.add(option.value));
+      }
+      return next;
+    });
+  };
+
+  const handleApply = () => {
+    onChange(Array.from(selected));
+    setOpen(false);
+  };
+
+  return (
+    <div className={styles.accessSelection}>
+      <div className={styles.accessSelectionHeader}>
+        <div className={styles.accessSelectionChips}>
+          {labels.length > 0 ? (
+            labels.map((label, index) => (
+              <span
+                key={`${value[index] ?? label}-${index}`}
+                className={styles.accessSelectionChip}
+              >
+                {label}
+              </span>
+            ))
+          ) : (
+            <span className={styles.accessSelectionEmpty}>{emptyText}</span>
+          )}
+        </div>
+        <Button variant="secondary" size="sm" onClick={openPicker} disabled={disabled}>
+          {selectButtonLabel}
+        </Button>
+      </div>
+
+      {open ? (
+        <div className={styles.accessDiscoveryPanel}>
+          <div className={styles.accessDiscoveryToolbar}>
+            <div className={styles.accessDiscoverySearchWrap}>
+              <span className={styles.accessDiscoverySearchIcon} aria-hidden="true">
+                <IconSearch size={14} />
+              </span>
+              <input
+                type="search"
+                className={styles.accessDiscoverySearch}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={searchPlaceholder}
+                disabled={disabled}
+              />
+            </div>
+          </div>
+
+          {options.length ? (
+            <>
+              <div className={styles.accessDiscoveryBatchRow}>
+                <SelectionCheckbox
+                  checked={allFilteredChecked}
+                  onChange={toggleAll}
+                  disabled={disabled || filteredOptions.length === 0}
+                  label={
+                    <span className={styles.accessDiscoveryBatchLabel}>
+                      {allFilteredChecked
+                        ? t('config_management.visual.api_keys.clear_all')
+                        : t('config_management.visual.api_keys.select_all')}
+                    </span>
+                  }
+                />
+                <span className={styles.accessDiscoveryCount}>
+                  {selectedCountLabel(selected.size, options.length)}
+                </span>
+              </div>
+              {filteredOptions.length ? (
+                <ul className={styles.accessDiscoveryList}>
+                  {filteredOptions.map((option) => (
+                    <li key={option.value} className={styles.accessDiscoveryItem}>
+                      <SelectionCheckbox
+                        checked={selected.has(option.value)}
+                        onChange={() => toggle(option.value)}
+                        disabled={disabled}
+                        label={
+                          <span className={styles.accessDiscoveryName}>
+                            <span>{option.label}</span>
+                            {option.description ? <small>{option.description}</small> : null}
+                          </span>
+                        }
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className={styles.accessDiscoveryEmpty}>
+                  {t('config_management.visual.api_keys.no_search_results')}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className={styles.accessDiscoveryEmpty}>{emptyText}</div>
+          )}
+
+          <div className={styles.accessDiscoveryFooter}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setOpen(false)}
+              disabled={disabled}
+            >
+              {t('config_management.visual.api_keys.close')}
+            </Button>
+            <Button size="sm" onClick={handleApply} disabled={disabled}>
+              {t('config_management.visual.api_keys.apply', { count: selected.size })}
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 });

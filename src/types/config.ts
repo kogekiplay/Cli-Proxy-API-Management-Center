@@ -64,7 +64,13 @@ export interface ConfigCache {
 export interface ApiKeyAccessRule {
   access?: 'all' | string;
   providers?: string[];
+  providerTargets?: ApiKeyAccessProviderTarget[];
   authFiles?: string[];
+}
+
+export interface ApiKeyAccessProviderTarget {
+  provider: string;
+  baseUrl: string;
 }
 
 export type ApiKeyAccessRules = Record<string, ApiKeyAccessRule>;

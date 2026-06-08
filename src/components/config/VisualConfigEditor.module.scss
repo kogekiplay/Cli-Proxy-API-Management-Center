@@ -659,6 +659,170 @@
   }
 }
 
+.accessSelection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.accessSelectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.accessSelectionChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.accessSelectionChip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 26px;
+  padding: 3px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.accessSelectionEmpty {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.accessDiscoveryPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-primary) 94%, var(--bg-secondary));
+}
+
+.accessDiscoveryToolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.accessDiscoverySearchWrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.accessDiscoverySearchIcon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  display: inline-flex;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.accessDiscoverySearch {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px 0 30px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 12px;
+
+  &:focus {
+    outline: none;
+    border-color: var(--text-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--text-primary) 12%, transparent);
+  }
+}
+
+.accessDiscoveryBatchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.accessDiscoveryBatchLabel {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.accessDiscoveryCount {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.accessDiscoveryList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 240px;
+  padding: 0;
+  margin: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.accessDiscoveryItem {
+  display: flex;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+
+.accessDiscoveryName {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+
+  small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+  }
+}
+
+.accessDiscoveryEmpty {
+  padding: 12px;
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: 12px;
+}
+
+.accessDiscoveryFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .payloadRuleModelRow {
   display: grid;
   grid-template-columns: 1fr 160px auto auto;
@@ -760,6 +924,12 @@
     align-items: stretch;
   }
 
+  .accessSelectionHeader,
+  .accessDiscoveryFooter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .payloadRowActionButton {
     width: 100%;
   }
@@ -784,7 +954,9 @@
   .blockHeaderRow :global(.btn),
   .ruleCardHeader :global(.btn),
   .actionRow :global(.btn),
-  .stringListRow :global(.btn) {
+  .stringListRow :global(.btn),
+  .accessSelectionHeader :global(.btn),
+  .accessDiscoveryFooter :global(.btn) {
     width: 100%;
     justify-content: center;
   }
