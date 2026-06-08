@@ -15,6 +15,8 @@ import type {
   PayloadParamValueType,
   PayloadRule,
 } from '@/types/visualConfig';
+import type { ApiKeyAccessRule, ApiKeyAccessRules } from '@/types/config';
+import type { ApiKeyAccessAuthTarget } from '@/services/api';
 import { makeClientId } from '@/types/visualConfig';
 import {
   getPayloadParamValidationError,
@@ -26,6 +28,41 @@ import { isValidApiKeyCharset } from '@/utils/validation';
 
 /** Minimum character count before the expand/collapse toggle appears. */
 const EXPAND_THRESHOLD = 30;
+
+type ApiKeyAccessListField = 'providers' | 'authFiles';
+
+function readApiKeyAccessRule(
+  rules: ApiKeyAccessRules | undefined,
+  apiKey: string
+): ApiKeyAccessRule | undefined {
+  const trimmed = apiKey.trim();
+  if (!rules || !trimmed) return undefined;
+  return rules[apiKey] ?? rules[trimmed];
+}
+
+function getAuthTargetValue(target: ApiKeyAccessAuthTarget): string {
+  return (target.filename ?? target.name ?? target.id ?? '').trim();
+}
+
+function getAuthTargetLabel(target: ApiKeyAccessAuthTarget): string {
+  const label = (
+    target.label ??
+    target.email ??
+    target.name ??
+    target.filename ??
+    target.id
+  ).trim();
+  const provider = target.provider.trim();
+  return provider ? `${provider} / ${label}` : label;
+}
+
+function addAccessListValue(values: string[] | undefined, nextValue: string): string[] {
+  const trimmed = nextValue.trim();
+  if (!trimmed) return values ?? [];
+  const current = values ?? [];
+  if (current.some((item) => item.trim() === trimmed)) return current;
+  return [...current, trimmed];
+}
 
 /** Auto-expanding textarea that collapses back to a single-line input on demand. */
 function ExpandableInput({
@@ -161,12 +198,18 @@ function buildProtocolOptions(
 
 export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   value,
+  apiKeyAccessRules = {},
+  apiKeyAccessTargets = [],
   disabled,
   onChange,
+  onApiKeyAccessChange,
 }: {
   value: string;
+  apiKeyAccessRules?: ApiKeyAccessRules;
+  apiKeyAccessTargets?: ApiKeyAccessAuthTarget[];
   disabled?: boolean;
   onChange: (nextValue: string) => void;
+  onApiKeyAccessChange?: (nextRules: ApiKeyAccessRules) => void;
 }) {
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
@@ -195,6 +238,36 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const [editingApiKeyId, setEditingApiKeyId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [formError, setFormError] = useState('');
+  const accessEditingDisabled = disabled || !onApiKeyAccessChange;
+  const accessOptions = useMemo(
+    () => [
+      { value: 'all', label: t('config_management.visual.api_keys.access_all') },
+      { value: 'restricted', label: t('config_management.visual.api_keys.access_restricted') },
+    ],
+    [t]
+  );
+  const providerSuggestions = useMemo(() => {
+    const providers = new Set<string>();
+    apiKeyAccessTargets.forEach((target) => {
+      const provider = target.provider.trim().toLowerCase();
+      if (provider) providers.add(provider);
+    });
+    return Array.from(providers).sort((left, right) => left.localeCompare(right));
+  }, [apiKeyAccessTargets]);
+  const authFileSuggestions = useMemo(() => {
+    const seen = new Set<string>();
+    return apiKeyAccessTargets
+      .map((target) => ({
+        value: getAuthTargetValue(target),
+        label: getAuthTargetLabel(target),
+      }))
+      .filter((target) => {
+        if (!target.value || seen.has(target.value)) return false;
+        seen.add(target.value);
+        return true;
+      })
+      .sort((left, right) => left.label.localeCompare(right.label));
+  }, [apiKeyAccessTargets]);
 
   function generateSecureApiKey(): string {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -229,11 +302,81 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     onChange(nextKeys.join('\n'));
   };
 
+  const updateApiKeyAccessRules = (nextRules: ApiKeyAccessRules) => {
+    onApiKeyAccessChange?.(nextRules);
+  };
+
+  const setAccessRule = (apiKey: string, rule: ApiKeyAccessRule) => {
+    const key = apiKey.trim();
+    if (!key) return;
+    updateApiKeyAccessRules({
+      ...apiKeyAccessRules,
+      [key]: rule,
+    });
+  };
+
+  const removeAccessRule = (apiKey: string) => {
+    const trimmed = apiKey.trim();
+    const nextRules = { ...apiKeyAccessRules };
+    delete nextRules[apiKey];
+    if (trimmed !== apiKey) delete nextRules[trimmed];
+    updateApiKeyAccessRules(nextRules);
+  };
+
+  const renameAccessRule = (previousKey: string, nextKey: string) => {
+    const previousTrimmed = previousKey.trim();
+    const nextTrimmed = nextKey.trim();
+    if (!previousTrimmed || !nextTrimmed || previousTrimmed === nextTrimmed) return;
+    const previousRule = readApiKeyAccessRule(apiKeyAccessRules, previousKey);
+    if (!previousRule) return;
+
+    const nextRules = { ...apiKeyAccessRules };
+    delete nextRules[previousKey];
+    delete nextRules[previousTrimmed];
+    nextRules[nextTrimmed] = previousRule;
+    updateApiKeyAccessRules(nextRules);
+  };
+
+  const updateAccessMode = (apiKey: string, nextMode: string) => {
+    if (nextMode === 'all') {
+      setAccessRule(apiKey, { access: 'all' });
+      return;
+    }
+
+    const currentRule = readApiKeyAccessRule(apiKeyAccessRules, apiKey);
+    setAccessRule(apiKey, currentRule && currentRule.access !== 'all' ? currentRule : {});
+  };
+
+  const updateRestrictedList = (
+    apiKey: string,
+    field: ApiKeyAccessListField,
+    nextValues: string[]
+  ) => {
+    const currentRule = readApiKeyAccessRule(apiKeyAccessRules, apiKey);
+    const nextRule: ApiKeyAccessRule =
+      currentRule && currentRule.access !== 'all' ? { ...currentRule } : {};
+    nextRule[field] = nextValues;
+    delete nextRule.access;
+    setAccessRule(apiKey, nextRule);
+  };
+
+  const addRestrictedListValue = (
+    apiKey: string,
+    field: ApiKeyAccessListField,
+    nextValue: string
+  ) => {
+    const currentRule = readApiKeyAccessRule(apiKeyAccessRules, apiKey);
+    const currentValues = currentRule && currentRule.access !== 'all' ? currentRule[field] : [];
+    updateRestrictedList(apiKey, field, addAccessListValue(currentValues, nextValue));
+  };
+
   const handleDelete = (apiKeyId: string) => {
     const index = renderApiKeyIds.findIndex((id) => id === apiKeyId);
     if (index < 0) return;
+    const removedKey = apiKeys[index] ?? '';
     setApiKeyIds(renderApiKeyIds.filter((id) => id !== apiKeyId));
     updateApiKeys(apiKeys.filter((_, i) => i !== index));
+    removeAccessRule(removedKey);
   };
 
   const handleSave = () => {
@@ -254,10 +397,14 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
       editingApiKeyId === null
         ? [...apiKeys, trimmed]
         : apiKeys.map((key, idx) => (idx === editingIndex ? trimmed : key));
+    const previousKey = editingIndex >= 0 ? (apiKeys[editingIndex] ?? '') : '';
     if (editingApiKeyId === null) {
       setApiKeyIds([...renderApiKeyIds, makeClientId()]);
     }
     updateApiKeys(nextKeys);
+    if (editingApiKeyId !== null) {
+      renameAccessRule(previousKey, trimmed);
+    }
     closeModal();
   };
 
@@ -287,43 +434,135 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
         <div className={styles.emptyState}>{t('config_management.visual.api_keys.empty')}</div>
       ) : (
         <div className="item-list" style={{ marginTop: 4 }}>
-          {apiKeys.map((key, index) => (
-            <div key={renderApiKeyIds[index] ?? `${key}-${index}`} className="item-row">
-              <div className="item-meta">
-                <div className="pill">#{index + 1}</div>
-                <div className="item-title">
-                  {t('config_management.visual.api_keys.input_label')}
+          {apiKeys.map((key, index) => {
+            const accessRule = readApiKeyAccessRule(apiKeyAccessRules, key);
+            const isRestricted = Boolean(accessRule && accessRule.access !== 'all');
+
+            return (
+              <div
+                key={renderApiKeyIds[index] ?? `${key}-${index}`}
+                className={`item-row ${styles.apiKeyItemRow}`}
+              >
+                <div className={styles.apiKeySummaryRow}>
+                  <div className="item-meta">
+                    <div className="pill">#{index + 1}</div>
+                    <div className="item-title">
+                      {t('config_management.visual.api_keys.input_label')}
+                    </div>
+                    <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
+                  </div>
+                  <div className="item-actions">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleCopy(key)}
+                      disabled={disabled}
+                    >
+                      {t('common.copy')}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => openEditModal(renderApiKeyIds[index] ?? '')}
+                      disabled={disabled}
+                    >
+                      {t('config_management.visual.common.edit')}
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => handleDelete(renderApiKeyIds[index] ?? '')}
+                      disabled={disabled}
+                    >
+                      {t('config_management.visual.common.delete')}
+                    </Button>
+                  </div>
                 </div>
-                <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
+
+                <div className={styles.apiKeyAccessScope}>
+                  <div className={styles.apiKeyAccessMode}>
+                    <div className={styles.blockLabel}>
+                      {t('config_management.visual.api_keys.access_scope')}
+                    </div>
+                    <Select
+                      value={isRestricted ? 'restricted' : 'all'}
+                      options={accessOptions}
+                      onChange={(nextMode) => updateAccessMode(key, nextMode)}
+                      disabled={accessEditingDisabled}
+                      size="sm"
+                      ariaLabel={t('config_management.visual.api_keys.access_scope')}
+                    />
+                  </div>
+
+                  {isRestricted ? (
+                    <div className={styles.apiKeyAccessPickers}>
+                      <div className={styles.apiKeyAccessPicker}>
+                        <div className={styles.blockLabel}>
+                          {t('config_management.visual.api_keys.providers_label')}
+                        </div>
+                        <StringListEditor
+                          value={accessRule?.providers ?? []}
+                          disabled={accessEditingDisabled}
+                          placeholder={t('config_management.visual.api_keys.provider_placeholder')}
+                          inputAriaLabel={t('config_management.visual.api_keys.providers_label')}
+                          onChange={(nextProviders) =>
+                            updateRestrictedList(key, 'providers', nextProviders)
+                          }
+                        />
+                        {providerSuggestions.length > 0 ? (
+                          <div className={styles.apiKeyAccessSuggestions}>
+                            {providerSuggestions.map((provider) => (
+                              <Button
+                                key={provider}
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => addRestrictedListValue(key, 'providers', provider)}
+                                disabled={accessEditingDisabled}
+                              >
+                                {provider}
+                              </Button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className={styles.apiKeyAccessPicker}>
+                        <div className={styles.blockLabel}>
+                          {t('config_management.visual.api_keys.auth_files_label')}
+                        </div>
+                        <StringListEditor
+                          value={accessRule?.authFiles ?? []}
+                          disabled={accessEditingDisabled}
+                          placeholder={t('config_management.visual.api_keys.auth_file_placeholder')}
+                          inputAriaLabel={t('config_management.visual.api_keys.auth_files_label')}
+                          onChange={(nextAuthFiles) =>
+                            updateRestrictedList(key, 'authFiles', nextAuthFiles)
+                          }
+                        />
+                        {authFileSuggestions.length > 0 ? (
+                          <div className={styles.apiKeyAccessSuggestions}>
+                            {authFileSuggestions.map((target) => (
+                              <Button
+                                key={target.value}
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  addRestrictedListValue(key, 'authFiles', target.value)
+                                }
+                                disabled={accessEditingDisabled}
+                              >
+                                {target.label}
+                              </Button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               </div>
-              <div className="item-actions">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleCopy(key)}
-                  disabled={disabled}
-                >
-                  {t('common.copy')}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => openEditModal(renderApiKeyIds[index] ?? '')}
-                  disabled={disabled}
-                >
-                  {t('config_management.visual.common.edit')}
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleDelete(renderApiKeyIds[index] ?? '')}
-                  disabled={disabled}
-                >
-                  {t('config_management.visual.common.delete')}
-                </Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

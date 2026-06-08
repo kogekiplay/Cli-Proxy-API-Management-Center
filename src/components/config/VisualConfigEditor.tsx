@@ -33,6 +33,7 @@ import type {
   VisualConfigValidationErrors,
   VisualConfigValues,
 } from '@/types/visualConfig';
+import type { ApiKeyAccessAuthTarget } from '@/services/api';
 import {
   ApiKeysCardEditor,
   PayloadFilterRulesEditor,
@@ -53,6 +54,7 @@ interface VisualConfigEditorProps {
   values: VisualConfigValues;
   validationErrors?: VisualConfigValidationErrors;
   hasPayloadValidationErrors?: boolean;
+  apiKeyAccessTargets?: ApiKeyAccessAuthTarget[];
   disabled?: boolean;
   onChange: (values: Partial<VisualConfigValues>) => void;
 }
@@ -160,6 +162,7 @@ export function VisualConfigEditor({
   values,
   validationErrors,
   hasPayloadValidationErrors = false,
+  apiKeyAccessTargets = [],
   disabled = false,
   onChange,
 }: VisualConfigEditorProps) {
@@ -216,6 +219,10 @@ export function VisualConfigEditor({
 
   const handleApiKeysTextChange = useCallback(
     (apiKeysText: string) => onChange({ apiKeysText }),
+    [onChange]
+  );
+  const handleApiKeyAccessRulesChange = useCallback(
+    (apiKeyAccessRules: VisualConfigValues['apiKeyAccessRules']) => onChange({ apiKeyAccessRules }),
     [onChange]
   );
   const handlePayloadDefaultRulesChange = useCallback(
@@ -618,8 +625,11 @@ export function VisualConfigEditor({
               <div className={styles.subsection}>
                 <ApiKeysCardEditor
                   value={values.apiKeysText}
+                  apiKeyAccessRules={values.apiKeyAccessRules}
+                  apiKeyAccessTargets={apiKeyAccessTargets}
                   disabled={disabled}
                   onChange={handleApiKeysTextChange}
+                  onApiKeyAccessChange={handleApiKeyAccessRulesChange}
                 />
               </div>
             </SectionStack>

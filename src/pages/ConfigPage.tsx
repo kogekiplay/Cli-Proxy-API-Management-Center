@@ -18,6 +18,7 @@ import { DiffModal } from '@/components/config/DiffModal';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useVisualConfig } from '@/hooks/useVisualConfig';
 import { useNotificationStore, useAuthStore, useThemeStore, useConfigStore } from '@/stores';
+import { apiKeyAccessApi, type ApiKeyAccessAuthTarget } from '@/services/api';
 import { configFileApi } from '@/services/api/configFile';
 import styles from './ConfigPage.module.scss';
 
@@ -79,6 +80,7 @@ export function ConfigPage() {
   const [diffModalOpen, setDiffModalOpen] = useState(false);
   const [serverYaml, setServerYaml] = useState('');
   const [mergedYaml, setMergedYaml] = useState('');
+  const [apiKeyAccessTargets, setApiKeyAccessTargets] = useState<ApiKeyAccessAuthTarget[]>([]);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,9 +111,20 @@ export function ConfigPage() {
       setServerYaml(data);
       setMergedYaml(data);
       loadVisualValuesFromYaml(data);
+      void apiKeyAccessApi
+        .get()
+        .then((response) => {
+          setApiKeyAccessTargets(
+            Array.isArray(response['auth-targets']) ? response['auth-targets'] : []
+          );
+        })
+        .catch(() => {
+          setApiKeyAccessTargets([]);
+        });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('notification.refresh_failed');
       setError(message);
+      setApiKeyAccessTargets([]);
     } finally {
       setLoading(false);
     }
@@ -563,6 +576,7 @@ export function ConfigPage() {
               validationErrors={visualValidationErrors}
               hasPayloadValidationErrors={visualHasPayloadValidationErrors}
               disabled={disableControls || loading}
+              apiKeyAccessTargets={apiKeyAccessTargets}
               onChange={setVisualValues}
             />
           ) : (

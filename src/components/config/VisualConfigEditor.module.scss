@@ -600,6 +600,65 @@
   flex-wrap: wrap;
 }
 
+.apiKeyItemRow {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.apiKeySummaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.apiKeyAccessScope {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.apiKeyAccessMode {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) minmax(180px, 260px);
+  gap: 8px;
+  align-items: center;
+}
+
+.apiKeyAccessPickers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.apiKeyAccessPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.apiKeyAccessSuggestions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+
+  :global(.btn span) {
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
 .payloadRuleModelRow {
   display: grid;
   grid-template-columns: 1fr 160px auto auto;
@@ -690,7 +749,9 @@
   .payloadRuleModelRowProtocolFirst,
   .payloadHeaderRow,
   .payloadRuleParamRow,
-  .payloadFilterModelRow {
+  .payloadFilterModelRow,
+  .apiKeyAccessMode,
+  .apiKeyAccessPickers {
     grid-template-columns: minmax(0, 1fr);
   }
 
