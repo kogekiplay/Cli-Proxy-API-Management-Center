@@ -28,6 +28,11 @@ import {
 import { maskApiKey } from '@/utils/format';
 import { isValidApiKeyCharset } from '@/utils/validation';
 import type { ApiKeyAccessProviderTarget } from '@/types/config';
+import {
+  getApiKeyAccessAuthTargetBaseUrl,
+  getApiKeyAccessAuthTargetLabel,
+  getApiKeyAccessAuthTargetValue,
+} from '@/utils/apiKeyAccessTargets';
 
 /** Minimum character count before the expand/collapse toggle appears. */
 const EXPAND_THRESHOLD = 30;
@@ -40,6 +45,13 @@ interface AccessPickerOption {
   description?: string;
 }
 
+const DEFAULT_PROVIDER_BASE_URLS: Record<string, string> = {
+  claude: 'https://api.anthropic.com',
+  codex: 'https://chatgpt.com/backend-api/codex',
+  vertex: 'https://aiplatform.googleapis.com',
+  xai: 'https://api.x.ai/v1',
+};
+
 function readApiKeyAccessRule(
   rules: ApiKeyAccessRules | undefined,
   apiKey: string
@@ -47,34 +59,6 @@ function readApiKeyAccessRule(
   const trimmed = apiKey.trim();
   if (!rules || !trimmed) return undefined;
   return rules[apiKey] ?? rules[trimmed];
-}
-
-function getAuthTargetValue(target: ApiKeyAccessAuthTarget): string {
-  return (target.filename ?? target.name ?? target.id ?? '').trim();
-}
-
-function getAuthTargetLabel(target: ApiKeyAccessAuthTarget): string {
-  const label = (
-    target.label ??
-    target.email ??
-    target.name ??
-    target.filename ??
-    target.id
-  ).trim();
-  const provider = target.provider.trim();
-  return provider ? `${provider} / ${label}` : label;
-}
-
-function getAuthTargetBaseUrl(target: ApiKeyAccessAuthTarget): string {
-  const providerTarget = target['provider-target'] ?? target.provider_target;
-  if (providerTarget && typeof providerTarget === 'object') {
-    const nestedBaseUrl =
-      'baseUrl' in providerTarget
-        ? providerTarget.baseUrl
-        : (providerTarget['base-url'] ?? providerTarget.base_url);
-    if (typeof nestedBaseUrl === 'string') return nestedBaseUrl.trim();
-  }
-  return (target['base-url'] ?? target.base_url ?? '').trim();
 }
 
 function providerTargetValue(target: ApiKeyAccessProviderTarget): string {
@@ -91,7 +75,12 @@ function providerTargetFromValue(value: string): ApiKeyAccessProviderTarget | nu
 function providerTargetLabelFromValue(value: string, defaultBaseUrlLabel: string): string {
   const target = providerTargetFromValue(value);
   if (!target) return value;
-  return `${target.provider} / ${target.baseUrl || defaultBaseUrlLabel}`;
+  return `${target.provider} / ${
+    target.baseUrl ||
+    (DEFAULT_PROVIDER_BASE_URLS[target.provider]
+      ? `${defaultBaseUrlLabel} ${DEFAULT_PROVIDER_BASE_URLS[target.provider]}`
+      : defaultBaseUrlLabel)
+  }`;
 }
 
 function providerTargetValuesForRule(
@@ -313,12 +302,18 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     return apiKeyAccessTargets
       .map((target) => {
         const provider = target.provider.trim().toLowerCase();
-        const baseUrl = getAuthTargetBaseUrl(target);
+        const baseUrl = getApiKeyAccessAuthTargetBaseUrl(target);
+        const defaultBaseUrl = DEFAULT_PROVIDER_BASE_URLS[provider];
         const value = providerTargetValue({ provider, baseUrl });
         return {
           value,
           label: provider
-            ? `${provider} / ${baseUrl || t('config_management.visual.api_keys.default_base_url')}`
+            ? `${provider} / ${
+                baseUrl ||
+                (defaultBaseUrl
+                  ? `${t('config_management.visual.api_keys.default_base_url')} ${defaultBaseUrl}`
+                  : t('config_management.visual.api_keys.default_base_url'))
+              }`
             : baseUrl,
         };
       })
@@ -333,8 +328,8 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     const seen = new Set<string>();
     return apiKeyAccessTargets
       .map((target) => ({
-        value: getAuthTargetValue(target),
-        label: getAuthTargetLabel(target),
+        value: getApiKeyAccessAuthTargetValue(target),
+        label: getApiKeyAccessAuthTargetLabel(target),
       }))
       .filter((target) => {
         if (!target.value || seen.has(target.value)) return false;

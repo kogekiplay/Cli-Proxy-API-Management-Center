@@ -672,11 +672,17 @@
   justify-content: space-between;
   gap: 8px;
   min-width: 0;
+
+  :global(.btn) {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
 }
 
 .accessSelectionChips {
   display: flex;
   flex-wrap: wrap;
+  flex: 1 1 auto;
   gap: 6px;
   min-width: 0;
 }
@@ -821,6 +827,11 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+
+  :global(.btn) {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
 }
 
 .payloadRuleModelRow {
