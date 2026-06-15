@@ -4,7 +4,6 @@
  */
 
 import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from './provider';
-import type { AmpcodeConfig } from './ampcode';
 
 export interface QuotaExceededConfig {
   switchProject?: boolean;
@@ -25,7 +24,6 @@ export interface Config {
   routingStrategy?: string;
   apiKeys?: string[];
   apiKeyAccess?: ApiKeyAccessRules;
-  ampcode?: AmpcodeConfig;
   geminiApiKeys?: GeminiKeyConfig[];
   codexApiKeys?: ProviderKeyConfig[];
   claudeApiKeys?: ProviderKeyConfig[];
@@ -48,7 +46,6 @@ export type RawConfigSection =
   | 'routing/strategy'
   | 'api-keys'
   | 'api-key-access'
-  | 'ampcode'
   | 'gemini-api-key'
   | 'codex-api-key'
   | 'claude-api-key'
