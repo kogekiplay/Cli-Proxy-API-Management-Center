@@ -84,6 +84,7 @@ export type VisualConfigValues = {
   apiKeysText: string;
   apiKeyAccessRules: ApiKeyAccessRules;
   pluginsEnabled: boolean;
+  pluginStoreSources: string[];
   debug: boolean;
   commercialMode: boolean;
   loggingToFile: boolean;
@@ -149,6 +150,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   apiKeysText: '',
   apiKeyAccessRules: {},
   pluginsEnabled: false,
+  pluginStoreSources: [],
   debug: false,
   commercialMode: false,
   loggingToFile: false,
