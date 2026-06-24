@@ -144,7 +144,7 @@
   "opencode_go": {
     "title": "OpenCode Go Accounts",
     "subtitle": "Sync accounts, API keys, and cookies from the browser helper into an OpenAI-compatible provider.",
-    "accounts_title": "OpenCode Go Quota",
+    "accounts_title": "OpenCode Quota",
     "copy_config": "Copy Script Config",
     "config_copied": "Script config copied",
     "config_copy_failed": "Failed to copy script config",

@@ -144,7 +144,7 @@
   "opencode_go": {
     "title": "OpenCode Go 帳號",
     "subtitle": "從瀏覽器助手同步帳號、API key 和 Cookie，並寫入 OpenAI-compatible 供應商。",
-    "accounts_title": "OpenCode Go 額度",
+    "accounts_title": "OpenCode 額度",
     "copy_config": "複製腳本設定",
     "config_copied": "腳本設定已複製",
     "config_copy_failed": "複製腳本設定失敗",

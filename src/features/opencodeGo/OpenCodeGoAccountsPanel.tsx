@@ -9,6 +9,7 @@ import { formatQuotaResetTime } from '@/utils/quota';
 import { useGridColumns } from '@/components/quota/useGridColumns';
 import type { OpenCodeGoAccount, OpenCodeGoUsageWindow } from '@/types/opencodeGo';
 import { displayOpenCodeGoAccountName } from './helpers';
+import { refreshOpenCodeGoUsageConcurrently } from './refreshUsagePool';
 import styles from './OpenCodeGoAccountsPanel.module.scss';
 import quotaStyles from '@/pages/QuotaPage.module.scss';
 
@@ -149,26 +150,17 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
 
     setBulkRefreshing(true);
     setUsageBusyID(null);
-    let successCount = 0;
-    let firstError = '';
     try {
-      for (const account of refreshable) {
-        try {
-          const result = await opencodeGoApi.refreshUsage(account.id);
-          const refreshedAccount = result.account;
-          if (refreshedAccount) {
-            setAccounts((items) =>
-              items.map((item) => (item.id === refreshedAccount.id ? refreshedAccount : item))
-            );
-          }
-          successCount += 1;
-        } catch (error) {
-          if (!firstError) {
-            firstError =
-              error instanceof Error ? error.message : t('opencode_go.usage_refresh_failed');
-          }
-        }
-      }
+      const { successCount, firstError } = await refreshOpenCodeGoUsageConcurrently(
+        refreshable,
+        (account) => opencodeGoApi.refreshUsage(account.id),
+        (refreshedAccount) => {
+          setAccounts((items) =>
+            items.map((item) => (item.id === refreshedAccount.id ? refreshedAccount : item))
+          );
+        },
+        { fallbackErrorMessage: t('opencode_go.usage_refresh_failed') }
+      );
 
       if (firstError) {
         showNotification(
@@ -323,7 +315,7 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
           return (
             <article className={styles.accountCard} key={account.id}>
               <div className={styles.cardHeader}>
-                <span className={styles.typeBadge}>OpenCode Go</span>
+                <span className={styles.typeBadge}>OpenCode</span>
                 <span className={styles.fileName}>{displayOpenCodeGoAccountName(account)}</span>
               </div>
 
