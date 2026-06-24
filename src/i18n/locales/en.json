@@ -153,6 +153,7 @@
     "base_url": "Base URL",
     "base_url_missing": "Not configured",
     "empty": "No accounts synced yet. Use the script on opencode.ai to sync the current account.",
+    "idle": "Click here to refresh quota",
     "load_failed": "Failed to load OpenCode Go accounts",
     "provider_synced": "Provider synced",
     "provider_sync_failed": "Failed to sync provider",

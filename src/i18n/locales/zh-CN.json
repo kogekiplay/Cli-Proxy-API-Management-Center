@@ -153,6 +153,7 @@
     "base_url": "服务地址",
     "base_url_missing": "未配置",
     "empty": "还没有同步账号，请在 opencode.ai 页面使用脚本同步当前账号。",
+    "idle": "点击此处刷新额度",
     "load_failed": "加载 OpenCode Go 账号失败",
     "provider_synced": "提供商已同步",
     "provider_sync_failed": "同步提供商失败",

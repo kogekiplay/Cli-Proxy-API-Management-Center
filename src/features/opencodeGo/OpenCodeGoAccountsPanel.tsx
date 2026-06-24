@@ -19,6 +19,14 @@ const usagePercent = (used?: number, limit?: number) => {
   return Math.min(100, Math.max(0, (used / limit) * 100));
 };
 
+const hasUsageWindow = (value: OpenCodeGoUsageWindow | undefined) =>
+  value?.used !== undefined || value?.limit !== undefined || Boolean(value?.resetAt?.trim());
+
+const hasUsageSnapshot = (account: OpenCodeGoAccount) =>
+  hasUsageWindow(account.usage?.rolling) ||
+  hasUsageWindow(account.usage?.weekly) ||
+  hasUsageWindow(account.usage?.monthly);
+
 export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccountsPanelProps) {
   const { t, i18n } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
@@ -108,8 +116,7 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
     value: OpenCodeGoUsageWindow | undefined
   ) => {
     const percent = usagePercent(value?.used, value?.limit);
-    const hasValue =
-      value?.used !== undefined || value?.limit !== undefined || Boolean(value?.resetAt?.trim());
+    const hasValue = hasUsageWindow(value);
 
     return (
       <div className={styles.usageItem} key={key}>
@@ -181,11 +188,22 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
               <span className={styles.planValue}>OpenCode Go</span>
             </div>
 
-            <div className={styles.quotaSection}>
-              {usageWindows(account).map((item) =>
-                renderUsageWindow(item.key, item.label, item.value)
-              )}
-            </div>
+            {hasUsageSnapshot(account) ? (
+              <div className={styles.quotaSection}>
+                {usageWindows(account).map((item) =>
+                  renderUsageWindow(item.key, item.label, item.value)
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                className={`${styles.quotaSection} ${styles.quotaIdleButton}`}
+                onClick={load}
+                disabled={disabled || loading}
+              >
+                {t('opencode_go.idle')}
+              </button>
+            )}
 
             <div className={styles.badges}>
               <span className={account.hasApiKey ? styles.badgeOk : styles.badgeWarn}>

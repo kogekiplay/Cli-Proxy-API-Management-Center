@@ -132,6 +132,32 @@
   border-top: 1px dashed var(--border-color);
 }
 
+.quotaIdleButton {
+  width: 100%;
+  min-height: 132px;
+  align-items: center;
+  justify-content: center;
+  border-right: none;
+  border-bottom: none;
+  border-left: none;
+  background: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  text-align: center;
+
+  &:hover:not(:disabled) {
+    color: var(--text-primary);
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.62;
+  }
+}
+
 .badgeOk,
 .badgeWarn,
 .badgeMuted {

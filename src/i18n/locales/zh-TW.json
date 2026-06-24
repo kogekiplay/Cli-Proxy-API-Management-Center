@@ -153,6 +153,7 @@
     "base_url": "服務位址",
     "base_url_missing": "未設定",
     "empty": "還沒有同步帳號，請在 opencode.ai 頁面使用腳本同步目前帳號。",
+    "idle": "點擊此處重新整理配額",
     "load_failed": "載入 OpenCode Go 帳號失敗",
     "provider_synced": "供應商已同步",
     "provider_sync_failed": "同步供應商失敗",
