@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { IconCheckCircle2, IconRefreshCw, IconTrash2 } from '@/components/ui/icons';
 import { opencodeGoApi } from '@/services/api/opencodeGo';
 import { useNotificationStore } from '@/stores';
-import { formatDateTimeValue, formatDateValue } from '@/utils/format';
+import { formatDateValue } from '@/utils/format';
 import type { OpenCodeGoAccount, OpenCodeGoUsageWindow } from '@/types/opencodeGo';
 import { displayOpenCodeGoAccountName } from './helpers';
 import styles from './OpenCodeGoAccountsPanel.module.scss';
@@ -24,8 +24,6 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
   const showNotification = useNotificationStore((state) => state.showNotification);
 
   const [accounts, setAccounts] = useState<OpenCodeGoAccount[]>([]);
-  const [providerName, setProviderName] = useState('opencode-go');
-  const [baseUrl, setBaseUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [busyID, setBusyID] = useState<string | null>(null);
 
@@ -41,8 +39,6 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
     setLoading(true);
     try {
       const result = await opencodeGoApi.list();
-      setProviderName(result.providerName);
-      setBaseUrl(result.baseUrl);
       setAccounts(result.accounts);
     } catch (error) {
       showNotification(
@@ -180,8 +176,9 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
               <span className={styles.fileName}>{displayOpenCodeGoAccountName(account)}</span>
             </div>
 
-            <div className={styles.accountSubline}>
-              {account.email || account.username || account.workspaceId || account.id}
+            <div className={styles.planLine}>
+              <span className={styles.planLabel}>{t('opencode_go.plan_label')}</span>
+              <span className={styles.planValue}>OpenCode Go</span>
             </div>
 
             <div className={styles.quotaSection}>
@@ -214,22 +211,6 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
             {account.providerSyncError ? (
               <p className={styles.error}>{account.providerSyncError}</p>
             ) : null}
-
-            <div className={styles.meta}>
-              <span>
-                {t('opencode_go.workspace_id')}: {account.workspaceId || '-'}
-              </span>
-              <span>
-                {t('opencode_go.provider')}: {account.providerName || providerName}
-              </span>
-              <span>
-                {t('opencode_go.base_url')}: {baseUrl || t('opencode_go.base_url_missing')}
-              </span>
-              <span>
-                {t('opencode_go.last_sync')}:{' '}
-                {formatDateTimeValue(account.lastSyncedAt, i18n.language) || '-'}
-              </span>
-            </div>
 
             <div className={styles.actions}>
               <Button

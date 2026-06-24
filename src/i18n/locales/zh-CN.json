@@ -149,6 +149,7 @@
     "config_copied": "脚本配置已复制",
     "config_copy_failed": "复制脚本配置失败",
     "provider_name": "提供商",
+    "plan_label": "套餐",
     "base_url": "服务地址",
     "base_url_missing": "未配置",
     "empty": "还没有同步账号，请在 opencode.ai 页面使用脚本同步当前账号。",

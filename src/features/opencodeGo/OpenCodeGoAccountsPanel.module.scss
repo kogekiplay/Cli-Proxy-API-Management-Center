@@ -24,8 +24,7 @@
 
 .headerActions,
 .actions,
-.badges,
-.meta {
+.badges {
   display: flex;
   flex-wrap: wrap;
   gap: $spacing-sm;
@@ -67,7 +66,7 @@
   border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
   border-radius: 8px;
   background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
-  background-image: linear-gradient(180deg, rgba(234, 231, 255, 0.18), rgba(234, 231, 255, 0));
+  background-image: linear-gradient(180deg, rgba(24, 24, 27, 0.035), rgba(24, 24, 27, 0));
 }
 
 .cardHeader {
@@ -84,8 +83,9 @@
   height: 28px;
   padding: 0 12px;
   border-radius: 999px;
-  background: #eae7ff;
-  color: #4f46e5;
+  border: 1px solid color-mix(in srgb, #18181b 14%, transparent);
+  background: #f4f4f5;
+  color: #18181b;
   font-size: 13px;
   font-weight: 700;
   line-height: 1;
@@ -102,15 +102,25 @@
   white-space: nowrap;
 }
 
-.accountSubline {
+.planLine {
+  display: flex;
+  align-items: center;
+  gap: 6px 12px;
   min-width: 0;
-  margin-top: -2px;
-  overflow: hidden;
   color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.planLabel {
+  color: var(--text-tertiary);
+  flex: 0 0 auto;
+}
+
+.planValue {
+  min-width: 0;
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .quotaSection {
@@ -210,7 +220,7 @@
     display: block;
     height: 100%;
     border-radius: inherit;
-    background: var(--success-color, #22c55e);
+    background: #0787ff;
   }
 }
 
@@ -223,15 +233,6 @@
   color: var(--danger-color);
   font-size: 13px;
   overflow-wrap: anywhere;
-}
-
-.meta {
-  color: var(--text-secondary);
-  font-size: 12px;
-
-  span {
-    overflow-wrap: anywhere;
-  }
 }
 
 .actions {
@@ -255,6 +256,7 @@
 }
 
 :global([data-theme='dark']) .typeBadge {
-  background: rgba(99, 102, 241, 0.22);
-  color: #c4b5fd;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
+  color: #f4f4f5;
 }

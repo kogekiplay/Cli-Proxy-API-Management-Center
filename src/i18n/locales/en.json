@@ -149,6 +149,7 @@
     "config_copied": "Script config copied",
     "config_copy_failed": "Failed to copy script config",
     "provider_name": "Provider",
+    "plan_label": "Plan",
     "base_url": "Base URL",
     "base_url_missing": "Not configured",
     "empty": "No accounts synced yet. Use the script on opencode.ai to sync the current account.",
