@@ -45,7 +45,10 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
       setBaseUrl(result.baseUrl);
       setAccounts(result.accounts);
     } catch (error) {
-      showNotification(error instanceof Error ? error.message : t('opencode_go.load_failed'), 'error');
+      showNotification(
+        error instanceof Error ? error.message : t('opencode_go.load_failed'),
+        'error'
+      );
     } finally {
       setLoading(false);
     }
@@ -72,7 +75,11 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
   };
 
   const deleteAccount = async (account: OpenCodeGoAccount) => {
-    if (!window.confirm(t('opencode_go.delete_confirm', { name: displayOpenCodeGoAccountName(account) }))) {
+    if (
+      !window.confirm(
+        t('opencode_go.delete_confirm', { name: displayOpenCodeGoAccountName(account) })
+      )
+    ) {
       return;
     }
     setBusyID(account.id);
@@ -81,7 +88,10 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
       showNotification(t('opencode_go.deleted'), 'success');
       await load();
     } catch (error) {
-      showNotification(error instanceof Error ? error.message : t('opencode_go.delete_failed'), 'error');
+      showNotification(
+        error instanceof Error ? error.message : t('opencode_go.delete_failed'),
+        'error'
+      );
     } finally {
       setBusyID(null);
     }
@@ -108,23 +118,25 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
     return (
       <div className={styles.usageItem} key={key}>
         <div className={styles.usageHeader}>
-          <span>{label}</span>
-          <strong>
-            {hasValue
-              ? `${formatUsageNumber(value?.used)} / ${formatUsageNumber(value?.limit)}`
-              : t('opencode_go.usage_empty')}
-          </strong>
+          <span className={styles.usageLabel}>{label}</span>
+          <div className={styles.usageMeta}>
+            <strong>
+              {hasValue
+                ? `${formatUsageNumber(value?.used)} / ${formatUsageNumber(value?.limit)}`
+                : t('opencode_go.usage_empty')}
+            </strong>
+            {value?.resetAt ? (
+              <span>
+                {t('opencode_go.reset_at', {
+                  value: formatDateValue(value.resetAt, i18n.language),
+                })}
+              </span>
+            ) : null}
+          </div>
         </div>
         <div className={styles.meter} aria-hidden="true">
           <span style={{ width: `${percent ?? 0}%` }} />
         </div>
-        <small>
-          {value?.resetAt
-            ? t('opencode_go.reset_at', {
-                value: formatDateValue(value.resetAt, i18n.language),
-              })
-            : '\u00a0'}
-        </small>
       </div>
     );
   };
@@ -156,17 +168,6 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
         </div>
       }
     >
-      <div className={styles.providerBar}>
-        <span>
-          <strong>{t('opencode_go.provider_name')}</strong>
-          {providerName}
-        </span>
-        <span>
-          <strong>{t('opencode_go.base_url')}</strong>
-          {baseUrl || t('opencode_go.base_url_missing')}
-        </span>
-      </div>
-
       <div className={styles.accountList}>
         {accounts.length === 0 && !loading ? (
           <div className={styles.empty}>{t('opencode_go.empty_quota')}</div>
@@ -174,34 +175,40 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
 
         {accounts.map((account) => (
           <article className={styles.accountCard} key={account.id}>
-            <div className={styles.accountMain}>
-              <div className={styles.accountIdentity}>
-                <h2>{displayOpenCodeGoAccountName(account)}</h2>
-                <p>{account.email || account.username || account.workspaceId || account.id}</p>
-              </div>
-
-              <div className={styles.badges}>
-                <span className={account.hasApiKey ? styles.badgeOk : styles.badgeWarn}>
-                  {account.apiKeyPreview || t('opencode_go.no_api_key')}
-                </span>
-                <span className={account.hasCookie ? styles.badgeOk : styles.badgeMuted}>
-                  {account.hasCookie ? t('opencode_go.cookie_saved') : t('opencode_go.cookie_missing')}
-                </span>
-                <span className={account.apiKeySynced ? styles.badgeOk : styles.badgeWarn}>
-                  {account.apiKeySynced
-                    ? t('opencode_go.provider_synced_status')
-                    : t('opencode_go.provider_not_synced')}
-                </span>
-                <span className={account.providerKeyManaged ? styles.badgeOk : styles.badgeMuted}>
-                  {account.providerKeyManaged
-                    ? t('opencode_go.provider_key_managed')
-                    : t('opencode_go.provider_key_manual')}
-                </span>
-              </div>
+            <div className={styles.cardHeader}>
+              <span className={styles.typeBadge}>OpenCode Go</span>
+              <span className={styles.fileName}>{displayOpenCodeGoAccountName(account)}</span>
             </div>
 
-            <div className={styles.usageGrid}>
-              {usageWindows(account).map((item) => renderUsageWindow(item.key, item.label, item.value))}
+            <div className={styles.accountSubline}>
+              {account.email || account.username || account.workspaceId || account.id}
+            </div>
+
+            <div className={styles.quotaSection}>
+              {usageWindows(account).map((item) =>
+                renderUsageWindow(item.key, item.label, item.value)
+              )}
+            </div>
+
+            <div className={styles.badges}>
+              <span className={account.hasApiKey ? styles.badgeOk : styles.badgeWarn}>
+                {account.apiKeyPreview || t('opencode_go.no_api_key')}
+              </span>
+              <span className={account.hasCookie ? styles.badgeOk : styles.badgeMuted}>
+                {account.hasCookie
+                  ? t('opencode_go.cookie_saved')
+                  : t('opencode_go.cookie_missing')}
+              </span>
+              <span className={account.apiKeySynced ? styles.badgeOk : styles.badgeWarn}>
+                {account.apiKeySynced
+                  ? t('opencode_go.provider_synced_status')
+                  : t('opencode_go.provider_not_synced')}
+              </span>
+              <span className={account.providerKeyManaged ? styles.badgeOk : styles.badgeMuted}>
+                {account.providerKeyManaged
+                  ? t('opencode_go.provider_key_managed')
+                  : t('opencode_go.provider_key_manual')}
+              </span>
             </div>
 
             {account.providerSyncError ? (
@@ -214,6 +221,9 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
               </span>
               <span>
                 {t('opencode_go.provider')}: {account.providerName || providerName}
+              </span>
+              <span>
+                {t('opencode_go.base_url')}: {baseUrl || t('opencode_go.base_url_missing')}
               </span>
               <span>
                 {t('opencode_go.last_sync')}:{' '}
