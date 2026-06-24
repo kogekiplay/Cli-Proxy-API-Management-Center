@@ -157,6 +157,8 @@
     "usage_refreshing": "Квота обновляется...",
     "usage_refreshed": "Квота OpenCode Go обновлена",
     "usage_refresh_failed": "Не удалось обновить квоту OpenCode Go",
+    "usage_refresh_all_success": "Обновлено учётных данных OpenCode Go: {{count}}",
+    "usage_refresh_all_partial": "Обновлено {{success}}, ошибок {{failed}}: {{message}}",
     "load_failed": "Не удалось загрузить аккаунты OpenCode Go",
     "provider_synced": "Провайдер синхронизирован",
     "provider_sync_failed": "Не удалось синхронизировать провайдера",

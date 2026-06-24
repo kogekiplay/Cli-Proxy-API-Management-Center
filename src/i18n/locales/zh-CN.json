@@ -158,6 +158,8 @@
     "usage_refreshing": "正在刷新额度...",
     "usage_refreshed": "OpenCode Go 额度已刷新",
     "usage_refresh_failed": "刷新 OpenCode Go 额度失败",
+    "usage_refresh_all_success": "已刷新 {{count}} 个 OpenCode Go 凭证",
+    "usage_refresh_all_partial": "已刷新 {{success}} 个，失败 {{failed}} 个：{{message}}",
     "load_failed": "加载 OpenCode Go 账号失败",
     "provider_synced": "提供商已同步",
     "provider_sync_failed": "同步提供商失败",

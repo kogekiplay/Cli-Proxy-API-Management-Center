@@ -158,6 +158,8 @@
     "usage_refreshing": "正在重新整理配額...",
     "usage_refreshed": "OpenCode Go 配額已重新整理",
     "usage_refresh_failed": "重新整理 OpenCode Go 配額失敗",
+    "usage_refresh_all_success": "已重新整理 {{count}} 個 OpenCode Go 憑證",
+    "usage_refresh_all_partial": "已重新整理 {{success}} 個，失敗 {{failed}} 個：{{message}}",
     "load_failed": "載入 OpenCode Go 帳號失敗",
     "provider_synced": "供應商已同步",
     "provider_sync_failed": "同步供應商失敗",

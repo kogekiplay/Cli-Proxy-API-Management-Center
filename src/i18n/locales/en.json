@@ -158,6 +158,8 @@
     "usage_refreshing": "Refreshing quota...",
     "usage_refreshed": "OpenCode Go quota refreshed",
     "usage_refresh_failed": "Failed to refresh OpenCode Go quota",
+    "usage_refresh_all_success": "Refreshed {{count}} OpenCode Go credentials",
+    "usage_refresh_all_partial": "Refreshed {{success}}, failed {{failed}}: {{message}}",
     "load_failed": "Failed to load OpenCode Go accounts",
     "provider_synced": "Provider synced",
     "provider_sync_failed": "Failed to sync provider",
