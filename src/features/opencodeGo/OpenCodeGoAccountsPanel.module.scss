@@ -132,6 +132,12 @@
   border-top: 1px dashed var(--border-color);
 }
 
+.quotaActions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: $spacing-xs;
+}
+
 .quotaIdleButton {
   width: 100%;
   min-height: 132px;

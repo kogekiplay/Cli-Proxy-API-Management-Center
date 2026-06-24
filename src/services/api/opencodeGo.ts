@@ -27,7 +27,9 @@ const normalizeUsageWindow = (raw: unknown): OpenCodeGoUsageWindow | undefined =
     limit: readNumber(raw, 'limit'),
     resetAt: readString(raw, 'reset-at'),
   };
-  return window.used === undefined && window.limit === undefined && !window.resetAt ? undefined : window;
+  return window.used === undefined && window.limit === undefined && !window.resetAt
+    ? undefined
+    : window;
 };
 
 const normalizeUsage = (raw: unknown): OpenCodeGoUsageSnapshot | undefined => {
@@ -80,6 +82,13 @@ export const opencodeGoApi = {
   async syncProvider(id: string): Promise<{ account: OpenCodeGoAccount | null }> {
     const data = await apiClient.post<Record<string, unknown>>(
       `/opencode-go/accounts/${encodeURIComponent(id)}/sync-provider`
+    );
+    return { account: normalizeAccount(data.account) };
+  },
+
+  async refreshUsage(id: string): Promise<{ account: OpenCodeGoAccount | null }> {
+    const data = await apiClient.post<Record<string, unknown>>(
+      `/opencode-go/accounts/${encodeURIComponent(id)}/refresh-usage`
     );
     return { account: normalizeAccount(data.account) };
   },

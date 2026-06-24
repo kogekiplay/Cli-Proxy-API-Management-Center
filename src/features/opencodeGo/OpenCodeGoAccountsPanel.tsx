@@ -34,6 +34,7 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
   const [accounts, setAccounts] = useState<OpenCodeGoAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [busyID, setBusyID] = useState<string | null>(null);
+  const [usageBusyID, setUsageBusyID] = useState<string | null>(null);
 
   const formatter = useMemo(
     () =>
@@ -75,6 +76,29 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
       );
     } finally {
       setBusyID(null);
+    }
+  };
+
+  const refreshUsage = async (account: OpenCodeGoAccount) => {
+    setUsageBusyID(account.id);
+    try {
+      const result = await opencodeGoApi.refreshUsage(account.id);
+      const refreshedAccount = result.account;
+      if (refreshedAccount) {
+        setAccounts((items) =>
+          items.map((item) => (item.id === refreshedAccount.id ? refreshedAccount : item))
+        );
+      } else {
+        await load();
+      }
+      showNotification(t('opencode_go.usage_refreshed'), 'success');
+    } catch (error) {
+      showNotification(
+        error instanceof Error ? error.message : t('opencode_go.usage_refresh_failed'),
+        'error'
+      );
+    } finally {
+      setUsageBusyID(null);
     }
   };
 
@@ -176,86 +200,105 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
           <div className={styles.empty}>{t('opencode_go.empty_quota')}</div>
         ) : null}
 
-        {accounts.map((account) => (
-          <article className={styles.accountCard} key={account.id}>
-            <div className={styles.cardHeader}>
-              <span className={styles.typeBadge}>OpenCode Go</span>
-              <span className={styles.fileName}>{displayOpenCodeGoAccountName(account)}</span>
-            </div>
+        {accounts.map((account) => {
+          const usageLoading = usageBusyID === account.id;
+          const canRefreshUsage = !disabled && !usageLoading && account.hasCookie;
 
-            <div className={styles.planLine}>
-              <span className={styles.planLabel}>{t('opencode_go.plan_label')}</span>
-              <span className={styles.planValue}>OpenCode Go</span>
-            </div>
-
-            {hasUsageSnapshot(account) ? (
-              <div className={styles.quotaSection}>
-                {usageWindows(account).map((item) =>
-                  renderUsageWindow(item.key, item.label, item.value)
-                )}
+          return (
+            <article className={styles.accountCard} key={account.id}>
+              <div className={styles.cardHeader}>
+                <span className={styles.typeBadge}>OpenCode Go</span>
+                <span className={styles.fileName}>{displayOpenCodeGoAccountName(account)}</span>
               </div>
-            ) : (
-              <button
-                type="button"
-                className={`${styles.quotaSection} ${styles.quotaIdleButton}`}
-                onClick={load}
-                disabled={disabled || loading}
-              >
-                {t('opencode_go.idle')}
-              </button>
-            )}
 
-            <div className={styles.badges}>
-              <span className={account.hasApiKey ? styles.badgeOk : styles.badgeWarn}>
-                {account.apiKeyPreview || t('opencode_go.no_api_key')}
-              </span>
-              <span className={account.hasCookie ? styles.badgeOk : styles.badgeMuted}>
-                {account.hasCookie
-                  ? t('opencode_go.cookie_saved')
-                  : t('opencode_go.cookie_missing')}
-              </span>
-              <span className={account.apiKeySynced ? styles.badgeOk : styles.badgeWarn}>
-                {account.apiKeySynced
-                  ? t('opencode_go.provider_synced_status')
-                  : t('opencode_go.provider_not_synced')}
-              </span>
-              <span className={account.providerKeyManaged ? styles.badgeOk : styles.badgeMuted}>
-                {account.providerKeyManaged
-                  ? t('opencode_go.provider_key_managed')
-                  : t('opencode_go.provider_key_manual')}
-              </span>
-            </div>
+              <div className={styles.planLine}>
+                <span className={styles.planLabel}>{t('opencode_go.plan_label')}</span>
+                <span className={styles.planValue}>OpenCode Go</span>
+              </div>
 
-            {account.providerSyncError ? (
-              <p className={styles.error}>{account.providerSyncError}</p>
-            ) : null}
+              {hasUsageSnapshot(account) ? (
+                <div className={styles.quotaSection}>
+                  {usageWindows(account).map((item) =>
+                    renderUsageWindow(item.key, item.label, item.value)
+                  )}
+                  <div className={styles.quotaActions}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => refreshUsage(account)}
+                      disabled={!canRefreshUsage}
+                      loading={usageLoading}
+                    >
+                      <span className={styles.buttonContent}>
+                        {!usageLoading && <IconRefreshCw size={15} />}
+                        <span>{t('opencode_go.refresh_usage')}</span>
+                      </span>
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className={`${styles.quotaSection} ${styles.quotaIdleButton}`}
+                  onClick={() => refreshUsage(account)}
+                  disabled={!canRefreshUsage}
+                >
+                  {usageLoading ? t('opencode_go.usage_refreshing') : t('opencode_go.idle')}
+                </button>
+              )}
 
-            <div className={styles.actions}>
-              <Button
-                size="sm"
-                onClick={() => syncProvider(account)}
-                disabled={disabled || busyID === account.id || !account.hasApiKey}
-                loading={busyID === account.id}
-              >
-                <span className={styles.buttonContent}>
-                  <IconCheckCircle2 size={15} />
-                  <span>{t('opencode_go.sync_provider')}</span>
+              <div className={styles.badges}>
+                <span className={account.hasApiKey ? styles.badgeOk : styles.badgeWarn}>
+                  {account.apiKeyPreview || t('opencode_go.no_api_key')}
                 </span>
-              </Button>
-              <Button
-                size="sm"
-                variant="danger"
-                onClick={() => deleteAccount(account)}
-                disabled={disabled || busyID === account.id}
-              >
-                <span className={styles.buttonContent}>
-                  <IconTrash2 size={15} />
-                  <span>{t('common.delete')}</span>
+                <span className={account.hasCookie ? styles.badgeOk : styles.badgeMuted}>
+                  {account.hasCookie
+                    ? t('opencode_go.cookie_saved')
+                    : t('opencode_go.cookie_missing')}
                 </span>
-              </Button>
-            </div>
-          </article>
-        ))}
+                <span className={account.apiKeySynced ? styles.badgeOk : styles.badgeWarn}>
+                  {account.apiKeySynced
+                    ? t('opencode_go.provider_synced_status')
+                    : t('opencode_go.provider_not_synced')}
+                </span>
+                <span className={account.providerKeyManaged ? styles.badgeOk : styles.badgeMuted}>
+                  {account.providerKeyManaged
+                    ? t('opencode_go.provider_key_managed')
+                    : t('opencode_go.provider_key_manual')}
+                </span>
+              </div>
+
+              {account.providerSyncError ? (
+                <p className={styles.error}>{account.providerSyncError}</p>
+              ) : null}
+
+              <div className={styles.actions}>
+                <Button
+                  size="sm"
+                  onClick={() => syncProvider(account)}
+                  disabled={disabled || busyID === account.id || !account.hasApiKey}
+                  loading={busyID === account.id}
+                >
+                  <span className={styles.buttonContent}>
+                    <IconCheckCircle2 size={15} />
+                    <span>{t('opencode_go.sync_provider')}</span>
+                  </span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => deleteAccount(account)}
+                  disabled={disabled || busyID === account.id}
+                >
+                  <span className={styles.buttonContent}>
+                    <IconTrash2 size={15} />
+                    <span>{t('common.delete')}</span>
+                  </span>
+                </Button>
+              </div>
+            </article>
+          );
+        })}
       </div>
     </Card>
   );
