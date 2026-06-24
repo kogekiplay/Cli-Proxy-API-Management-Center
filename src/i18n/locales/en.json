@@ -113,7 +113,6 @@
     "basic_settings": "Basic Settings",
     "api_keys": "API Keys",
     "ai_providers": "AI Providers",
-    "opencode_go": "OpenCode Go",
     "auth_files": "Auth Files",
     "oauth": "OAuth Login",
     "quota_management": "Quota Management",
@@ -133,7 +132,6 @@
   "nav_meta": {
     "dashboard": "Operations overview",
     "ai_providers": "Upstream model routing",
-    "opencode_go": "Sync Go accounts and usage",
     "auth_files": "Auth files & credentials",
     "oauth": "OAuth authorization",
     "quota_management": "API keys & limits",
@@ -175,7 +173,13 @@
     "workspace_id": "Workspace",
     "provider": "Provider",
     "last_sync": "Last sync",
-    "sync_provider": "Sync to Provider"
+    "sync_provider": "Sync to Provider",
+    "import_title": "OpenCode Go Cookie Import",
+    "import_desc": "Use the Tampermonkey script to sync the current opencode.ai account cookie, API key, and usage into CPA. Cookie upload is off by default and only happens after you enable it in the script.",
+    "import_step_install": "Install script",
+    "import_step_login": "Log in to opencode.ai",
+    "import_step_sync": "Sync current account",
+    "empty_quota": "No OpenCode Go accounts have been synced yet. Copy the script config from Auth Files, then sync from opencode.ai."
   },
   "dashboard": {
     "title": "Dashboard",

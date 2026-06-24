@@ -45,6 +45,7 @@ import { AuthFileModelsModal } from '@/features/authFiles/components/AuthFileMod
 import { AuthFilesPrefixProxyEditorModal } from '@/features/authFiles/components/AuthFilesPrefixProxyEditorModal';
 import { OAuthExcludedCard } from '@/features/authFiles/components/OAuthExcludedCard';
 import { OAuthModelAliasCard } from '@/features/authFiles/components/OAuthModelAliasCard';
+import { OpenCodeGoImportCard } from '@/features/opencodeGo';
 import { useAuthFilesData } from '@/features/authFiles/hooks/useAuthFilesData';
 import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModels';
 import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth';
@@ -639,6 +640,8 @@ export function AuthFilesPage() {
         <h1 className={styles.pageTitle}>{t('auth_files.title')}</h1>
         <p className={styles.description}>{t('auth_files.description')}</p>
       </div>
+
+      <OpenCodeGoImportCard disabled={disableControls} />
 
       <Card
         title={titleNode}

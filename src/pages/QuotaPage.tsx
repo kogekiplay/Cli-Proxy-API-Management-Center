@@ -15,6 +15,7 @@ import {
   KIMI_CONFIG,
   XAI_CONFIG,
 } from '@/components/quota';
+import { OpenCodeGoAccountsPanel } from '@/features/opencodeGo';
 import type { AuthFileItem } from '@/types';
 import styles from './QuotaPage.module.scss';
 
@@ -56,6 +57,8 @@ export function QuotaPage() {
       </div>
 
       {error && <div className={styles.errorBox}>{error}</div>}
+
+      <OpenCodeGoAccountsPanel disabled={disableControls} />
 
       <QuotaSection
         config={CLAUDE_CONFIG}

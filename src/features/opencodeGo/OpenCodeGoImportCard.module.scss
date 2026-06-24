@@ -1,0 +1,33 @@
+@use '../../styles/variables' as *;
+
+.card {
+  border-color: color-mix(in srgb, var(--primary-color) 18%, var(--border-color));
+}
+
+.body {
+  display: grid;
+  gap: $spacing-sm;
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+}
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 0 9px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg-secondary) 78%, transparent);
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+}

@@ -20,7 +20,6 @@ import {
   IconSidebarDashboard,
   IconSidebarLogs,
   IconSidebarOauth,
-  IconSidebarOpenCodeGo,
   IconSidebarPlugins,
   IconSidebarProviders,
   IconSidebarQuota,
@@ -50,7 +49,6 @@ import type { Theme } from '@/types';
 const sidebarIcons: Record<string, ReactNode> = {
   dashboard: <IconSidebarDashboard size={18} />,
   aiProviders: <IconSidebarProviders size={18} />,
-  opencodeGo: <IconSidebarOpenCodeGo size={18} />,
   authFiles: <IconSidebarAuthFiles size={18} />,
   oauth: <IconSidebarOauth size={18} />,
   quota: <IconSidebarQuota size={18} />,
@@ -533,12 +531,6 @@ export function MainLayout() {
           labelKey: 'nav.ai_providers',
           metaKey: 'nav_meta.ai_providers',
           icon: sidebarIcons.aiProviders,
-        },
-        {
-          path: '/opencode-go',
-          labelKey: 'nav.opencode_go',
-          metaKey: 'nav_meta.opencode_go',
-          icon: sidebarIcons.opencodeGo,
         },
         {
           path: '/auth-files',

@@ -509,17 +509,6 @@ export function IconSidebarProviders({ size = 20, ...props }: IconProps) {
   );
 }
 
-export function IconSidebarOpenCodeGo({ size = 20, ...props }: IconProps) {
-  return (
-    <svg {...sidebarSvgProps} width={size} height={size} {...props}>
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <path d="M8 10h8" />
-      <path d="M8 14h5" />
-      <circle cx="17" cy="15" r="2" />
-    </svg>
-  );
-}
-
 export function IconSidebarAuthFiles({ size = 20, ...props }: IconProps) {
   return (
     <svg {...sidebarSvgProps} width={size} height={size} {...props}>

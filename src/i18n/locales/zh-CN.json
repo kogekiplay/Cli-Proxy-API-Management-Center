@@ -113,7 +113,6 @@
     "basic_settings": "基础设置",
     "api_keys": "API 密钥",
     "ai_providers": "AI 提供商",
-    "opencode_go": "OpenCode Go",
     "auth_files": "认证文件",
     "oauth": "OAuth 登录",
     "quota_management": "配额管理",
@@ -133,7 +132,6 @@
   "nav_meta": {
     "dashboard": "运行总览",
     "ai_providers": "上游模型路由",
-    "opencode_go": "同步 Go 账号与用量",
     "auth_files": "Auth 文件与凭证",
     "oauth": "OAuth 授权登录",
     "quota_management": "API Key 与限额",
@@ -175,7 +173,13 @@
     "workspace_id": "工作区",
     "provider": "提供商",
     "last_sync": "最近同步",
-    "sync_provider": "同步到提供商"
+    "sync_provider": "同步到提供商",
+    "import_title": "OpenCode Go Cookie 导入",
+    "import_desc": "通过篡改猴脚本把当前 opencode.ai 账号的 Cookie、API key 和用量同步到 CPA。Cookie 上传默认关闭，只在脚本里手动勾选后上传。",
+    "import_step_install": "安装脚本",
+    "import_step_login": "登录 opencode.ai",
+    "import_step_sync": "同步当前账号",
+    "empty_quota": "还没有同步 OpenCode Go 账号，请先在认证文件页复制脚本配置并到 opencode.ai 同步。"
   },
   "dashboard": {
     "title": "仪表盘",

@@ -113,7 +113,6 @@
     "basic_settings": "Основные настройки",
     "api_keys": "API ключи",
     "ai_providers": "Поставщики AI",
-    "opencode_go": "OpenCode Go",
     "auth_files": "Файлы аутентификации",
     "oauth": "OAuth вход",
     "quota_management": "Управление квотами",
@@ -132,7 +131,6 @@
   "nav_meta": {
     "dashboard": "Обзор работы",
     "ai_providers": "Маршрутизация моделей",
-    "opencode_go": "Синхронизация аккаунтов Go",
     "auth_files": "Файлы и учётные данные",
     "oauth": "Авторизация OAuth",
     "quota_management": "API ключи и лимиты",
@@ -174,7 +172,13 @@
     "workspace_id": "Workspace",
     "provider": "Провайдер",
     "last_sync": "Последняя синхронизация",
-    "sync_provider": "Синхронизировать"
+    "sync_provider": "Синхронизировать",
+    "import_title": "Импорт Cookie OpenCode Go",
+    "import_desc": "Используйте скрипт Tampermonkey, чтобы синхронизировать Cookie, API key и лимиты текущего аккаунта opencode.ai в CPA. Загрузка Cookie выключена по умолчанию и включается только вручную в скрипте.",
+    "import_step_install": "Установить скрипт",
+    "import_step_login": "Войти в opencode.ai",
+    "import_step_sync": "Синхронизировать аккаунт",
+    "empty_quota": "Аккаунты OpenCode Go ещё не синхронизированы. Скопируйте конфиг скрипта в разделе Auth Files и синхронизируйте аккаунт на opencode.ai."
   },
   "dashboard": {
     "title": "Панель управления",

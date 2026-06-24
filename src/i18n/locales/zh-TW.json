@@ -113,7 +113,6 @@
     "basic_settings": "基本設定",
     "api_keys": "API 金鑰",
     "ai_providers": "AI 供應商",
-    "opencode_go": "OpenCode Go",
     "auth_files": "驗證檔案",
     "oauth": "OAuth 登入",
     "quota_management": "配額管理",
@@ -133,7 +132,6 @@
   "nav_meta": {
     "dashboard": "運行總覽",
     "ai_providers": "上游模型路由",
-    "opencode_go": "同步 Go 帳號與用量",
     "auth_files": "Auth 檔案與憑證",
     "oauth": "OAuth 授權登入",
     "quota_management": "API Key 與限額",
@@ -175,7 +173,13 @@
     "workspace_id": "工作區",
     "provider": "供應商",
     "last_sync": "最近同步",
-    "sync_provider": "同步到供應商"
+    "sync_provider": "同步到供應商",
+    "import_title": "OpenCode Go Cookie 匯入",
+    "import_desc": "透過 Tampermonkey 腳本把目前 opencode.ai 帳號的 Cookie、API key 和用量同步到 CPA。Cookie 上傳預設關閉，只會在腳本中手動勾選後上傳。",
+    "import_step_install": "安裝腳本",
+    "import_step_login": "登入 opencode.ai",
+    "import_step_sync": "同步目前帳號",
+    "empty_quota": "還沒有同步 OpenCode Go 帳號，請先在驗證檔案頁複製腳本設定並到 opencode.ai 同步。"
   },
   "dashboard": {
     "title": "儀表板",
