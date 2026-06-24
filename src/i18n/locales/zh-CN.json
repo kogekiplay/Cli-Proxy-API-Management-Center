@@ -113,6 +113,7 @@
     "basic_settings": "基础设置",
     "api_keys": "API 密钥",
     "ai_providers": "AI 提供商",
+    "opencode_go": "OpenCode Go",
     "auth_files": "认证文件",
     "oauth": "OAuth 登录",
     "quota_management": "配额管理",
@@ -132,6 +133,7 @@
   "nav_meta": {
     "dashboard": "运行总览",
     "ai_providers": "上游模型路由",
+    "opencode_go": "同步 Go 账号与用量",
     "auth_files": "Auth 文件与凭证",
     "oauth": "OAuth 授权登录",
     "quota_management": "API Key 与限额",
