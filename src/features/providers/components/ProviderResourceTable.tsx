@@ -41,7 +41,7 @@ interface ProviderResourceTableProps {
   onToggleDisabled?: (resource: ProviderResource, disabled: boolean) => void;
 }
 
-const columnWidths = ['18%', '18%', '6%', '14%', '24%', '20%'];
+const columnWidths = ['180px', '220px', '72px', '138px', '174px', '176px'];
 
 const resolveStatusBarData = (
   resource: ProviderResource,
@@ -106,6 +106,12 @@ export function ProviderResourceTable({
 
   const renderModelsSummary = (r: ProviderResource) => {
     const items: ReactNode[] = [];
+    if (r.brand === 'apikeyFun') {
+      (r.flags.protocols ?? []).forEach((protocol) => {
+        items.push(renderFlagTag(protocol, t(`providersPage.sponsor.protocols.${protocol}`)));
+      });
+      return <div className={styles.metricsCell}>{items}</div>;
+    }
     if (r.brand === 'openaiCompatibility') {
       items.push(
         renderMetric('models', t('providersPage.table.metrics.models'), r.modelCount),
@@ -145,6 +151,16 @@ export function ProviderResourceTable({
   };
 
   const renderPrimary = (r: ProviderResource) => {
+    if (r.brand === 'apikeyFun') {
+      return (
+        <div className={styles.primaryCell}>
+          <span className={styles.primaryName}>{r.name ?? r.identifier}</span>
+          <span className={styles.primarySub}>
+            {r.apiKeyPreview ?? t('providersPage.status.notConfigured')}
+          </span>
+        </div>
+      );
+    }
     if (r.brand === 'openaiCompatibility') {
       const extra = r.apiKeyEntryCount > 1 ? ` · +${r.apiKeyEntryCount - 1}` : '';
       return (
@@ -167,6 +183,13 @@ export function ProviderResourceTable({
   };
 
   const renderBaseUrl = (r: ProviderResource) => {
+    if (r.brand === 'apikeyFun') {
+      return (
+        <span className={styles.baseUrl}>
+          {t('providersPage.sponsor.protocolSummary')}
+        </span>
+      );
+    }
     if (r.brand === 'claude' && !r.baseUrl) {
       return (
         <span className={styles.baseUrl}>
@@ -183,6 +206,7 @@ export function ProviderResourceTable({
 
   return (
     <Table
+      className={styles.providerTable}
       cols={columnWidths.map((w, i) => (
         <col key={i} style={{ width: w }} />
       ))}
@@ -194,7 +218,9 @@ export function ProviderResourceTable({
           <TableHead>{t('providersPage.table.prefix')}</TableHead>
           <TableHead>{t('providersPage.table.models')}</TableHead>
           <TableHead>{t('providersPage.table.status')}</TableHead>
-          <TableHead alignRight>{t('providersPage.table.actions')}</TableHead>
+          <TableHead alignRight className={styles.actionsHead}>
+            {t('providersPage.table.actions')}
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -214,7 +240,7 @@ export function ProviderResourceTable({
               <TableCell>
                 <div className={styles.statusCell}>
                   {renderStatus(resource)}
-                  {usageByProvider ? (
+                  {usageByProvider && resource.brand !== 'apikeyFun' ? (
                     <>
                       {(() => {
                         const stats = resolveTotalStats(resource, usageByProvider);
@@ -229,15 +255,23 @@ export function ProviderResourceTable({
                           </div>
                         );
                       })()}
-                      <ProviderStatusBar
-                        statusData={resolveStatusBarData(resource, usageByProvider)}
-                        styles={statusBarStyles}
-                      />
+                      <div className={styles.statusBarWrap}>
+                        <ProviderStatusBar
+                          statusData={resolveStatusBarData(resource, usageByProvider)}
+                          styles={statusBarStyles}
+                        />
+                      </div>
                     </>
                   ) : null}
                 </div>
               </TableCell>
-              <TableCell alignRight>
+              <TableCell
+                alignRight
+                className={[
+                  styles.actionsCell,
+                  resource.id === selectedId ? styles.actionsCellSelected : '',
+                ].filter(Boolean).join(' ')}
+              >
                 <div className={styles.actions}>
                   {onToggleDisabled ? (
                     <span
