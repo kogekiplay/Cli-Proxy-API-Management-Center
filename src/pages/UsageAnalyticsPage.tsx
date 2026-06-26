@@ -263,17 +263,11 @@ export function UsageAnalyticsPage() {
   const renderAPIKeyIdentity = useCallback(
     (row: UsageAnalyticsAPIKeyStat) => {
       const hash = row.api_key_hash?.trim() ?? '';
-      const providers = row.providers?.length ? row.providers : row.provider ? [row.provider] : [];
-      const providerText = providers.map(providerLabel).join(' · ');
       const label = apiKeyLabelByHash[hash] ?? (hash ? compactHash(hash, 16) : '-');
-      const metaParts = [
-        providerText ? t('usage_analytics.used_providers', { providers: providerText }) : '',
-        hash && apiKeyLabelByHash[hash] ? `hash ${compactHash(hash)}` : '',
-      ].filter(Boolean);
 
-      return <IdentityPill badge="API Key" label={label} meta={metaParts.join(' · ')} />;
+      return <IdentityPill badge="API Key" label={label} />;
     },
-    [apiKeyLabelByHash, t]
+    [apiKeyLabelByHash]
   );
 
   const renderCredentialIdentity = useCallback(
@@ -291,7 +285,6 @@ export function UsageAnalyticsPage() {
         '-';
       const metaParts = [
         row.auth_file_name && row.auth_file_name !== label ? row.auth_file_name : '',
-        row.auth_index ? `idx ${compactHash(row.auth_index, 10)}` : '',
         accountID && accountID !== label ? accountID : '',
       ].filter(Boolean);
 
