@@ -801,7 +801,7 @@ export function MainLayout() {
             variant="ghost"
             size="sm"
             onClick={handleRefreshAll}
-            title={t('header.refresh_all')}
+            aria-label={t('header.refresh_all')}
           >
             {headerIcons.refresh}
           </Button>
@@ -810,7 +810,6 @@ export function MainLayout() {
               variant="ghost"
               size="sm"
               onClick={toggleLanguageMenu}
-              title={t('language.switch')}
               aria-label={t('language.switch')}
               aria-haspopup="menu"
               aria-expanded={languageMenuOpen}
@@ -844,7 +843,6 @@ export function MainLayout() {
               variant="ghost"
               size="sm"
               onClick={toggleThemeMenu}
-              title={t('theme.switch')}
               aria-label={t('theme.switch')}
               aria-haspopup="menu"
               aria-expanded={themeMenuOpen}
@@ -912,7 +910,7 @@ export function MainLayout() {
               </div>
             )}
           </div>
-          <Button variant="ghost" size="sm" onClick={logout} title={t('header.logout')}>
+          <Button variant="ghost" size="sm" onClick={logout} aria-label={t('header.logout')}>
             {headerIcons.logout}
           </Button>
         </div>
