@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { IconRefreshCw } from '@/components/ui/icons';
-import { apiKeysApi, authFilesApi } from '@/services/api';
+import { authFilesApi } from '@/services/api';
 import { opencodeGoApi } from '@/services/api/opencodeGo';
 import {
   usageAnalyticsApi,
@@ -18,7 +18,6 @@ import {
 import type { AuthFileItem } from '@/types';
 import type { OpenCodeGoAccount } from '@/types/opencodeGo';
 import { displayOpenCodeGoAccountName } from '@/features/opencodeGo/helpers';
-import { maskApiKey } from '@/utils/format';
 import { getErrorMessage } from '@/utils/helpers';
 import styles from './UsageAnalyticsPage.module.scss';
 
@@ -68,15 +67,6 @@ const compactHash = (value: string | undefined | null, length = 12) => {
   const trimmed = value?.trim() ?? '';
   if (!trimmed) return '';
   return trimmed.length <= length ? trimmed : `${trimmed.slice(0, length)}...`;
-};
-
-const hashAPIKey = async (value: string) => {
-  const trimmed = value.trim();
-  if (!trimmed || !globalThis.crypto?.subtle) return '';
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(trimmed));
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('');
 };
 
 const providerLabel = (value: string | undefined | null) => {
@@ -166,7 +156,6 @@ export function UsageAnalyticsPage() {
   const [data, setData] = useState<UsageAnalyticsResponse | null>(null);
   const [authFiles, setAuthFiles] = useState<AuthFileItem[]>([]);
   const [opencodeAccounts, setOpenCodeAccounts] = useState<OpenCodeGoAccount[]>([]);
-  const [apiKeyLabelByHash, setAPIKeyLabelByHash] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -209,27 +198,14 @@ export function UsageAnalyticsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.allSettled([authFilesApi.list(), opencodeGoApi.list(), apiKeysApi.list()]).then(async (results) => {
+    void Promise.allSettled([authFilesApi.list(), opencodeGoApi.list()]).then((results) => {
       if (cancelled) return;
-      const [authResult, opencodeResult, apiKeysResult] = results;
+      const [authResult, opencodeResult] = results;
       if (authResult.status === 'fulfilled') {
         setAuthFiles(authResult.value.files ?? []);
       }
       if (opencodeResult.status === 'fulfilled') {
         setOpenCodeAccounts(opencodeResult.value.accounts ?? []);
-      }
-      if (apiKeysResult.status === 'fulfilled') {
-        const entries = await Promise.all(
-          apiKeysResult.value.map(async (key) => {
-            const hash = await hashAPIKey(key);
-            return hash ? ([hash, maskApiKey(key)] as const) : null;
-          })
-        );
-        if (!cancelled) {
-          setAPIKeyLabelByHash(
-            Object.fromEntries(entries.filter((entry): entry is readonly [string, string] => Boolean(entry)))
-          );
-        }
       }
     });
     return () => {
@@ -263,11 +239,17 @@ export function UsageAnalyticsPage() {
   const renderAPIKeyIdentity = useCallback(
     (row: UsageAnalyticsAPIKeyStat) => {
       const hash = row.api_key_hash?.trim() ?? '';
-      const label = apiKeyLabelByHash[hash] ?? (hash ? compactHash(hash, 16) : '-');
+      const accountID = accountIdFromRef(row.account_ref);
+      const opencodeAccount = accountID ? opencodeByID.get(accountID) : undefined;
+      const label =
+        opencodeAccount?.apiKeyPreview ||
+        (opencodeAccount ? displayOpenCodeGoAccountName(opencodeAccount) : '') ||
+        (hash ? compactHash(hash, 16) : '-') ||
+        '-';
 
       return <IdentityPill badge="API Key" label={label} />;
     },
-    [apiKeyLabelByHash]
+    [opencodeByID]
   );
 
   const renderCredentialIdentity = useCallback(

@@ -46,6 +46,7 @@ export interface UsageAnalyticsAPIKeyStat {
   provider: string;
   providers?: string[];
   api_key_hash: string;
+  account_ref?: string;
   calls: number;
   success_calls: number;
   failure_calls: number;
@@ -75,7 +76,9 @@ export interface UsageAnalyticsEventRow {
   auth_index: string;
   auth_file_name: string;
   api_key_hash: string;
+  credential_key_hash?: string;
   account_ref: string;
+  auth_type?: string;
   service_tier: string;
   tokens: UsageAnalyticsTokens;
   failed: boolean;
