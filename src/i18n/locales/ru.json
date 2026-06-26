@@ -160,6 +160,7 @@
     "timeline": "Динамика token",
     "model_stats": "Модели",
     "api_key_stats": "API Key",
+    "used_providers": "Использует {{providers}}",
     "credential_stats": "Учётные данные",
     "recent_requests": "Последние запросы",
     "model": "Модель",

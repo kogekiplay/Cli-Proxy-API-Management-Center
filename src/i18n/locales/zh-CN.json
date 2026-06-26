@@ -161,6 +161,7 @@
     "timeline": "Token 趋势",
     "model_stats": "模型排行",
     "api_key_stats": "API Key 用量",
+    "used_providers": "调用 {{providers}}",
     "credential_stats": "认证文件用量",
     "recent_requests": "最近请求",
     "model": "模型",

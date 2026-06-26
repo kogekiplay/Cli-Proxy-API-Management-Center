@@ -161,6 +161,7 @@
     "timeline": "Token Trend",
     "model_stats": "Model Ranking",
     "api_key_stats": "API Key Usage",
+    "used_providers": "Used {{providers}}",
     "credential_stats": "Credential Usage",
     "recent_requests": "Recent Requests",
     "model": "Model",

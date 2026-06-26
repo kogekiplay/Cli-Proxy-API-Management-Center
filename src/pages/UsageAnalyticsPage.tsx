@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { IconRefreshCw } from '@/components/ui/icons';
-import { authFilesApi } from '@/services/api';
+import { apiKeysApi, authFilesApi } from '@/services/api';
 import { opencodeGoApi } from '@/services/api/opencodeGo';
 import {
   usageAnalyticsApi,
@@ -18,6 +18,7 @@ import {
 import type { AuthFileItem } from '@/types';
 import type { OpenCodeGoAccount } from '@/types/opencodeGo';
 import { displayOpenCodeGoAccountName } from '@/features/opencodeGo/helpers';
+import { maskApiKey } from '@/utils/format';
 import { getErrorMessage } from '@/utils/helpers';
 import styles from './UsageAnalyticsPage.module.scss';
 
@@ -69,6 +70,15 @@ const compactHash = (value: string | undefined | null, length = 12) => {
   return trimmed.length <= length ? trimmed : `${trimmed.slice(0, length)}...`;
 };
 
+const hashAPIKey = async (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed || !globalThis.crypto?.subtle) return '';
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(trimmed));
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+};
+
 const providerLabel = (value: string | undefined | null) => {
   const provider = value?.trim() ?? '';
   if (!provider) return 'Unknown';
@@ -92,14 +102,15 @@ const accountIdFromRef = (value: string | undefined | null) => {
 
 interface IdentityPillProps {
   tone?: string;
+  badge?: string;
   label: string;
   meta?: string;
 }
 
-function IdentityPill({ tone, label, meta }: IdentityPillProps) {
+function IdentityPill({ tone, badge, label, meta }: IdentityPillProps) {
   return (
     <div className={styles.identityPill}>
-      <span className={styles.identityBadge}>{providerLabel(tone)}</span>
+      <span className={styles.identityBadge}>{badge ?? providerLabel(tone)}</span>
       <span className={styles.identityText}>
         <strong>{label}</strong>
         {meta ? <small>{meta}</small> : null}
@@ -155,6 +166,7 @@ export function UsageAnalyticsPage() {
   const [data, setData] = useState<UsageAnalyticsResponse | null>(null);
   const [authFiles, setAuthFiles] = useState<AuthFileItem[]>([]);
   const [opencodeAccounts, setOpenCodeAccounts] = useState<OpenCodeGoAccount[]>([]);
+  const [apiKeyLabelByHash, setAPIKeyLabelByHash] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -197,14 +209,27 @@ export function UsageAnalyticsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.allSettled([authFilesApi.list(), opencodeGoApi.list()]).then((results) => {
+    void Promise.allSettled([authFilesApi.list(), opencodeGoApi.list(), apiKeysApi.list()]).then(async (results) => {
       if (cancelled) return;
-      const [authResult, opencodeResult] = results;
+      const [authResult, opencodeResult, apiKeysResult] = results;
       if (authResult.status === 'fulfilled') {
         setAuthFiles(authResult.value.files ?? []);
       }
       if (opencodeResult.status === 'fulfilled') {
         setOpenCodeAccounts(opencodeResult.value.accounts ?? []);
+      }
+      if (apiKeysResult.status === 'fulfilled') {
+        const entries = await Promise.all(
+          apiKeysResult.value.map(async (key) => {
+            const hash = await hashAPIKey(key);
+            return hash ? ([hash, maskApiKey(key)] as const) : null;
+          })
+        );
+        if (!cancelled) {
+          setAPIKeyLabelByHash(
+            Object.fromEntries(entries.filter((entry): entry is readonly [string, string] => Boolean(entry)))
+          );
+        }
       }
     });
     return () => {
@@ -236,14 +261,19 @@ export function UsageAnalyticsPage() {
   }, [opencodeAccounts]);
 
   const renderAPIKeyIdentity = useCallback(
-    (row: UsageAnalyticsAPIKeyStat) => (
-      <IdentityPill
-        tone={row.provider}
-        label={providerLabel(row.provider)}
-        meta={row.api_key_hash ? `hash ${compactHash(row.api_key_hash)}` : undefined}
-      />
-    ),
-    []
+    (row: UsageAnalyticsAPIKeyStat) => {
+      const hash = row.api_key_hash?.trim() ?? '';
+      const providers = row.providers?.length ? row.providers : row.provider ? [row.provider] : [];
+      const providerText = providers.map(providerLabel).join(' · ');
+      const label = apiKeyLabelByHash[hash] ?? (hash ? compactHash(hash, 16) : '-');
+      const metaParts = [
+        providerText ? t('usage_analytics.used_providers', { providers: providerText }) : '',
+        hash && apiKeyLabelByHash[hash] ? `hash ${compactHash(hash)}` : '',
+      ].filter(Boolean);
+
+      return <IdentityPill badge="API Key" label={label} meta={metaParts.join(' · ')} />;
+    },
+    [apiKeyLabelByHash, t]
   );
 
   const renderCredentialIdentity = useCallback(
