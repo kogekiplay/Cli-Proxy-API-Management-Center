@@ -36,12 +36,13 @@
 }
 
 .filters {
-  display: grid;
-  grid-template-columns: minmax(220px, 280px) repeat(4, minmax(180px, 1fr)) minmax(92px, auto);
+  display: flex;
+  flex-wrap: wrap;
   gap: $spacing-sm;
   align-items: center;
 
   :global(.form-group) {
+    flex: 1 1 220px;
     margin: 0;
     min-width: 0;
   }
@@ -50,27 +51,28 @@
     min-width: 0;
   }
 
-  @include desktop {
-    grid-template-columns: minmax(220px, 280px) repeat(2, minmax(180px, 1fr)) minmax(92px, auto);
-  }
-
-  @include tablet {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   @include mobile {
-    grid-template-columns: 1fr;
+    align-items: stretch;
+
+    :global(.form-group) {
+      flex-basis: 100%;
+    }
   }
 }
 
 .rangeGroup {
   display: inline-grid;
+  flex: 0 0 330px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
   background: var(--bg-secondary);
+
+  @include mobile {
+    flex-basis: 100%;
+  }
 }
 
 .rangeButton {
@@ -93,12 +95,17 @@
 .checkboxLabel {
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
   gap: 8px;
   min-height: 42px;
   padding: 0 4px;
   color: var(--text-secondary);
   font-size: 13px;
   white-space: nowrap;
+
+  @include mobile {
+    min-height: 34px;
+  }
 }
 
 .summaryGrid {
