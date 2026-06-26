@@ -59,6 +59,7 @@ export interface UsageAnalyticsCredentialStat {
   provider: string;
   auth_index: string;
   auth_file_name: string;
+  credential_display_name?: string;
   account_ref: string;
   calls: number;
   success_calls: number;
@@ -76,6 +77,7 @@ export interface UsageAnalyticsEventRow {
   endpoint: string;
   auth_index: string;
   auth_file_name: string;
+  credential_display_name?: string;
   api_key_hash: string;
   credential_key_hash?: string;
   account_ref: string;

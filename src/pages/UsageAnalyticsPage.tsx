@@ -260,12 +260,12 @@ export function UsageAnalyticsPage() {
       const opencodeAccount = provider === 'opencode-go' && accountID ? opencodeByID.get(accountID) : undefined;
       const authFile = row.auth_index ? authFileByIndex.get(row.auth_index) : undefined;
       const label =
+        row.credential_display_name ||
         (opencodeAccount ? displayOpenCodeGoAccountName(opencodeAccount) : '') ||
         (authFile ? authFileDisplayName(authFile) : '') ||
         row.auth_file_name ||
-        row.auth_index ||
         accountID ||
-        '-';
+        t('usage_analytics.unknown_credential', { defaultValue: '未知认证文件' });
       const metaParts = [
         row.auth_file_name && row.auth_file_name !== label ? row.auth_file_name : '',
         accountID && accountID !== label ? accountID : '',
@@ -273,7 +273,7 @@ export function UsageAnalyticsPage() {
 
       return <IdentityPill tone={provider} label={label} meta={metaParts.join(' · ')} />;
     },
-    [authFileByIndex, opencodeByID]
+    [authFileByIndex, opencodeByID, t]
   );
 
   const modelColumns = useMemo(
