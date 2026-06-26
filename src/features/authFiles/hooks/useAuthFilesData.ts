@@ -38,6 +38,7 @@ export type UseAuthFilesDataResult = {
   loadFiles: () => Promise<void>;
   handleUploadClick: () => void;
   handleFileChange: (event: ChangeEvent<HTMLInputElement>) => Promise<void>;
+  handlePasteImport: (name: string, text: string) => Promise<void>;
   handleDelete: (name: string) => void;
   handleDeleteAll: (options: DeleteAllOptions) => void;
   handleDownload: (name: string) => Promise<void>;
@@ -240,6 +241,24 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
       } finally {
         setUploading(false);
         event.target.value = '';
+      }
+    },
+    [loadFiles, showNotification, t]
+  );
+
+  const handlePasteImport = useCallback(
+    async (name: string, text: string) => {
+      setUploading(true);
+      try {
+        await authFilesApi.saveText(name, text);
+        showNotification(t('auth_files.upload_success'), 'success');
+        await loadFiles();
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        showNotification(`${t('notification.upload_failed')}: ${errorMessage}`, 'error');
+        throw err;
+      } finally {
+        setUploading(false);
       }
     },
     [loadFiles, showNotification, t]
@@ -649,6 +668,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     loadFiles,
     handleUploadClick,
     handleFileChange,
+    handlePasteImport,
     handleDelete,
     handleDeleteAll,
     handleDownload,

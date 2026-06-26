@@ -255,6 +255,12 @@
   }
 }
 
+.cpaUsageLine {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .error {
   margin: 0;
   padding: 10px 12px;

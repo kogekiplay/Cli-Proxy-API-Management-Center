@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/icons';
 import { VisualConfigEditor } from '@/components/config/VisualConfigEditor';
 import { DiffModal } from '@/components/config/DiffModal';
+import { ModelPricesPanel } from '@/features/modelPrices/ModelPricesPanel';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useActionBarHeightVar } from '@/hooks/useActionBarHeightVar';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
@@ -593,15 +594,18 @@ export function ConfigPage() {
           )}
 
           {activeTab === 'visual' ? (
-            <VisualConfigEditor
-              values={visualValues}
-              validationErrors={visualValidationErrors}
-              hasPayloadValidationErrors={visualHasPayloadValidationErrors}
-              disabled={disableControls || loading}
-              apiKeyAccessTargets={apiKeyAccessTargets}
-              apiKeyAccessProviderTargets={apiKeyAccessProviderTargets}
-              onChange={setVisualValues}
-            />
+            <>
+              <VisualConfigEditor
+                values={visualValues}
+                validationErrors={visualValidationErrors}
+                hasPayloadValidationErrors={visualHasPayloadValidationErrors}
+                disabled={disableControls || loading}
+                apiKeyAccessTargets={apiKeyAccessTargets}
+                apiKeyAccessProviderTargets={apiKeyAccessProviderTargets}
+                onChange={setVisualValues}
+              />
+              <ModelPricesPanel disabled={disableControls} />
+            </>
           ) : (
             <div className={styles.sourceWorkspace}>
               <div className={styles.sourceToolbar}>

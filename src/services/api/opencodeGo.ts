@@ -2,10 +2,12 @@ import { apiClient } from './client';
 import type {
   OpenCodeGoAccount,
   OpenCodeGoAccountsResponse,
+  OpenCodeGoCPAUsageSnapshot,
   OpenCodeGoUsageSnapshot,
   OpenCodeGoUsageWindow,
   OpenCodeGoUserscriptConfig,
 } from '@/types/opencodeGo';
+import type { UsageSummary } from '@/types/usage';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -42,6 +44,16 @@ const normalizeUsage = (raw: unknown): OpenCodeGoUsageSnapshot | undefined => {
   return usage.rolling || usage.weekly || usage.monthly ? usage : undefined;
 };
 
+const normalizeCPAUsage = (raw: unknown): OpenCodeGoCPAUsageSnapshot | undefined => {
+  if (!isRecord(raw)) return undefined;
+  const usage = {
+    rolling: isRecord(raw.rolling) ? (raw.rolling as unknown as UsageSummary) : undefined,
+    weekly: isRecord(raw.weekly) ? (raw.weekly as unknown as UsageSummary) : undefined,
+    monthly: isRecord(raw.monthly) ? (raw.monthly as unknown as UsageSummary) : undefined,
+  };
+  return usage.rolling || usage.weekly || usage.monthly ? usage : undefined;
+};
+
 const normalizeAccount = (raw: unknown): OpenCodeGoAccount | null => {
   if (!isRecord(raw)) return null;
   const id = readString(raw, 'id');
@@ -56,6 +68,7 @@ const normalizeAccount = (raw: unknown): OpenCodeGoAccount | null => {
     hasApiKey: Boolean(raw['has-api-key']),
     hasCookie: Boolean(raw['has-cookie']),
     usage: normalizeUsage(raw.usage),
+    cpaUsage: normalizeCPAUsage(raw['cpa-usage']),
     providerName: readString(raw, 'provider-name'),
     baseUrl: readString(raw, 'base-url'),
     apiKeySynced: Boolean(raw['api-key-synced']),

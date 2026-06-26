@@ -13,7 +13,7 @@ import type { AuthFileItem, ResolvedTheme } from '@/types';
 import { getStatusFromError } from '@/utils/quota';
 import { QuotaCard } from './QuotaCard';
 import type { QuotaStatusState } from './QuotaCard';
-import { useQuotaLoader } from './useQuotaLoader';
+import { buildQuotaCacheKey, useQuotaLoader } from './useQuotaLoader';
 import type { QuotaConfig } from './quotaConfigs';
 import { useGridColumns } from './useGridColumns';
 import { IconRefreshCw } from '@/components/ui/icons';
@@ -197,9 +197,10 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     setQuota((prev) => {
       const nextState: Record<string, TState> = {};
       filteredFiles.forEach((file) => {
-        const cached = prev[file.name];
+        const cacheKey = buildQuotaCacheKey(config.type, file);
+        const cached = prev[cacheKey];
         if (cached) {
-          nextState[file.name] = cached;
+          nextState[cacheKey] = cached;
         }
       });
       return nextState;
@@ -209,18 +210,19 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const refreshQuotaForFile = useCallback(
     async (file: AuthFileItem) => {
       if (disabled || file.disabled) return;
-      if (quota[file.name]?.status === 'loading') return;
+      const cacheKey = buildQuotaCacheKey(config.type, file);
+      if (quota[cacheKey]?.status === 'loading') return;
 
       setQuota((prev) => ({
         ...prev,
-        [file.name]: config.buildLoadingState()
+        [cacheKey]: config.buildLoadingState()
       }));
 
       try {
         const data = await config.fetchQuota(file, t);
         setQuota((prev) => ({
           ...prev,
-          [file.name]: config.buildSuccessState(data)
+          [cacheKey]: config.buildSuccessState(data)
         }));
         showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
       } catch (err: unknown) {
@@ -228,7 +230,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
         const status = getStatusFromError(err);
         setQuota((prev) => ({
           ...prev,
-          [file.name]: config.buildErrorState(message, status)
+          [cacheKey]: config.buildErrorState(message, status)
         }));
         showNotification(
           t('auth_files.quota_refresh_failed', { name: file.name, message }),
@@ -244,7 +246,8 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
       const resetQuota = config.resetQuota;
       if (!resetQuota) return;
       if (disabled || file.disabled) return;
-      if (quota[file.name]?.status === 'loading') return;
+      const cacheKey = buildQuotaCacheKey(config.type, file);
+      if (quota[cacheKey]?.status === 'loading') return;
       if (resettingQuotaName === file.name) return;
 
       showConfirmation({
@@ -258,7 +261,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             const data = await resetQuota(file, t);
             setQuota((prev) => ({
               ...prev,
-              [file.name]: config.buildSuccessState(data)
+              [cacheKey]: config.buildSuccessState(data)
             }));
             showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
           } catch (err: unknown) {
@@ -356,7 +359,8 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
         <>
           <div ref={gridRef} className={config.gridClassName}>
             {pageItems.map((item) => {
-              const itemQuota = quota[item.name];
+              const itemQuotaKey = buildQuotaCacheKey(config.type, item);
+              const itemQuota = quota[itemQuotaKey];
               const isResettingQuota = resettingQuotaName === item.name;
               const canUseQuotaAction =
                 !disabled && !item.disabled && itemQuota?.status !== 'loading';
@@ -381,7 +385,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
 
               return (
                 <QuotaCard
-                  key={item.name}
+                  key={itemQuotaKey}
                   item={item}
                   quota={itemQuota}
                   resolvedTheme={resolvedTheme}

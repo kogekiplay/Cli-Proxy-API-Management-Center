@@ -189,6 +189,25 @@
     "import_step_sync": "Sync current account",
     "empty_quota": "No OpenCode Go accounts have been synced yet. Copy the script config from Auth Files, then sync from opencode.ai."
   },
+  "quota_usage": {
+    "cpa_line": "CPA: {{tokens}} token · {{cost}}",
+    "unpriced": "Price missing"
+  },
+  "model_prices": {
+    "title": "Model Prices",
+    "model": "Model",
+    "input": "Input / 1M",
+    "output": "Output / 1M",
+    "cache_read": "Cache read / 1M",
+    "cache_write": "Cache write / 1M",
+    "empty": "No model prices configured",
+    "load_failed": "Failed to load model prices",
+    "invalid_price": "Enter a model name and non-negative numeric prices.",
+    "save_success": "Model price saved",
+    "save_failed": "Failed to save model price",
+    "delete_success": "Model price deleted",
+    "delete_failed": "Failed to delete model price"
+  },
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Welcome to CLI Proxy API Management Center",
@@ -266,6 +285,13 @@
     "title_section": "Auth Files",
     "description": "Manage all CLI Proxy JSON auth files here (e.g. Qwen, Gemini, Vertex). Uploading a credential immediately enables the corresponding AI integration.",
     "upload_button": "Upload File",
+    "paste_button": "Paste Import",
+    "paste_title": "Paste Auth File",
+    "paste_name_label": "File name",
+    "paste_json_label": "JSON content",
+    "paste_invalid_name": "File name must end with .json and must not contain path separators.",
+    "paste_empty_json": "Paste JSON content first.",
+    "paste_invalid_json": "JSON content must be an object.",
     "delete_all_button": "Delete All",
     "empty_title": "No Auth Files",
     "empty_desc": "Click the button above to upload the first file",

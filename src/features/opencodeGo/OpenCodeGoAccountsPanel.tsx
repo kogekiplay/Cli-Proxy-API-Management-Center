@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { IconCheckCircle2, IconRefreshCw, IconTrash2 } from '@/components/ui/icons';
@@ -10,6 +11,7 @@ import { useGridColumns } from '@/components/quota/useGridColumns';
 import type { OpenCodeGoAccount, OpenCodeGoUsageWindow } from '@/types/opencodeGo';
 import { displayOpenCodeGoAccountName } from './helpers';
 import { refreshOpenCodeGoUsageConcurrently } from './refreshUsagePool';
+import type { UsageSummary } from '@/types/usage';
 import styles from './OpenCodeGoAccountsPanel.module.scss';
 import quotaStyles from '@/pages/QuotaPage.module.scss';
 
@@ -39,6 +41,37 @@ const hasUsageSnapshot = (account: OpenCodeGoAccount) =>
   hasUsageWindow(account.usage?.rolling) ||
   hasUsageWindow(account.usage?.weekly) ||
   hasUsageWindow(account.usage?.monthly);
+
+const formatUsageTokens = (value: number): string =>
+  new Intl.NumberFormat(undefined, {
+    notation: value >= 10_000 ? 'compact' : 'standard',
+    maximumFractionDigits: value >= 10_000 ? 1 : 0,
+  }).format(value);
+
+const formatUsageCost = (value: number): string =>
+  new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: value >= 1 ? 2 : 4,
+    maximumFractionDigits: value >= 1 ? 2 : 4,
+  }).format(value);
+
+const usageSummaryLine = (
+  summary: UsageSummary | undefined,
+  t: TFunction
+): string | null => {
+  if (!summary) return null;
+  const totalTokens = summary.tokens?.total_tokens ?? 0;
+  if (totalTokens <= 0 && summary.request_count <= 0) return null;
+  const cost =
+    summary.estimated_cost_usd === null || summary.estimated_cost_usd === undefined
+      ? t('quota_usage.unpriced')
+      : formatUsageCost(summary.estimated_cost_usd);
+  return t('quota_usage.cpa_line', {
+    tokens: formatUsageTokens(totalTokens),
+    cost,
+  });
+};
 
 export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccountsPanelProps) {
   const { t } = useTranslation();
@@ -206,19 +239,36 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
   };
 
   const usageWindows = (account: OpenCodeGoAccount) => [
-    { key: 'rolling', label: t('opencode_go.rolling'), value: account.usage?.rolling },
-    { key: 'weekly', label: t('opencode_go.weekly'), value: account.usage?.weekly },
-    { key: 'monthly', label: t('opencode_go.monthly'), value: account.usage?.monthly },
+    {
+      key: 'rolling',
+      label: t('opencode_go.rolling'),
+      value: account.usage?.rolling,
+      cpa: account.cpaUsage?.rolling,
+    },
+    {
+      key: 'weekly',
+      label: t('opencode_go.weekly'),
+      value: account.usage?.weekly,
+      cpa: account.cpaUsage?.weekly,
+    },
+    {
+      key: 'monthly',
+      label: t('opencode_go.monthly'),
+      value: account.usage?.monthly,
+      cpa: account.cpaUsage?.monthly,
+    },
   ];
 
   const renderUsageWindow = (
     key: string,
     label: string,
-    value: OpenCodeGoUsageWindow | undefined
+    value: OpenCodeGoUsageWindow | undefined,
+    cpaUsage: UsageSummary | undefined
   ) => {
     const percent = remainingPercent(value?.used, value?.limit);
     const hasValue = hasUsageWindow(value);
     const percentLabel = percent === null ? t('opencode_go.usage_empty') : `${Math.round(percent)}%`;
+    const cpaLine = usageSummaryLine(cpaUsage, t);
 
     return (
       <div className={styles.usageItem} key={key}>
@@ -238,6 +288,7 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
         <div className={styles.meter} aria-hidden="true">
           <span style={{ width: `${percent ?? 0}%` }} />
         </div>
+        {cpaLine ? <div className={styles.cpaUsageLine}>{cpaLine}</div> : null}
       </div>
     );
   };
@@ -327,7 +378,7 @@ export function OpenCodeGoAccountsPanel({ disabled = false }: OpenCodeGoAccounts
               {hasUsageSnapshot(account) ? (
                 <div className={styles.quotaSection}>
                   {usageWindows(account).map((item) =>
-                    renderUsageWindow(item.key, item.label, item.value)
+                    renderUsageWindow(item.key, item.label, item.value, item.cpa)
                   )}
                   <div className={styles.quotaActions}>
                     <Button

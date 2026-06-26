@@ -189,6 +189,25 @@
     "import_step_sync": "同步当前账号",
     "empty_quota": "还没有同步 OpenCode Go 账号，请先在认证文件页复制脚本配置并到 opencode.ai 同步。"
   },
+  "quota_usage": {
+    "cpa_line": "CPA: {{tokens}} token · {{cost}}",
+    "unpriced": "未配置价格"
+  },
+  "model_prices": {
+    "title": "模型价格",
+    "model": "模型",
+    "input": "输入/百万",
+    "output": "输出/百万",
+    "cache_read": "缓存读/百万",
+    "cache_write": "缓存写/百万",
+    "empty": "暂无模型价格",
+    "load_failed": "加载模型价格失败",
+    "invalid_price": "请填写模型名，并确保价格是非负数字。",
+    "save_success": "模型价格已保存",
+    "save_failed": "保存模型价格失败",
+    "delete_success": "模型价格已删除",
+    "delete_failed": "删除模型价格失败"
+  },
   "dashboard": {
     "title": "仪表盘",
     "subtitle": "欢迎使用 CLI Proxy API 管理中心",
@@ -266,6 +285,13 @@
     "title_section": "认证文件",
     "description": "这里集中管理 CLI Proxy 支持的所有 JSON 认证文件（如 Qwen、Gemini、Vertex 等），上传后即可在运行时启用相应的 AI 服务。",
     "upload_button": "上传文件",
+    "paste_button": "粘贴导入",
+    "paste_title": "粘贴导入认证文件",
+    "paste_name_label": "文件名",
+    "paste_json_label": "JSON 内容",
+    "paste_invalid_name": "文件名必须以 .json 结尾，且不能包含路径分隔符。",
+    "paste_empty_json": "请粘贴 JSON 内容。",
+    "paste_invalid_json": "JSON 内容必须是对象。",
     "delete_all_button": "删除全部",
     "empty_title": "暂无认证文件",
     "empty_desc": "点击上方按钮上传第一个文件",

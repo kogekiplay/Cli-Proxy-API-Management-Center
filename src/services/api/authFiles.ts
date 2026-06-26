@@ -254,8 +254,9 @@ const parseAuthFileJsonObject = (rawText: string): Record<string, unknown> => {
 };
 
 const saveAuthFileText = async (name: string, text: string) => {
-  const file = new File([text], name, { type: 'application/json' });
-  await authFilesApi.upload(file);
+  await apiClient.post(`/auth-files?name=${encodeURIComponent(name)}`, text, {
+    headers: { 'Content-Type': 'application/json' },
+  });
 };
 
 export const isAuthFileInvalidJsonObjectError = (err: unknown): boolean =>

@@ -58,8 +58,13 @@ export function QuotaPage() {
 
       {error && <div className={styles.errorBox}>{error}</div>}
 
+      <QuotaSection
+        config={CODEX_CONFIG}
+        files={files}
+        loading={loading}
+        disabled={disableControls}
+      />
       <OpenCodeGoAccountsPanel disabled={disableControls} />
-
       <QuotaSection
         config={CLAUDE_CONFIG}
         files={files}
@@ -68,12 +73,6 @@ export function QuotaPage() {
       />
       <QuotaSection
         config={ANTIGRAVITY_CONFIG}
-        files={files}
-        loading={loading}
-        disabled={disableControls}
-      />
-      <QuotaSection
-        config={CODEX_CONFIG}
         files={files}
         loading={loading}
         disabled={disableControls}

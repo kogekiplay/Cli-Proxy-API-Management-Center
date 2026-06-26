@@ -18,6 +18,7 @@ import type {
   ClaudeUsagePayload,
   CodexRateLimitInfo,
   CodexRateLimitResetCredit,
+  CodexUsageSummaries,
   CodexQuotaState,
   CodexUsageWindow,
   CodexQuotaWindow,
@@ -34,6 +35,7 @@ import {
   authFilesApi,
   getApiCallErrorMessage,
   type AntigravitySubscriptionSummary,
+  usageSummaryApi,
 } from '@/services/api';
 import {
   ANTIGRAVITY_QUOTA_URLS,
@@ -79,6 +81,7 @@ import {
 } from '@/utils/quota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import { formatDateTimeValue } from '@/utils/format';
+import type { UsageSummary, UsageSummaryWindowKind } from '@/types/usage';
 import type { QuotaRenderHelpers } from './QuotaCard';
 import styles from '@/pages/QuotaPage.module.scss';
 
@@ -105,6 +108,7 @@ type CodexQuotaData = {
   rateLimitResetCredits: CodexRateLimitResetCredit[];
   rateLimitResetCreditsError: string;
   windows: CodexQuotaWindow[];
+  usageSummaries?: CodexUsageSummaries;
 };
 
 const QUOTA_PROGRESS_HIGH_THRESHOLD = 70;
@@ -617,7 +621,10 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
   const usageResetCreditsAvailableCount = normalizeNumberValue(
     resetCredits?.available_count ?? resetCredits?.availableCount
   );
-  const resetCreditsData = await fetchCodexResetCredits(authIndex, requestHeader, t);
+  const [resetCreditsData, usageSummaries] = await Promise.all([
+    fetchCodexResetCredits(authIndex, requestHeader, t),
+    fetchCodexUsageSummaries(authIndex),
+  ]);
   const resetCreditsCountFromDetails =
     resetCreditsData.credits.length > 0 ? resetCreditsData.credits.length : null;
   const rateLimitResetCreditsAvailableCount =
@@ -633,7 +640,28 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
     rateLimitResetCredits: resetCreditsData.credits,
     rateLimitResetCreditsError: resetCreditsData.error,
     windows,
+    usageSummaries,
   };
+};
+
+const fetchCodexUsageSummaries = async (authIndex: string): Promise<CodexUsageSummaries> => {
+  const fetchWindow = async (window: UsageSummaryWindowKind) => {
+    try {
+      return await usageSummaryApi.get({
+        provider: 'codex',
+        authIndex,
+        window,
+      });
+    } catch {
+      return undefined;
+    }
+  };
+  const [rolling, weekly, monthly] = await Promise.all([
+    fetchWindow('5h'),
+    fetchWindow('7d'),
+    fetchWindow('month'),
+  ]);
+  return { rolling, weekly, monthly };
 };
 
 const createCodexRedeemRequestId = (): string => {
@@ -889,6 +917,44 @@ const renderAntigravityItems = (
 
 const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lite']);
 
+const formatUsageTokens = (value: number): string =>
+  new Intl.NumberFormat(undefined, {
+    notation: value >= 10_000 ? 'compact' : 'standard',
+    maximumFractionDigits: value >= 10_000 ? 1 : 0,
+  }).format(value);
+
+const formatUsageCost = (value: number): string =>
+  new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: value >= 1 ? 2 : 4,
+    maximumFractionDigits: value >= 1 ? 2 : 4,
+  }).format(value);
+
+const usageSummaryLine = (summary: UsageSummary | undefined, t: TFunction): string | null => {
+  if (!summary) return null;
+  const totalTokens = summary.tokens?.total_tokens ?? 0;
+  if (totalTokens <= 0 && summary.request_count <= 0) return null;
+  const cost =
+    summary.estimated_cost_usd === null || summary.estimated_cost_usd === undefined
+      ? t('quota_usage.unpriced')
+      : formatUsageCost(summary.estimated_cost_usd);
+  return t('quota_usage.cpa_line', {
+    tokens: formatUsageTokens(totalTokens),
+    cost,
+  });
+};
+
+const codexSummaryForWindow = (
+  summaries: CodexUsageSummaries | undefined,
+  windowID: string
+): UsageSummary | undefined => {
+  const normalized = windowID.toLowerCase();
+  if (normalized.includes('five-hour')) return summaries?.rolling;
+  if (normalized.includes('monthly')) return summaries?.monthly;
+  return summaries?.weekly;
+};
+
 const renderCodexItems = (
   quota: CodexQuotaState,
   t: TFunction,
@@ -902,6 +968,7 @@ const renderCodexItems = (
   const rateLimitResetCreditsAvailableCount = quota.rateLimitResetCreditsAvailableCount ?? null;
   const rateLimitResetCredits = quota.rateLimitResetCredits ?? [];
   const rateLimitResetCreditsError = quota.rateLimitResetCreditsError ?? '';
+  const usageSummaries = quota.usageSummaries;
 
   const getPlanLabel = (pt?: string | null): string | null => {
     const normalized = normalizePlanType(pt);
@@ -1019,6 +1086,7 @@ const renderCodexItems = (
       const windowLabel = window.labelKey
         ? t(window.labelKey, window.labelParams as Record<string, string | number>)
         : window.label;
+      const usageLine = usageSummaryLine(codexSummaryForWindow(usageSummaries, window.id), t);
 
       return h(
         'div',
@@ -1038,7 +1106,8 @@ const renderCodexItems = (
           percent: remaining,
           highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
           mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
-        })
+        }),
+        usageLine ? h('div', { className: styleMap.quotaUsageLine }, usageLine) : null
       );
     })
   );
@@ -1342,6 +1411,7 @@ export const CODEX_CONFIG: QuotaConfig<CodexQuotaState, CodexQuotaData> = {
   buildSuccessState: (data) => ({
     status: 'success',
     windows: data.windows,
+    usageSummaries: data.usageSummaries,
     planType: data.planType,
     subscriptionActiveUntil: data.subscriptionActiveUntil,
     rateLimitResetCreditsAvailableCount: data.rateLimitResetCreditsAvailableCount,

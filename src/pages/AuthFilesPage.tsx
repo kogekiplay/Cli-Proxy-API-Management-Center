@@ -43,6 +43,7 @@ import {
 import { AuthFileCard } from '@/features/authFiles/components/AuthFileCard';
 import { AuthFileModelsModal } from '@/features/authFiles/components/AuthFileModelsModal';
 import { AuthFilesPrefixProxyEditorModal } from '@/features/authFiles/components/AuthFilesPrefixProxyEditorModal';
+import { PasteAuthFileModal } from '@/features/authFiles/components/PasteAuthFileModal';
 import { OAuthExcludedCard } from '@/features/authFiles/components/OAuthExcludedCard';
 import { OAuthModelAliasCard } from '@/features/authFiles/components/OAuthModelAliasCard';
 import { OpenCodeGoImportCard } from '@/features/opencodeGo';
@@ -100,6 +101,7 @@ export function AuthFilesPage() {
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
   const [sortMode, setSortMode] = useState<AuthFilesSortMode>('default');
   const [batchActionBarVisible, setBatchActionBarVisible] = useState(false);
+  const [pasteModalOpen, setPasteModalOpen] = useState(false);
   const [uiStateHydrated, setUiStateHydrated] = useState(false);
   const floatingBatchActionsRef = useRef<HTMLDivElement>(null);
   const batchActionAnimationRef = useRef<AnimationPlaybackControlsWithThen | null>(null);
@@ -121,6 +123,7 @@ export function AuthFilesPage() {
     loadFiles,
     handleUploadClick,
     handleFileChange,
+    handlePasteImport,
     handleDelete,
     handleDeleteAll,
     handleDownload,
@@ -659,6 +662,14 @@ export function AuthFilesPage() {
               {t('auth_files.upload_button')}
             </Button>
             <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setPasteModalOpen(true)}
+              disabled={disableControls || uploading}
+            >
+              {t('auth_files.paste_button')}
+            </Button>
+            <Button
               variant="danger"
               size="sm"
               onClick={() =>
@@ -888,6 +899,12 @@ export function AuthFilesPage() {
         excluded={excluded}
         onClose={closeModelsModal}
         onCopyText={copyTextWithNotification}
+      />
+      <PasteAuthFileModal
+        open={pasteModalOpen}
+        saving={uploading}
+        onClose={() => setPasteModalOpen(false)}
+        onSubmit={handlePasteImport}
       />
 
       <AuthFilesPrefixProxyEditorModal

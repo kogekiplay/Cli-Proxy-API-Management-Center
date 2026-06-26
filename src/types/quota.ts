@@ -2,6 +2,8 @@
  * Quota management types.
  */
 
+import type { UsageSummary } from './usage';
+
 // Theme types
 export type ThemeColors = { bg: string; text: string; border?: string };
 export type TypeColorSet = { light: ThemeColors; dark?: ThemeColors };
@@ -194,6 +196,7 @@ export interface CodexQuotaWindow {
 export interface CodexQuotaState {
   status: 'idle' | 'loading' | 'success' | 'error';
   windows: CodexQuotaWindow[];
+  usageSummaries?: CodexUsageSummaries;
   planType?: string | null;
   subscriptionActiveUntil?: string | number | null;
   rateLimitResetCreditsAvailableCount?: number | null;
@@ -201,6 +204,12 @@ export interface CodexQuotaState {
   rateLimitResetCreditsError?: string;
   error?: string;
   errorStatus?: number;
+}
+
+export interface CodexUsageSummaries {
+  rolling?: UsageSummary;
+  weekly?: UsageSummary;
+  monthly?: UsageSummary;
 }
 
 // Kimi API payload types

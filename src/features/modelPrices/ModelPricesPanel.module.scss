@@ -1,0 +1,85 @@
+.panel {
+  margin-top: 16px;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+  font-size: 13px;
+
+  th,
+  td {
+    padding: 8px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  th {
+    color: var(--text-secondary);
+    font-weight: 650;
+  }
+}
+
+.modelCell {
+  min-width: 190px;
+}
+
+.numberCell {
+  width: 120px;
+}
+
+.actionsCell {
+  width: 150px;
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font: inherit;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.empty {
+  padding: 18px 8px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.error {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--danger-color);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--danger-color) 10%, transparent);
+  color: var(--danger-color);
+  font-size: 13px;
+}

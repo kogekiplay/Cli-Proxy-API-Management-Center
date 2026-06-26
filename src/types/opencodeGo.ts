@@ -1,3 +1,5 @@
+import type { UsageSummary } from './usage';
+
 export interface OpenCodeGoUsageWindow {
   used?: number;
   limit?: number;
@@ -10,6 +12,12 @@ export interface OpenCodeGoUsageSnapshot {
   monthly?: OpenCodeGoUsageWindow;
 }
 
+export interface OpenCodeGoCPAUsageSnapshot {
+  rolling?: UsageSummary;
+  weekly?: UsageSummary;
+  monthly?: UsageSummary;
+}
+
 export interface OpenCodeGoAccount {
   id: string;
   alias?: string;
@@ -20,6 +28,7 @@ export interface OpenCodeGoAccount {
   hasApiKey: boolean;
   hasCookie: boolean;
   usage?: OpenCodeGoUsageSnapshot;
+  cpaUsage?: OpenCodeGoCPAUsageSnapshot;
   providerName?: string;
   baseUrl?: string;
   apiKeySynced: boolean;
