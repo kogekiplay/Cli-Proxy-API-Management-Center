@@ -37,12 +37,25 @@
 
 .filters {
   display: grid;
-  grid-template-columns: minmax(230px, auto) repeat(4, minmax(150px, 1fr)) auto;
+  grid-template-columns: minmax(220px, 280px) repeat(4, minmax(180px, 1fr)) minmax(92px, auto);
   gap: $spacing-sm;
   align-items: center;
 
   :global(.form-group) {
     margin: 0;
+    min-width: 0;
+  }
+
+  :global(input) {
+    min-width: 0;
+  }
+
+  @include desktop {
+    grid-template-columns: minmax(220px, 280px) repeat(2, minmax(180px, 1fr)) minmax(92px, auto);
+  }
+
+  @include tablet {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   @include mobile {
@@ -81,6 +94,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-height: 42px;
+  padding: 0 4px;
   color: var(--text-secondary);
   font-size: 13px;
   white-space: nowrap;
@@ -172,7 +187,7 @@
 
 .table {
   width: 100%;
-  min-width: 640px;
+  min-width: 760px;
   border-collapse: collapse;
 
   th,
@@ -195,6 +210,10 @@
     overflow-wrap: anywhere;
   }
 
+  td:not(:first-child) {
+    white-space: nowrap;
+  }
+
   tr:last-child td {
     border-bottom: 0;
   }
@@ -205,4 +224,52 @@
   color: var(--text-secondary);
   font-size: 13px;
   text-align: center;
+}
+
+.identityPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.identityBadge {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 24%, var(--border-color));
+  border-radius: $radius-full;
+  background: color-mix(in srgb, var(--primary-color) 9%, transparent);
+  color: var(--primary-color);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.identityText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+
+  strong,
+  small {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    line-height: 1.2;
+  }
 }

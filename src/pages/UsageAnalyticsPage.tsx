@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { IconRefreshCw } from '@/components/ui/icons';
+import { authFilesApi } from '@/services/api';
+import { opencodeGoApi } from '@/services/api/opencodeGo';
 import {
   usageAnalyticsApi,
   type UsageAnalyticsAPIKeyStat,
@@ -13,6 +15,9 @@ import {
   type UsageAnalyticsModelStat,
   type UsageAnalyticsResponse,
 } from '@/services/api/usageAnalytics';
+import type { AuthFileItem } from '@/types';
+import type { OpenCodeGoAccount } from '@/types/opencodeGo';
+import { displayOpenCodeGoAccountName } from '@/features/opencodeGo/helpers';
 import { getErrorMessage } from '@/utils/helpers';
 import styles from './UsageAnalyticsPage.module.scss';
 
@@ -58,13 +63,58 @@ const formatDateTime = (value: number | undefined | null) => {
 const successRate = (success: number, total: number) =>
   total > 0 ? `${Math.round((success / total) * 100)}%` : '-';
 
+const compactHash = (value: string | undefined | null, length = 12) => {
+  const trimmed = value?.trim() ?? '';
+  if (!trimmed) return '';
+  return trimmed.length <= length ? trimmed : `${trimmed.slice(0, length)}...`;
+};
+
+const providerLabel = (value: string | undefined | null) => {
+  const provider = value?.trim() ?? '';
+  if (!provider) return 'Unknown';
+  if (provider === 'opencode-go') return 'OpenCode';
+  return provider.charAt(0).toUpperCase() + provider.slice(1);
+};
+
+const authIndexOf = (file: AuthFileItem) =>
+  String(file.authIndex ?? file['auth_index'] ?? file['auth-index'] ?? '').trim();
+
+const authFileDisplayName = (file: AuthFileItem) => {
+  const label = file.label ?? file.email ?? file.account ?? file.name;
+  return typeof label === 'string' && label.trim() ? label.trim() : file.name;
+};
+
+const accountIdFromRef = (value: string | undefined | null) => {
+  const trimmed = value?.trim() ?? '';
+  if (!trimmed) return '';
+  return trimmed.startsWith('opencode-go:') ? trimmed.slice('opencode-go:'.length) : trimmed;
+};
+
+interface IdentityPillProps {
+  tone?: string;
+  label: string;
+  meta?: string;
+}
+
+function IdentityPill({ tone, label, meta }: IdentityPillProps) {
+  return (
+    <div className={styles.identityPill}>
+      <span className={styles.identityBadge}>{providerLabel(tone)}</span>
+      <span className={styles.identityText}>
+        <strong>{label}</strong>
+        {meta ? <small>{meta}</small> : null}
+      </span>
+    </div>
+  );
+}
+
 function StatTable<T>({
   rows,
   columns,
   empty,
 }: {
   rows: T[];
-  columns: Array<{ key: string; label: string; render: (row: T) => string }>;
+  columns: Array<{ key: string; label: string; render: (row: T) => ReactNode }>;
   empty: string;
 }) {
   if (rows.length === 0) {
@@ -103,6 +153,8 @@ export function UsageAnalyticsPage() {
   const [apiKeyHashFilter, setAPIKeyHashFilter] = useState('');
   const [failedOnly, setFailedOnly] = useState(false);
   const [data, setData] = useState<UsageAnalyticsResponse | null>(null);
+  const [authFiles, setAuthFiles] = useState<AuthFileItem[]>([]);
+  const [opencodeAccounts, setOpenCodeAccounts] = useState<OpenCodeGoAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -143,10 +195,79 @@ export function UsageAnalyticsPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.allSettled([authFilesApi.list(), opencodeGoApi.list()]).then((results) => {
+      if (cancelled) return;
+      const [authResult, opencodeResult] = results;
+      if (authResult.status === 'fulfilled') {
+        setAuthFiles(authResult.value.files ?? []);
+      }
+      if (opencodeResult.status === 'fulfilled') {
+        setOpenCodeAccounts(opencodeResult.value.accounts ?? []);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const summary = data?.summary;
   const timelineMax = useMemo(
     () => Math.max(...(data?.timeline ?? []).map((item) => item.total_tokens), 1),
     [data?.timeline]
+  );
+
+  const authFileByIndex = useMemo(() => {
+    const map = new Map<string, AuthFileItem>();
+    authFiles.forEach((file) => {
+      const index = authIndexOf(file);
+      if (index) map.set(index, file);
+    });
+    return map;
+  }, [authFiles]);
+
+  const opencodeByID = useMemo(() => {
+    const map = new Map<string, OpenCodeGoAccount>();
+    opencodeAccounts.forEach((account) => {
+      map.set(account.id, account);
+    });
+    return map;
+  }, [opencodeAccounts]);
+
+  const renderAPIKeyIdentity = useCallback(
+    (row: UsageAnalyticsAPIKeyStat) => (
+      <IdentityPill
+        tone={row.provider}
+        label={providerLabel(row.provider)}
+        meta={row.api_key_hash ? `hash ${compactHash(row.api_key_hash)}` : undefined}
+      />
+    ),
+    []
+  );
+
+  const renderCredentialIdentity = useCallback(
+    (row: UsageAnalyticsCredentialStat | UsageAnalyticsEventRow) => {
+      const provider = row.provider;
+      const accountID = accountIdFromRef(row.account_ref);
+      const opencodeAccount = provider === 'opencode-go' && accountID ? opencodeByID.get(accountID) : undefined;
+      const authFile = row.auth_index ? authFileByIndex.get(row.auth_index) : undefined;
+      const label =
+        (opencodeAccount ? displayOpenCodeGoAccountName(opencodeAccount) : '') ||
+        (authFile ? authFileDisplayName(authFile) : '') ||
+        row.auth_file_name ||
+        row.auth_index ||
+        accountID ||
+        '-';
+      const metaParts = [
+        row.auth_file_name && row.auth_file_name !== label ? row.auth_file_name : '',
+        row.auth_index ? `idx ${compactHash(row.auth_index, 10)}` : '',
+        accountID && accountID !== label ? accountID : '',
+      ].filter(Boolean);
+
+      return <IdentityPill tone={provider} label={label} meta={metaParts.join(' · ')} />;
+    },
+    [authFileByIndex, opencodeByID]
   );
 
   const modelColumns = useMemo(
@@ -162,13 +283,13 @@ export function UsageAnalyticsPage() {
 
   const apiKeyColumns = useMemo(
     () => [
-      { key: 'apiKey', label: t('usage_analytics.api_key'), render: (row: UsageAnalyticsAPIKeyStat) => row.api_key_hash || '-' },
+      { key: 'apiKey', label: t('usage_analytics.api_key'), render: renderAPIKeyIdentity },
       { key: 'calls', label: t('usage_analytics.calls'), render: (row: UsageAnalyticsAPIKeyStat) => formatNumber(row.calls) },
       { key: 'tokens', label: t('usage_analytics.tokens'), render: (row: UsageAnalyticsAPIKeyStat) => formatNumber(row.total_tokens) },
       { key: 'rate', label: t('usage_analytics.success_rate'), render: (row: UsageAnalyticsAPIKeyStat) => successRate(row.success_calls, row.calls) },
       { key: 'cost', label: t('usage_analytics.cost'), render: (row: UsageAnalyticsAPIKeyStat) => formatCost(row.cost) },
     ],
-    [t]
+    [renderAPIKeyIdentity, t]
   );
 
   const credentialColumns = useMemo(
@@ -176,15 +297,14 @@ export function UsageAnalyticsPage() {
       {
         key: 'credential',
         label: t('usage_analytics.credential'),
-        render: (row: UsageAnalyticsCredentialStat) =>
-          row.auth_file_name || row.auth_index || row.account_ref || '-',
+        render: renderCredentialIdentity,
       },
       { key: 'calls', label: t('usage_analytics.calls'), render: (row: UsageAnalyticsCredentialStat) => formatNumber(row.calls) },
       { key: 'tokens', label: t('usage_analytics.tokens'), render: (row: UsageAnalyticsCredentialStat) => formatNumber(row.total_tokens) },
       { key: 'rate', label: t('usage_analytics.success_rate'), render: (row: UsageAnalyticsCredentialStat) => successRate(row.success_calls, row.calls) },
       { key: 'cost', label: t('usage_analytics.cost'), render: (row: UsageAnalyticsCredentialStat) => formatCost(row.cost) },
     ],
-    [t]
+    [renderCredentialIdentity, t]
   );
 
   const eventColumns = useMemo(
@@ -192,11 +312,11 @@ export function UsageAnalyticsPage() {
       { key: 'time', label: t('usage_analytics.time'), render: (row: UsageAnalyticsEventRow) => formatDateTime(row.timestamp_ms) },
       { key: 'provider', label: t('usage_analytics.provider'), render: (row: UsageAnalyticsEventRow) => row.provider || '-' },
       { key: 'model', label: t('usage_analytics.model'), render: (row: UsageAnalyticsEventRow) => row.model || '-' },
-      { key: 'credential', label: t('usage_analytics.credential'), render: (row: UsageAnalyticsEventRow) => row.auth_file_name || row.auth_index || row.account_ref || '-' },
+      { key: 'credential', label: t('usage_analytics.credential'), render: renderCredentialIdentity },
       { key: 'tokens', label: t('usage_analytics.tokens'), render: (row: UsageAnalyticsEventRow) => formatNumber(row.tokens?.total_tokens) },
       { key: 'status', label: t('usage_analytics.status'), render: (row: UsageAnalyticsEventRow) => row.failed ? t('usage_analytics.failed') : t('usage_analytics.success') },
     ],
-    [t]
+    [renderCredentialIdentity, t]
   );
 
   return (

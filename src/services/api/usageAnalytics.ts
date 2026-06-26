@@ -43,6 +43,7 @@ export interface UsageAnalyticsModelStat {
 }
 
 export interface UsageAnalyticsAPIKeyStat {
+  provider: string;
   api_key_hash: string;
   calls: number;
   success_calls: number;
@@ -52,6 +53,7 @@ export interface UsageAnalyticsAPIKeyStat {
 }
 
 export interface UsageAnalyticsCredentialStat {
+  provider: string;
   auth_index: string;
   auth_file_name: string;
   account_ref: string;
