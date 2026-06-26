@@ -3,13 +3,11 @@ import { providersApi } from '@/services/api';
 import { getErrorMessage } from '@/utils/helpers';
 import { useAuthStore, useConfigStore } from '@/stores';
 import {
-  stripDisableAllModelsRule,
   withDisableAllModelsRule,
   withoutDisableAllModelsRule,
 } from '@/components/providers/utils';
 import type { GeminiKeyConfig, ModelAlias, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import {
-  apiKeyFunToResource,
   claudeToResource,
   codexToResource,
   geminiToResource,
@@ -23,16 +21,7 @@ import type {
   ProviderGroup,
   ProviderResource,
   ProviderSnapshot,
-  SponsorKeyEntryInput,
 } from './types';
-import {
-  APIKEY_FUN_PROVIDER_NAME,
-  buildApiKeyFunRaw,
-  getApiKeyFunProtocolUrls,
-  isApiKeyFunClaudeProvider,
-  isApiKeyFunCodexProvider,
-  isApiKeyFunOpenAIProvider,
-} from './sponsor';
 
 export interface UseProviderWorkbenchResult {
   connected: boolean;
@@ -191,74 +180,6 @@ const buildOpenAIConfig = (
   };
 };
 
-const removeSponsorEntries = <T>(list: T[], indices: number[]): T[] => {
-  const sponsorIndices = new Set(indices);
-  return list.filter((_, index) => !sponsorIndices.has(index));
-};
-
-const sponsorEntryApiKey = (entry: SponsorKeyEntryInput): string =>
-  entry.apiKey.trim() || entry.existingApiKey?.trim() || '';
-
-const buildApiKeyFunOpenAIConfig = (
-  entry: SponsorKeyEntryInput,
-  existing?: OpenAIProviderConfig
-): OpenAIProviderConfig => {
-  const urls = getApiKeyFunProtocolUrls(entry.baseUrl);
-  const models = buildModelAliases(entry.models, true);
-  const apiKey = sponsorEntryApiKey(entry);
-  const firstExistingEntry = existing?.apiKeyEntries?.[0];
-  const apiKeyEntries = apiKey
-    ? [
-        {
-          ...(firstExistingEntry ?? {}),
-          apiKey,
-          proxyUrl: entry.proxyUrl.trim() || undefined,
-        },
-      ]
-    : [];
-
-  return {
-    ...(existing ?? {}),
-    name: APIKEY_FUN_PROVIDER_NAME,
-    baseUrl: urls.openai,
-    prefix: entry.prefix.trim() || undefined,
-    disabled: entry.disabled,
-    disableCooling: entry.disableCooling === true,
-    priority: entry.priority,
-    apiKeyEntries,
-    models: models.length ? models : undefined,
-  };
-};
-
-const buildApiKeyFunProviderKeyConfig = (
-  entry: SponsorKeyEntryInput,
-  protocol: 'claude' | 'codex',
-  existing?: ProviderKeyConfig
-): ProviderKeyConfig => {
-  const urls = getApiKeyFunProtocolUrls(entry.baseUrl);
-  const models = buildModelAliases(entry.models);
-  const apiKey = sponsorEntryApiKey(entry);
-  const excluded = entry.disabled
-    ? withDisableAllModelsRule(stripDisableAllModelsRule(existing?.excludedModels))
-    : withoutDisableAllModelsRule(existing?.excludedModels);
-
-  return {
-    ...(existing ?? {}),
-    apiKey,
-    baseUrl: protocol === 'claude' ? urls.anthropic : urls.codex,
-    proxyUrl: entry.proxyUrl.trim() || undefined,
-    prefix: entry.prefix.trim() || undefined,
-    priority: entry.priority,
-    disableCooling: entry.disableCooling === true,
-    excludedModels: excluded,
-    models: models.length ? models : undefined,
-  };
-};
-
-const normalizeSponsorKeyEntries = (
-  entries: SponsorKeyEntryInput[] | undefined
-): SponsorKeyEntryInput[] => (entries ?? []).filter((entry) => sponsorEntryApiKey(entry));
-
 /* -------------------------------------------------------------------------- */
 /* hook                                                                       */
 /* -------------------------------------------------------------------------- */
@@ -329,43 +250,17 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           resources = (config.geminiApiKeys ?? []).map((c, i) => geminiToResource(c, i));
           break;
         case 'codex':
-          resources = (config.codexApiKeys ?? []).reduce<ProviderResource[]>((out, item, index) => {
-            if (!isApiKeyFunCodexProvider(item)) {
-              out.push(codexToResource(item, index));
-            }
-            return out;
-          }, []);
+          resources = (config.codexApiKeys ?? []).map((c, i) => codexToResource(c, i));
           break;
         case 'claude':
-          resources = (config.claudeApiKeys ?? []).reduce<ProviderResource[]>(
-            (out, item, index) => {
-              if (!isApiKeyFunClaudeProvider(item)) {
-                out.push(claudeToResource(item, index));
-              }
-              return out;
-            },
-            []
-          );
+          resources = (config.claudeApiKeys ?? []).map((c, i) => claudeToResource(c, i));
           break;
         case 'vertex':
           resources = (config.vertexApiKeys ?? []).map((c, i) => vertexToResource(c, i));
           break;
         case 'openaiCompatibility':
-          resources = (config.openaiCompatibility ?? []).reduce<ProviderResource[]>(
-            (out, item, index) => {
-              if (!isApiKeyFunOpenAIProvider(item)) {
-                out.push(openaiToResource(item, index));
-              }
-              return out;
-            },
-            []
-          );
+          resources = (config.openaiCompatibility ?? []).map((c, i) => openaiToResource(c, i));
           break;
-        case 'apikeyFun': {
-          const sponsorResource = apiKeyFunToResource(buildApiKeyFunRaw(config));
-          resources = sponsorResource ? [sponsorResource] : [];
-          break;
-        }
       }
       return {
         id: brand,
@@ -420,54 +315,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
     [updateConfigValue]
   );
 
-  const persistApiKeyFunConfig = useCallback(
-    async (input: ProviderEntryFormInput) => {
-      const raw = buildApiKeyFunRaw(config);
-      const openaiList = config?.openaiCompatibility ?? [];
-      const claudeList = config?.claudeApiKeys ?? [];
-      const codexList = config?.codexApiKeys ?? [];
-      const entries = normalizeSponsorKeyEntries(input.sponsorKeyEntries);
-      const openaiEntry = entries.find((entry) => entry.protocol === 'openai');
-      const claudeEntry = entries.find((entry) => entry.protocol === 'claude');
-      const codexEntry = entries.find((entry) => entry.protocol === 'codex');
-      const nextOpenAIList = removeSponsorEntries(
-        openaiList,
-        raw.openai.map((item) => item.index)
-      );
-      const nextClaudeList = removeSponsorEntries(
-        claudeList,
-        raw.claude.map((item) => item.index)
-      );
-      const nextCodexList = removeSponsorEntries(
-        codexList,
-        raw.codex.map((item) => item.index)
-      );
-
-      await persistCodexConfigs(
-        codexEntry
-          ? [
-              ...nextCodexList,
-              buildApiKeyFunProviderKeyConfig(codexEntry, 'codex', raw.codex[0]?.config),
-            ]
-          : nextCodexList
-      );
-      await persistClaudeConfigs(
-        claudeEntry
-          ? [
-              ...nextClaudeList,
-              buildApiKeyFunProviderKeyConfig(claudeEntry, 'claude', raw.claude[0]?.config),
-            ]
-          : nextClaudeList
-      );
-      await persistOpenAIConfigs(
-        openaiEntry
-          ? [...nextOpenAIList, buildApiKeyFunOpenAIConfig(openaiEntry, raw.openai[0]?.config)]
-          : nextOpenAIList
-      );
-    },
-    [config, persistClaudeConfigs, persistCodexConfigs, persistOpenAIConfigs]
-  );
-
   const createProvider = useCallback(
     async (brand: ProviderBrand, input: ProviderEntryFormInput) => {
       setMutating(true);
@@ -492,8 +339,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           const next = [...(config?.openaiCompatibility ?? [])];
           next.push(buildOpenAIConfig(input));
           await persistOpenAIConfigs(next);
-        } else if (brand === 'apikeyFun') {
-          await persistApiKeyFunConfig(input);
         }
         refreshSnapshot();
       } finally {
@@ -506,7 +351,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       persistCodexConfigs,
       persistGeminiKeys,
       persistOpenAIConfigs,
-      persistApiKeyFunConfig,
       persistVertexConfigs,
       refreshSnapshot,
     ]
@@ -543,8 +387,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           const existing = list[idx];
           list[idx] = buildOpenAIConfig(input, existing);
           await persistOpenAIConfigs(list);
-        } else if (brand === 'apikeyFun') {
-          await persistApiKeyFunConfig(input);
         }
         refreshSnapshot();
       } finally {
@@ -557,7 +399,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       persistCodexConfigs,
       persistGeminiKeys,
       persistOpenAIConfigs,
-      persistApiKeyFunConfig,
       persistVertexConfigs,
       refreshSnapshot,
     ]
@@ -588,19 +429,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           await providersApi.deleteOpenAIProvider(sel.index);
           const next = (config?.openaiCompatibility ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('openai-compatibility', next);
-        } else if (sel.brand === 'apikeyFun') {
-          const nextClaude = (config?.claudeApiKeys ?? []).filter(
-            (_, index) => !sel.claudeIndices.includes(index)
-          );
-          const nextCodex = (config?.codexApiKeys ?? []).filter(
-            (_, index) => !sel.codexIndices.includes(index)
-          );
-          const nextOpenAI = (config?.openaiCompatibility ?? []).filter(
-            (_, index) => !sel.openaiIndices.includes(index)
-          );
-          await persistCodexConfigs(nextCodex);
-          await persistClaudeConfigs(nextClaude);
-          await persistOpenAIConfigs(nextOpenAI);
         }
         refreshSnapshot();
       } finally {
@@ -609,9 +437,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
     },
     [
       config,
-      persistClaudeConfigs,
-      persistCodexConfigs,
-      persistOpenAIConfigs,
       refreshSnapshot,
       updateConfigValue,
     ]
@@ -657,27 +482,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             list[idx] = { ...current, disabled };
             updateConfigValue('openai-compatibility', list);
           }
-        } else if (brand === 'apikeyFun') {
-          const claudeList = (config?.claudeApiKeys ?? []).map((item) => {
-            if (!isApiKeyFunClaudeProvider(item)) return item;
-            const excluded = disabled
-              ? withDisableAllModelsRule(item.excludedModels)
-              : withoutDisableAllModelsRule(item.excludedModels);
-            return { ...item, excludedModels: excluded };
-          });
-          const codexList = (config?.codexApiKeys ?? []).map((item) => {
-            if (!isApiKeyFunCodexProvider(item)) return item;
-            const excluded = disabled
-              ? withDisableAllModelsRule(item.excludedModels)
-              : withoutDisableAllModelsRule(item.excludedModels);
-            return { ...item, excludedModels: excluded };
-          });
-          const openaiList = (config?.openaiCompatibility ?? []).map((item) =>
-            isApiKeyFunOpenAIProvider(item) ? { ...item, disabled } : item
-          );
-          await persistCodexConfigs(codexList);
-          await persistClaudeConfigs(claudeList);
-          await persistOpenAIConfigs(openaiList);
         }
         refreshSnapshot();
       } finally {
@@ -689,7 +493,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       persistClaudeConfigs,
       persistCodexConfigs,
       persistGeminiKeys,
-      persistOpenAIConfigs,
       persistVertexConfigs,
       refreshSnapshot,
       updateConfigValue,

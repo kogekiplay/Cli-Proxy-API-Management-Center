@@ -4,7 +4,6 @@ import geminiLogo from '@/assets/icons/gemini.svg';
 import openaiLightLogo from '@/assets/icons/openai-light.svg';
 import openaiDarkLogo from '@/assets/icons/openai-dark.svg';
 import vertexLogo from '@/assets/icons/vertex.svg';
-import apikeyFunLogo from '@/assets/icons/apikey-fun.png';
 import type { ProviderBrand } from './types';
 
 export interface ProviderBrandLogo {
@@ -20,5 +19,4 @@ export const PROVIDER_LOGOS: Record<ProviderBrand, ProviderBrandLogo> = {
   codex: { src: codexLogo },
   vertex: { src: vertexLogo },
   openaiCompatibility: { src: openaiLightLogo, darkSrc: openaiDarkLogo, transparent: true },
-  apikeyFun: { src: apikeyFunLogo },
 };

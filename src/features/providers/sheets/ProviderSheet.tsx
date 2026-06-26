@@ -13,7 +13,6 @@ import type {
 import type { UseProviderWorkbenchResult } from '../useProviderWorkbench';
 import { BaseProviderForm } from './forms/BaseProviderForm';
 import { ResourceDetailView } from './ResourceDetailView';
-import { SponsorProviderForm } from './forms/SponsorProviderForm';
 import styles from './forms/sharedForm.module.scss';
 
 type SheetMode = 'detail' | 'create' | 'edit';
@@ -148,19 +147,6 @@ export function ProviderSheet({
       return <ResourceDetailView resource={state.resource} usageByProvider={usageByProvider} />;
     }
     const formKey = `${state.brand}:${state.resource?.id ?? 'new'}:${state.mode}`;
-    if (state.brand === 'apikeyFun') {
-      return (
-        <SponsorProviderForm
-          key={formKey}
-          resource={state.resource}
-          mode={state.mode}
-          mutating={formMutating}
-          formId={formId}
-          onSubmit={state.mode === 'create' ? handleCreate : handleUpdate}
-          onDirtyChange={handleDirtyChange}
-        />
-      );
-    }
     return (
       <BaseProviderForm
         key={formKey}
@@ -248,9 +234,7 @@ export function ProviderSheet({
         route:
           state.brand === 'openaiCompatibility'
             ? '/ai-providers/openai'
-            : state.brand === 'apikeyFun'
-              ? '/quick-start'
-              : `/ai-providers/${state.brand}`,
+            : `/ai-providers/${state.brand}`,
       })}
       footer={footer}
       closeDisabled={submitting}

@@ -117,25 +117,6 @@ export const PROVIDER_DESCRIPTORS: Record<ProviderBrand, ProviderDescriptor> = {
     supportsApiKeyEntries: true,
     sheetSize: 'lg',
   },
-  apikeyFun: {
-    id: 'apikeyFun',
-    supportsName: false,
-    supportsApiKey: true,
-    supportsDisabled: true,
-    supportsBaseUrl: false,
-    baseUrlRequired: false,
-    supportsProxyUrl: true,
-    supportsPrefix: true,
-    supportsModels: false,
-    supportsHeaders: false,
-    supportsExcludedModels: false,
-    supportsPriority: true,
-    supportsTestModel: false,
-    supportsWebsockets: false,
-    supportsCloak: false,
-    supportsApiKeyEntries: false,
-    sheetSize: 'md',
-  },
 };
 
 export const PROVIDER_BRAND_ORDER: ProviderBrand[] = [
@@ -144,5 +125,4 @@ export const PROVIDER_BRAND_ORDER: ProviderBrand[] = [
   'claude',
   'vertex',
   'openaiCompatibility',
-  'apikeyFun',
 ];
