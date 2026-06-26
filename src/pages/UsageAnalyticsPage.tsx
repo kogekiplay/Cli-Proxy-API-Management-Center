@@ -242,6 +242,7 @@ export function UsageAnalyticsPage() {
       const accountID = accountIdFromRef(row.account_ref);
       const opencodeAccount = accountID ? opencodeByID.get(accountID) : undefined;
       const label =
+        row.api_key_preview ||
         opencodeAccount?.apiKeyPreview ||
         (opencodeAccount ? displayOpenCodeGoAccountName(opencodeAccount) : '') ||
         (hash ? compactHash(hash, 16) : '-') ||

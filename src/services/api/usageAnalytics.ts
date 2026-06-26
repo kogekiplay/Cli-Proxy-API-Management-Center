@@ -46,6 +46,7 @@ export interface UsageAnalyticsAPIKeyStat {
   provider: string;
   providers?: string[];
   api_key_hash: string;
+  api_key_preview?: string;
   account_ref?: string;
   calls: number;
   success_calls: number;
