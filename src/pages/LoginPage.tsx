@@ -18,6 +18,7 @@ import styles from './LoginPage.module.scss';
  * 将 API 错误转换为本地化的用户友好消息
  */
 type RedirectState = { from?: { pathname?: string } };
+const STARTUP_SPLASH_DELAY_MS = 600;
 
 function getLocalizedErrorMessage(error: unknown, t: (key: string) => string): string {
   const apiError = error as Partial<ApiError>;
@@ -102,7 +103,7 @@ export function LoginPage() {
   const [rememberPassword, setRememberPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [autoLoading, setAutoLoading] = useState(true);
-  const [autoLoginSuccess, setAutoLoginSuccess] = useState(false);
+  const [showDelayedSplash, setShowDelayedSplash] = useState(false);
   const [error, setError] = useState('');
 
   const detectedBase = useMemo(() => detectApiBaseFromLocation(), []);
@@ -125,28 +126,47 @@ export function LoginPage() {
   );
 
   useEffect(() => {
+    if (!autoLoading) {
+      setShowDelayedSplash(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setShowDelayedSplash(true);
+    }, STARTUP_SPLASH_DELAY_MS);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [autoLoading]);
+
+  useEffect(() => {
+    let cancelled = false;
+
     const init = async () => {
       try {
         const autoLoggedIn = await restoreSession();
+        if (cancelled) return;
+
         if (autoLoggedIn) {
-          setAutoLoginSuccess(true);
-          // 延迟跳转，让用户看到成功动画
-          setTimeout(() => {
-            const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
-            navigate(redirect, { replace: true });
-          }, 1500);
+          const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
+          navigate(redirect, { replace: true });
         } else {
           setApiBase(storedBase || detectedBase);
           setManagementKey(storedKey || '');
           setRememberPassword(storedRememberPassword || Boolean(storedKey));
         }
       } finally {
-        // 自动登录成功时 showSplash 仍由 autoLoginSuccess 维持，可无条件结束 loading
-        setAutoLoading(false);
+        if (!cancelled) {
+          setAutoLoading(false);
+        }
       }
     };
 
     init();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -186,13 +206,12 @@ export function LoginPage() {
     [loading, handleSubmit]
   );
 
-  if (isAuthenticated && !autoLoading && !autoLoginSuccess) {
+  if (isAuthenticated && !autoLoading) {
     const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
     return <Navigate to={redirect} replace />;
   }
 
-  // 显示启动动画（自动登录中或自动登录成功）
-  const showSplash = autoLoading || autoLoginSuccess;
+  const showSplash = autoLoading && showDelayedSplash;
 
   return (
     <div className={styles.container}>
@@ -217,6 +236,8 @@ export function LoginPage() {
               <div className={styles.splashLoaderBar} />
             </div>
           </div>
+        ) : autoLoading ? (
+          <div className={styles.formContent} aria-hidden="true" />
         ) : (
           /* 登录表单 */
           <div className={styles.formContent}>
