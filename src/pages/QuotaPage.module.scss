@@ -118,6 +118,7 @@
   display: grid;
   gap: $spacing-md;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  align-items: start;
 
   @include mobile {
     grid-template-columns: 1fr;
@@ -391,10 +392,47 @@
   color: var(--text-secondary);
 }
 
-.quotaUsageLine {
+.quotaUsageGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+.quotaUsageMetric {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 74%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-secondary) 84%, var(--bg-primary));
+
+  span,
+  strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.quotaUsageMetricLabel {
   color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.quotaUsageMetric strong {
+  color: var(--text-primary);
   font-size: 12px;
-  line-height: 1.35;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.quotaUsageMetricEmphasis {
+  color: var(--success-color, #22c55e) !important;
 }
 
 .quotaMessage {
@@ -755,6 +793,7 @@
   padding: $spacing-md;
   display: flex;
   flex-direction: column;
+  align-self: start;
   gap: $spacing-sm;
   transition:
     transform $transition-fast,

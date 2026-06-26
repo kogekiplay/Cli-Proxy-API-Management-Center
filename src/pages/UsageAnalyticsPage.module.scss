@@ -1,0 +1,208 @@
+@use '../styles/mixins' as *;
+
+.container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+
+  @include mobile {
+    flex-direction: column;
+  }
+}
+
+.pageTitle {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.pageSubtitle {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.filterCard {
+  padding-bottom: 2px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: minmax(230px, auto) repeat(4, minmax(150px, 1fr)) auto;
+  gap: $spacing-sm;
+  align-items: center;
+
+  :global(.form-group) {
+    margin: 0;
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rangeGroup {
+  display: inline-grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-secondary);
+}
+
+.rangeButton {
+  @include button-reset;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: $radius-sm;
+  color: var(--text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.rangeButtonActive {
+  color: var(--primary-color);
+  background: var(--bg-primary);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary-color) 22%, transparent);
+}
+
+.checkboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: $spacing-md;
+
+  @include mobile {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.metricCard {
+  display: grid;
+  gap: 8px;
+  min-height: 92px;
+
+  span {
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 24px;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+}
+
+.gridTwo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-lg;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.timelineList {
+  display: grid;
+  gap: 8px;
+}
+
+.timelineRow {
+  display: grid;
+  grid-template-columns: 116px minmax(120px, 1fr) minmax(70px, auto);
+  gap: 10px;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+
+  strong {
+    color: var(--text-primary);
+    text-align: right;
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+
+    strong {
+      text-align: left;
+    }
+  }
+}
+
+.timelineBarTrack {
+  height: 8px;
+  overflow: hidden;
+  border-radius: $radius-full;
+  background: var(--bg-secondary);
+}
+
+.timelineBar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary-color), color-mix(in srgb, var(--primary-color) 58%, #36a3ff));
+}
+
+.tableWrap {
+  width: 100%;
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+    font-size: 13px;
+    vertical-align: top;
+  }
+
+  th {
+    color: var(--text-secondary);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  td {
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+  }
+
+  tr:last-child td {
+    border-bottom: 0;
+  }
+}
+
+.tableEmpty {
+  padding: 18px 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: center;
+}

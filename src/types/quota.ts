@@ -189,6 +189,9 @@ export interface CodexQuotaWindow {
   label: string;
   labelKey?: string;
   labelParams?: Record<string, string | number>;
+  model?: string;
+  excludedModels?: string[];
+  resetAt?: string;
   usedPercent: number | null;
   resetLabel: string;
 }
@@ -210,6 +213,7 @@ export interface CodexUsageSummaries {
   rolling?: UsageSummary;
   weekly?: UsageSummary;
   monthly?: UsageSummary;
+  byWindow?: Record<string, UsageSummary>;
 }
 
 // Kimi API payload types

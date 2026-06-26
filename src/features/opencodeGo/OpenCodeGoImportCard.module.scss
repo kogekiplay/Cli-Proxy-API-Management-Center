@@ -20,7 +20,8 @@
   flex-wrap: wrap;
   gap: 8px;
 
-  span {
+  span,
+  a {
     display: inline-flex;
     align-items: center;
     min-height: 26px;
@@ -29,5 +30,16 @@
     background: color-mix(in srgb, var(--bg-secondary) 78%, transparent);
     color: var(--text-secondary);
     font-size: 12px;
+    text-decoration: none;
+  }
+
+  a {
+    color: var(--primary-color);
+    background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+
+    &:hover {
+      color: var(--primary-hover);
+      background: color-mix(in srgb, var(--primary-color) 16%, transparent);
+    }
   }
 }

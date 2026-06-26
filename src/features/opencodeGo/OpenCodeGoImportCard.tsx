@@ -8,6 +8,11 @@ import { copyToClipboard } from '@/utils/clipboard';
 import { resolveOpenCodeGoManagementBase } from './helpers';
 import styles from './OpenCodeGoImportCard.module.scss';
 
+const OPENCODE_GO_USERSCRIPT_URL =
+  'https://greasyfork.org/zh-CN/scripts/584166-opencode-go%E8%B4%A6%E5%8F%B7%E5%8A%A9%E6%89%8B';
+const TAMPERMONKEY_BETA_URL =
+  'https://chromewebstore.google.com/detail/tampermonkey-beta/gcalenpjmijncebpfijmoaglllgpjagf';
+
 interface OpenCodeGoImportCardProps {
   disabled?: boolean;
 }
@@ -67,7 +72,12 @@ export function OpenCodeGoImportCard({ disabled = false }: OpenCodeGoImportCardP
       <div className={styles.body}>
         <p>{t('opencode_go.import_desc')}</p>
         <div className={styles.steps}>
-          <span>{t('opencode_go.import_step_install')}</span>
+          <a href={OPENCODE_GO_USERSCRIPT_URL} target="_blank" rel="noreferrer">
+            {t('opencode_go.import_step_install')}
+          </a>
+          <a href={TAMPERMONKEY_BETA_URL} target="_blank" rel="noreferrer">
+            {t('opencode_go.import_step_install_beta')}
+          </a>
           <span>{t('opencode_go.import_step_login')}</span>
           <span>{t('opencode_go.import_step_sync')}</span>
         </div>

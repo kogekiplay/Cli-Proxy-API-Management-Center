@@ -1,0 +1,132 @@
+import { apiClient } from './client';
+
+export interface UsageAnalyticsTokens {
+  input_tokens: number;
+  output_tokens: number;
+  reasoning_tokens: number;
+  cached_tokens: number;
+  cache_read_tokens: number;
+  cache_creation_tokens: number;
+  total_tokens: number;
+}
+
+export interface UsageAnalyticsSummary {
+  total_calls: number;
+  success_calls: number;
+  failure_calls: number;
+  input_tokens: number;
+  output_tokens: number;
+  reasoning_tokens: number;
+  cached_tokens: number;
+  cache_read_tokens: number;
+  cache_creation_tokens: number;
+  total_tokens: number;
+  total_cost?: number | null;
+}
+
+export interface UsageAnalyticsTimelinePoint {
+  bucket_ms: number;
+  calls: number;
+  success: number;
+  failure: number;
+  total_tokens: number;
+  cost?: number | null;
+}
+
+export interface UsageAnalyticsModelStat {
+  model: string;
+  calls: number;
+  success_calls: number;
+  failure_calls: number;
+  total_tokens: number;
+  cost?: number | null;
+}
+
+export interface UsageAnalyticsAPIKeyStat {
+  api_key_hash: string;
+  calls: number;
+  success_calls: number;
+  failure_calls: number;
+  total_tokens: number;
+  cost?: number | null;
+}
+
+export interface UsageAnalyticsCredentialStat {
+  auth_index: string;
+  auth_file_name: string;
+  account_ref: string;
+  calls: number;
+  success_calls: number;
+  failure_calls: number;
+  total_tokens: number;
+  cost?: number | null;
+}
+
+export interface UsageAnalyticsEventRow {
+  id: number;
+  request_id: string;
+  timestamp_ms: number;
+  provider: string;
+  model: string;
+  endpoint: string;
+  auth_index: string;
+  auth_file_name: string;
+  api_key_hash: string;
+  account_ref: string;
+  service_tier: string;
+  tokens: UsageAnalyticsTokens;
+  failed: boolean;
+  estimated_cost_usd?: number | null;
+  missing_price_model_name?: string;
+}
+
+export interface UsageAnalyticsEventsResponse {
+  items: UsageAnalyticsEventRow[];
+  next_before_ms?: number;
+  next_before_id?: number;
+  has_more: boolean;
+  total_count: number;
+}
+
+export interface UsageAnalyticsResponse {
+  generated_at_ms: number;
+  summary?: UsageAnalyticsSummary;
+  timeline?: UsageAnalyticsTimelinePoint[];
+  model_stats?: UsageAnalyticsModelStat[];
+  api_key_stats?: UsageAnalyticsAPIKeyStat[];
+  credential_stats?: UsageAnalyticsCredentialStat[];
+  events?: UsageAnalyticsEventsResponse;
+}
+
+export interface UsageAnalyticsRequest {
+  from_ms: number;
+  to_ms: number;
+  filters?: {
+    providers?: string[];
+    models?: string[];
+    auth_files?: string[];
+    auth_indices?: string[];
+    api_key_hashes?: string[];
+    accounts?: string[];
+    failed_only?: boolean;
+    include_failed?: boolean;
+  };
+  include?: {
+    summary?: boolean;
+    timeline?: boolean;
+    model_stats?: boolean;
+    api_key_stats?: boolean;
+    credential_stats?: boolean;
+    events_page?: {
+      limit?: number;
+      before_ms?: number;
+      before_id?: number;
+    };
+  };
+}
+
+export const usageAnalyticsApi = {
+  query(request: UsageAnalyticsRequest): Promise<UsageAnalyticsResponse> {
+    return apiClient.post<UsageAnalyticsResponse>('/usage-analytics', request);
+  },
+};

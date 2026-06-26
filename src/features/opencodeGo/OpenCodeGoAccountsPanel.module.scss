@@ -28,6 +28,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: $spacing-sm;
+  align-items: center;
+  align-content: flex-start;
 }
 
 .headerActions {
@@ -44,6 +46,7 @@
   display: grid;
   gap: $spacing-md;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  align-items: start;
 
   @include mobile {
     grid-template-columns: 1fr;
@@ -60,6 +63,8 @@
 
 .accountCard {
   display: grid;
+  align-self: start;
+  align-content: start;
   gap: $spacing-sm;
   min-width: 0;
   padding: 16px;

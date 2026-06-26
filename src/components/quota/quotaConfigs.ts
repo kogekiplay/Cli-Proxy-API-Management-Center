@@ -81,8 +81,14 @@ import {
 } from '@/utils/quota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import { formatDateTimeValue } from '@/utils/format';
-import type { UsageSummary, UsageSummaryWindowKind } from '@/types/usage';
+import type {
+  TokenUsage,
+  UsageModelSummary,
+  UsageSummary,
+  UsageSummaryWindowKind,
+} from '@/types/usage';
 import type { QuotaRenderHelpers } from './QuotaCard';
+import { QuotaUsageSummary } from './QuotaUsageSummary';
 import styles from '@/pages/QuotaPage.module.scss';
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
@@ -310,6 +316,26 @@ const toAntigravityQuotaSubscription = (
   };
 };
 
+const codexWindowResetAtISO = (window?: CodexUsageWindow | null): string | undefined => {
+  if (!window) return undefined;
+  const resetAtSeconds = normalizeNumberValue(window.reset_at ?? window.resetAt);
+  if (resetAtSeconds !== null && resetAtSeconds > 0) {
+    return new Date(resetAtSeconds * 1000).toISOString();
+  }
+  const resetAfterSeconds = normalizeNumberValue(
+    window.reset_after_seconds ?? window.resetAfterSeconds
+  );
+  if (resetAfterSeconds !== null && resetAfterSeconds > 0) {
+    return new Date(Date.now() + resetAfterSeconds * 1000).toISOString();
+  }
+  const rawResetAt = normalizeStringValue(window.reset_at ?? window.resetAt);
+  if (rawResetAt) {
+    const parsed = new Date(rawResetAt);
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
+  }
+  return undefined;
+};
+
 const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): CodexQuotaWindow[] => {
   const FIVE_HOUR_SECONDS = 18000;
   const WEEK_SECONDS = 604800;
@@ -339,11 +365,33 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
   const additionalRateLimits = payload.additional_rate_limits ?? payload.additionalRateLimits ?? [];
   const windows: CodexQuotaWindow[] = [];
 
+  const normalizeUsageModel = (value?: string | null): string | undefined => {
+    const normalized = normalizeStringValue(value)
+      ?.replace(/\s+/g, '-')
+      .toLowerCase();
+    return normalized || undefined;
+  };
+
+  const additionalUsageModels = Array.isArray(additionalRateLimits)
+    ? additionalRateLimits
+        .map((limitItem) =>
+          normalizeUsageModel(
+            normalizeStringValue(limitItem?.limit_name ?? limitItem?.limitName) ??
+              normalizeStringValue(limitItem?.metered_feature ?? limitItem?.meteredFeature)
+          )
+        )
+        .filter((model): model is string => Boolean(model))
+    : [];
+  const sharedExcludedModels =
+    additionalUsageModels.length > 0 ? Array.from(new Set(additionalUsageModels)) : undefined;
+
   const addWindow = (
     id: string,
     label: string,
     labelKey: string | undefined,
     labelParams: Record<string, string | number> | undefined,
+    model: string | undefined,
+    excludedModels: string[] | undefined,
     window?: CodexUsageWindow | null,
     limitReached?: boolean,
     allowed?: boolean
@@ -358,6 +406,9 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
       label,
       labelKey,
       labelParams,
+      model,
+      excludedModels,
+      resetAt: codexWindowResetAtISO(window),
       usedPercent,
       resetLabel,
     });
@@ -427,6 +478,8 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     t(WINDOW_META.codeFiveHour.labelKey),
     WINDOW_META.codeFiveHour.labelKey,
     undefined,
+    undefined,
+    sharedExcludedModels,
     rateWindows.fiveHourWindow,
     rawLimitReached,
     rawAllowed
@@ -441,6 +494,8 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     t(codeSecondaryWindowMeta.labelKey),
     codeSecondaryWindowMeta.labelKey,
     undefined,
+    undefined,
+    sharedExcludedModels,
     rateWindows.weeklyWindow,
     rawLimitReached,
     rawAllowed
@@ -454,6 +509,8 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     t(WINDOW_META.codeReviewFiveHour.labelKey),
     WINDOW_META.codeReviewFiveHour.labelKey,
     undefined,
+    undefined,
+    sharedExcludedModels,
     codeReviewWindows.fiveHourWindow,
     codeReviewLimitReached,
     codeReviewAllowed
@@ -468,6 +525,8 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     t(codeReviewSecondaryWindowMeta.labelKey),
     codeReviewSecondaryWindowMeta.labelKey,
     undefined,
+    undefined,
+    sharedExcludedModels,
     codeReviewWindows.weeklyWindow,
     codeReviewLimitReached,
     codeReviewAllowed
@@ -491,6 +550,7 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
         `additional-${index + 1}`;
 
       const idPrefix = normalizeWindowId(limitName) || `additional-${index + 1}`;
+      const usageModel = normalizeUsageModel(limitName);
       const additionalPrimaryWindow = rateInfo.primary_window ?? rateInfo.primaryWindow ?? null;
       const additionalSecondaryWindow =
         rateInfo.secondary_window ?? rateInfo.secondaryWindow ?? null;
@@ -502,6 +562,8 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
         t('codex_quota.additional_primary_window', { name: limitName }),
         'codex_quota.additional_primary_window',
         { name: limitName },
+        usageModel,
+        undefined,
         additionalPrimaryWindow,
         additionalLimitReached,
         additionalAllowed
@@ -516,6 +578,8 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
         t(additionalSecondaryMeta.labelKey, { name: limitName }),
         additionalSecondaryMeta.labelKey,
         { name: limitName },
+        usageModel,
+        undefined,
         additionalSecondaryWindow,
         additionalLimitReached,
         additionalAllowed
@@ -621,9 +685,10 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
   const usageResetCreditsAvailableCount = normalizeNumberValue(
     resetCredits?.available_count ?? resetCredits?.availableCount
   );
+  const windows = buildCodexQuotaWindows(payload, t);
   const [resetCreditsData, usageSummaries] = await Promise.all([
     fetchCodexResetCredits(authIndex, requestHeader, t),
-    fetchCodexUsageSummaries(authIndex),
+    fetchCodexUsageSummaries(authIndex, windows),
   ]);
   const resetCreditsCountFromDetails =
     resetCreditsData.credits.length > 0 ? resetCreditsData.credits.length : null;
@@ -632,7 +697,6 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
     resetCreditsCountFromDetails ??
     usageResetCreditsAvailableCount;
   const planType = planTypeFromUsage ?? planTypeFromFile;
-  const windows = buildCodexQuotaWindows(payload, t);
   return {
     planType,
     subscriptionActiveUntil,
@@ -644,24 +708,93 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
   };
 };
 
-const fetchCodexUsageSummaries = async (authIndex: string): Promise<CodexUsageSummaries> => {
-  const fetchWindow = async (window: UsageSummaryWindowKind) => {
+const codexUsageWindowKind = (windowID: string): UsageSummaryWindowKind => {
+  const normalized = windowID.toLowerCase();
+  if (normalized.includes('five-hour')) return '5h';
+  if (normalized.includes('monthly')) return 'month';
+  return '7d';
+};
+
+const emptyTokenUsage = (): TokenUsage => ({
+  input_tokens: 0,
+  output_tokens: 0,
+  reasoning_tokens: 0,
+  cached_tokens: 0,
+  cache_read_tokens: 0,
+  cache_creation_tokens: 0,
+  total_tokens: 0,
+});
+
+const addTokenUsage = (left: TokenUsage, right: TokenUsage): TokenUsage => ({
+  input_tokens: left.input_tokens + right.input_tokens,
+  output_tokens: left.output_tokens + right.output_tokens,
+  reasoning_tokens: left.reasoning_tokens + right.reasoning_tokens,
+  cached_tokens: left.cached_tokens + right.cached_tokens,
+  cache_read_tokens: left.cache_read_tokens + right.cache_read_tokens,
+  cache_creation_tokens: left.cache_creation_tokens + right.cache_creation_tokens,
+  total_tokens: left.total_tokens + right.total_tokens,
+});
+
+const normalizeUsageModelKey = (value: string): string => value.trim().toLowerCase();
+
+const rebuildUsageSummaryFromRows = (
+  summary: UsageSummary,
+  rows: UsageModelSummary[]
+): UsageSummary => {
+  const missingPriceModels = Array.from(
+    new Set(rows.flatMap((row) => row.missing_price_models ?? []))
+  ).sort();
+  const allPriced = rows.length > 0 && rows.every((row) => row.estimated_cost_usd !== null);
+  const estimatedCost = allPriced
+    ? rows.reduce((sum, row) => sum + (row.estimated_cost_usd ?? 0), 0)
+    : null;
+
+  return {
+    ...summary,
+    request_count: rows.reduce((sum, row) => sum + row.request_count, 0),
+    failed_count: rows.reduce((sum, row) => sum + row.failed_count, 0),
+    tokens: rows.reduce((sum, row) => addTokenUsage(sum, row.tokens), emptyTokenUsage()),
+    estimated_cost_usd: estimatedCost,
+    missing_price_models: missingPriceModels,
+    rows,
+  };
+};
+
+const excludeModelsFromUsageSummary = (
+  summary: UsageSummary,
+  excludedModels: string[] | undefined
+): UsageSummary => {
+  if (!excludedModels || excludedModels.length === 0) return summary;
+  const excluded = new Set(excludedModels.map(normalizeUsageModelKey));
+  const originalRows = summary.rows ?? [];
+  const rows = originalRows.filter((row) => !excluded.has(normalizeUsageModelKey(row.model)));
+  if (rows.length === originalRows.length) return summary;
+  return rebuildUsageSummaryFromRows(summary, rows);
+};
+
+const fetchCodexUsageSummaries = async (
+  authIndex: string,
+  windows: CodexQuotaWindow[]
+): Promise<CodexUsageSummaries> => {
+  const byWindow: Record<string, UsageSummary> = {};
+  const fetchWindow = async (window: CodexQuotaWindow) => {
     try {
-      return await usageSummaryApi.get({
+      const summary = await usageSummaryApi.get({
         provider: 'codex',
         authIndex,
-        window,
+        model: window.model,
+        window: codexUsageWindowKind(window.id),
+        resetAt: window.resetAt,
       });
+      const filteredSummary = excludeModelsFromUsageSummary(summary, window.excludedModels);
+      byWindow[window.id] = filteredSummary;
+      return filteredSummary;
     } catch {
       return undefined;
     }
   };
-  const [rolling, weekly, monthly] = await Promise.all([
-    fetchWindow('5h'),
-    fetchWindow('7d'),
-    fetchWindow('month'),
-  ]);
-  return { rolling, weekly, monthly };
+  await Promise.all(windows.map(fetchWindow));
+  return { byWindow };
 };
 
 const createCodexRedeemRequestId = (): string => {
@@ -917,38 +1050,12 @@ const renderAntigravityItems = (
 
 const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lite']);
 
-const formatUsageTokens = (value: number): string =>
-  new Intl.NumberFormat(undefined, {
-    notation: value >= 10_000 ? 'compact' : 'standard',
-    maximumFractionDigits: value >= 10_000 ? 1 : 0,
-  }).format(value);
-
-const formatUsageCost = (value: number): string =>
-  new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: value >= 1 ? 2 : 4,
-    maximumFractionDigits: value >= 1 ? 2 : 4,
-  }).format(value);
-
-const usageSummaryLine = (summary: UsageSummary | undefined, t: TFunction): string | null => {
-  if (!summary) return null;
-  const totalTokens = summary.tokens?.total_tokens ?? 0;
-  if (totalTokens <= 0 && summary.request_count <= 0) return null;
-  const cost =
-    summary.estimated_cost_usd === null || summary.estimated_cost_usd === undefined
-      ? t('quota_usage.unpriced')
-      : formatUsageCost(summary.estimated_cost_usd);
-  return t('quota_usage.cpa_line', {
-    tokens: formatUsageTokens(totalTokens),
-    cost,
-  });
-};
-
 const codexSummaryForWindow = (
   summaries: CodexUsageSummaries | undefined,
   windowID: string
 ): UsageSummary | undefined => {
+  const direct = summaries?.byWindow?.[windowID];
+  if (direct) return direct;
   const normalized = windowID.toLowerCase();
   if (normalized.includes('five-hour')) return summaries?.rolling;
   if (normalized.includes('monthly')) return summaries?.monthly;
@@ -1086,7 +1193,7 @@ const renderCodexItems = (
       const windowLabel = window.labelKey
         ? t(window.labelKey, window.labelParams as Record<string, string | number>)
         : window.label;
-      const usageLine = usageSummaryLine(codexSummaryForWindow(usageSummaries, window.id), t);
+      const usageSummary = codexSummaryForWindow(usageSummaries, window.id);
 
       return h(
         'div',
@@ -1107,7 +1214,7 @@ const renderCodexItems = (
           highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
           mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
         }),
-        usageLine ? h('div', { className: styleMap.quotaUsageLine }, usageLine) : null
+        h(QuotaUsageSummary, { summary: usageSummary })
       );
     })
   );

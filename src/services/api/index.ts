@@ -16,5 +16,6 @@ export * from './modelPrices';
 export * from './plugins';
 export * from './transformers';
 export * from './usageSummary';
+export * from './usageAnalytics';
 export * from './vertex';
 export * from './opencodeGo';
