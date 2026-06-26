@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { IconExternalLink } from '@/components/ui/icons';
 import { opencodeGoApi } from '@/services/api/opencodeGo';
 import { useAuthStore, useNotificationStore } from '@/stores';
 import { copyToClipboard } from '@/utils/clipboard';
@@ -72,14 +73,14 @@ export function OpenCodeGoImportCard({ disabled = false }: OpenCodeGoImportCardP
       <div className={styles.body}>
         <p>{t('opencode_go.import_desc')}</p>
         <div className={styles.steps}>
-          <a href={OPENCODE_GO_USERSCRIPT_URL} target="_blank" rel="noreferrer">
-            {t('opencode_go.import_step_install')}
+          <a className={styles.primaryLink} href={OPENCODE_GO_USERSCRIPT_URL} target="_blank" rel="noreferrer">
+            <span>{t('opencode_go.import_step_install')}</span>
+            <IconExternalLink size={14} />
           </a>
-          <a href={TAMPERMONKEY_BETA_URL} target="_blank" rel="noreferrer">
-            {t('opencode_go.import_step_install_beta')}
+          <a className={styles.secondaryLink} href={TAMPERMONKEY_BETA_URL} target="_blank" rel="noreferrer">
+            <span>{t('opencode_go.import_step_install_beta')}</span>
+            <IconExternalLink size={14} />
           </a>
-          <span>{t('opencode_go.import_step_login')}</span>
-          <span>{t('opencode_go.import_step_sync')}</span>
         </div>
       </div>
     </Card>

@@ -20,26 +20,55 @@
   flex-wrap: wrap;
   gap: 8px;
 
-  span,
   a {
     display: inline-flex;
     align-items: center;
-    min-height: 26px;
-    padding: 0 9px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--bg-secondary) 78%, transparent);
-    color: var(--text-secondary);
-    font-size: 12px;
+    justify-content: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 0 14px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
     text-decoration: none;
-  }
-
-  a {
-    color: var(--primary-color);
-    background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+    transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease,
+      box-shadow 0.16s ease, transform 0.16s ease;
 
     &:hover {
-      color: var(--primary-hover);
-      background: color-mix(in srgb, var(--primary-color) 16%, transparent);
+      transform: translateY(-1px);
     }
+
+    &:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--primary-color) 40%, transparent);
+      outline-offset: 2px;
+    }
+  }
+}
+
+.primaryLink {
+  color: var(--primary-contrast, #fff);
+  background: var(--primary-color);
+  border-color: color-mix(in srgb, var(--primary-color) 92%, #000);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--primary-color) 22%, transparent);
+
+  &:hover {
+    color: var(--primary-contrast, #fff);
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+  }
+}
+
+.secondaryLink {
+  color: var(--primary-color);
+  background: var(--bg-primary);
+  border-color: color-mix(in srgb, var(--primary-color) 42%, var(--border-color));
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--text-primary) 8%, transparent);
+
+  &:hover {
+    color: var(--primary-hover);
+    background: color-mix(in srgb, var(--primary-color) 8%, var(--bg-primary));
+    border-color: var(--primary-color);
   }
 }
