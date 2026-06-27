@@ -9,7 +9,6 @@ import type { AuthState, LoginCredentials, ConnectionStatus, ServerRuntimeKind }
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
 import { obfuscatedStorage } from '@/services/storage/secureStorage';
 import { apiClient } from '@/services/api/client';
-import { versionApi } from '@/services/api/version';
 import { useConfigStore } from './useConfigStore';
 import { useModelsStore } from './useModelsStore';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
@@ -35,13 +34,12 @@ interface AuthStoreState extends AuthState {
 
 let restoreSessionPromise: Promise<boolean> | null = null;
 
-const detectRuntimeKind = async (): Promise<ServerRuntimeKind> => {
-  try {
-    return await versionApi.detectRuntimeKind();
-  } catch (error) {
-    console.warn('Runtime kind detection failed:', error);
-    return 'unknown';
-  }
+const normalizeRuntimeKind = (runtimeKind: ServerRuntimeKind): ServerRuntimeKind =>
+  runtimeKind === 'home' || runtimeKind === 'cpa' ? runtimeKind : 'cpa';
+
+const currentRuntimeKind = (): ServerRuntimeKind => {
+  const runtimeKind = useAuthStore.getState().serverRuntimeKind;
+  return normalizeRuntimeKind(runtimeKind);
 };
 
 export const useAuthStore = create<AuthStoreState>()(
@@ -128,7 +126,7 @@ export const useAuthStore = create<AuthStoreState>()(
 
           // 测试连接 - 获取配置
           await useConfigStore.getState().fetchConfig(undefined, true);
-          const runtimeKind = await detectRuntimeKind();
+          const runtimeKind = currentRuntimeKind();
 
           // 登录成功
           set({
@@ -194,7 +192,7 @@ export const useAuthStore = create<AuthStoreState>()(
 
           // 验证连接
           await useConfigStore.getState().fetchConfig();
-          const runtimeKind = await detectRuntimeKind();
+          const runtimeKind = currentRuntimeKind();
 
           set({
             isAuthenticated: true,

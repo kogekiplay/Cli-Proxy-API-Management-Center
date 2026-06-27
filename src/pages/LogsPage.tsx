@@ -28,7 +28,6 @@ import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { logsApi, type LogsQuery } from '@/services/api/logs';
-import { versionApi } from '@/services/api/version';
 import { copyToClipboard } from '@/utils/clipboard';
 import { getErrorMessage } from '@/utils/helpers';
 import { downloadBlob } from '@/utils/download';
@@ -475,17 +474,7 @@ export function LogsPage() {
 
   useEffect(() => {
     if (connectionStatus !== 'connected' || serverRuntimeKind !== 'unknown') return;
-    let cancelled = false;
-    const detectRuntime = async () => {
-      const runtimeKind = await versionApi.detectRuntimeKind();
-      if (!cancelled && (runtimeKind === 'cpa' || runtimeKind === 'home')) {
-        updateServerRuntimeKind(runtimeKind);
-      }
-    };
-    void detectRuntime();
-    return () => {
-      cancelled = true;
-    };
+    updateServerRuntimeKind('cpa');
   }, [connectionStatus, serverRuntimeKind, updateServerRuntimeKind]);
 
   useEffect(() => {
