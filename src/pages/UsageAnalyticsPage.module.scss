@@ -33,6 +33,33 @@
   }
 }
 
+.completeHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-lg;
+
+  @include mobile {
+    flex-direction: column;
+  }
+}
+
+.completeHeaderMain {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.completeBackButton {
+  width: fit-content;
+
+  :global(span) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
 .pageTitle {
   margin: 0;
   color: var(--text-primary);
@@ -176,6 +203,24 @@
   gap: 12px;
 
   @media (max-width: 1280px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @include mobile {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.completeMetricStrip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+
+  .metricCard {
+    min-height: 128px;
+  }
+
+  @media (max-width: 1360px) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -345,6 +390,15 @@
   color: var(--text-tertiary);
   font-size: 13px;
   font-weight: 700;
+
+  span {
+    margin: 0 4px;
+    color: color-mix(in srgb, var(--text-tertiary) 70%, transparent);
+  }
+
+  strong {
+    color: var(--text-primary);
+  }
 }
 
 .metricCard {
@@ -500,8 +554,7 @@
   }
 }
 
-.overviewMainGrid,
-.completeMainGrid {
+.overviewMainGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: $spacing-lg;
@@ -512,7 +565,6 @@
 }
 
 .rankGrid,
-.completeHeroGrid,
 .analysisGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -523,12 +575,90 @@
   }
 }
 
-.completeHeroGrid {
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.45fr);
+.completeDashboardGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.82fr) minmax(320px, 0.92fr);
+  grid-template-areas:
+    'trend trend insights'
+    'heatmap cost provider'
+    'failure apiKeys modelRank'
+    'recommendation recommendation recommendation';
+  gap: $spacing-lg;
+
+  @media (max-width: 1320px) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'trend trend'
+      'insights provider'
+      'heatmap cost'
+      'failure modelRank'
+      'apiKeys apiKeys'
+      'recommendation recommendation';
+  }
 
   @media (max-width: 1080px) {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      'trend'
+      'insights'
+      'provider'
+      'modelRank'
+      'heatmap'
+      'cost'
+      'apiKeys'
+      'failure'
+      'recommendation';
   }
+}
+
+.completeTrendPanel {
+  grid-area: trend;
+
+  .lineChart {
+    min-height: 330px;
+  }
+}
+
+.completeInsightColumn {
+  grid-area: insights;
+  display: flex;
+  min-width: 0;
+
+  .insightRail {
+    flex: 1;
+  }
+}
+
+.completeProviderPanel {
+  grid-area: provider;
+}
+
+.completeModelRankPanel {
+  grid-area: modelRank;
+}
+
+.completeHeatmapPanel {
+  grid-area: heatmap;
+}
+
+.completeCostPanel {
+  grid-area: cost;
+}
+
+.completeApiKeyPanel {
+  grid-area: apiKeys;
+
+  .table {
+    min-width: 620px;
+  }
+}
+
+.completeFailurePanel {
+  grid-area: failure;
+}
+
+.completeRecommendationPanel {
+  grid-area: recommendation;
 }
 
 .trendCard,

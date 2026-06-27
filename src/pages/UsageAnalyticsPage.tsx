@@ -657,6 +657,44 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   const [monitoringSearch, setMonitoringSearch] = useState('');
   const [monitoringPageSize, setMonitoringPageSize] = useState('20');
   const [monitoringPage, setMonitoringPage] = useState(1);
+  const isCompleteAnalysisView = !isMonitoringView && analysisMode === 'complete';
+
+  const scrollToUsageAnalyticsTop = useCallback(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      document.scrollingElement?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      document.querySelector<HTMLElement>('.content')?.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'auto',
+      });
+    });
+  }, []);
+
+  const switchAnalysisMode = useCallback(
+    (mode: 'overview' | 'complete') => {
+      if (mode === 'complete') {
+        setAnalysisMode('complete');
+      } else {
+        setAnalysisMode('overview');
+      }
+      scrollToUsageAnalyticsTop();
+    },
+    [scrollToUsageAnalyticsTop]
+  );
+
+  const handleTrendBucketChange = useCallback(
+    (value: string) => {
+      if (value === 'hour') {
+        setRange('24h');
+        return;
+      }
+      setRange((current) => (current === '24h' ? '7d' : current));
+    },
+    [setRange]
+  );
 
   const buildAnalyticsRequest = useCallback(
     (
@@ -1554,7 +1592,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
         <button
           className={styles.textAction}
           type="button"
-          onClick={() => setAnalysisMode('complete')}
+          onClick={() => switchAnalysisMode('complete')}
         >
           查看完整分析
           <span aria-hidden="true">→</span>
@@ -1634,7 +1672,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
           <button
             className={styles.textAction}
             type="button"
-            onClick={() => setAnalysisMode('complete')}
+            onClick={() => switchAnalysisMode('complete')}
           >
             查看全部模型
             <span aria-hidden="true">→</span>
@@ -1649,7 +1687,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
           <button
             className={styles.textAction}
             type="button"
-            onClick={() => setAnalysisMode('complete')}
+            onClick={() => switchAnalysisMode('complete')}
           >
             查看全部 API Key
             <span aria-hidden="true">→</span>
@@ -1665,7 +1703,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
         <button
           className={styles.textAction}
           type="button"
-          onClick={() => setAnalysisMode('complete')}
+          onClick={() => switchAnalysisMode('complete')}
         >
           查看全部认证文件
           <span aria-hidden="true">→</span>
@@ -1674,79 +1712,75 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     </>
   );
 
+  const renderCompleteMetricCards = () => (
+    <div className={styles.completeMetricStrip}>
+      <SummaryCard
+        accent="blue"
+        icon={<IconInbox size={18} />}
+        label={t('usage_analytics.calls')}
+        value={formatNumber(totalCalls)}
+        meta={usageTrendText}
+      />
+      <SummaryCard
+        accent="teal"
+        icon={<IconFileText size={18} />}
+        label={t('usage_analytics.tokens')}
+        value={formatCompactNumber(totalTokens)}
+        meta={t('usage_analytics.summary_token_full', { value: formatNumber(totalTokens) })}
+      />
+      <SummaryCard
+        accent="amber"
+        icon={<IconDollarSign size={18} />}
+        label="费用 (USD)"
+        value={formatCost(summary?.total_cost)}
+        meta={comparisonText(`较前 ${currentRangeLabel}`, null)}
+      />
+      <SummaryCard
+        accent="red"
+        icon={<IconAlertTriangle size={18} />}
+        label={t('usage_analytics.failed_calls')}
+        value={formatNumber(failureCalls)}
+        meta={totalCalls > 0 ? `占比 ${((failureCalls / totalCalls) * 100).toFixed(1)}%` : '占比 -'}
+        tone={failureCalls > 0 ? 'bad' : 'good'}
+      />
+      <SummaryCard
+        accent="cyan"
+        icon={<IconTimer size={18} />}
+        label="平均延迟 (P50)"
+        value={formatDuration(eventMetrics.p50LatencyMs)}
+        meta={comparisonText(`较前 ${currentRangeLabel}`, null)}
+      />
+      <SummaryCard
+        accent="cyan"
+        icon={<IconTimer size={18} />}
+        label="平均延迟 (P95)"
+        value={formatDuration(eventMetrics.p95LatencyMs)}
+        meta={comparisonText(`较前 ${currentRangeLabel}`, null)}
+      />
+    </div>
+  );
+
   const renderCompleteAnalysis = () => (
     <>
-      <div className={styles.completeHeroGrid}>
-        <Card title="分析摘要" className={styles.summaryPanel}>
-          <div className={styles.analysisSummaryList}>
-            {insightItems.slice(0, 3).map((item) => (
-              <div
-                className={`${styles.insightItem} ${styles[`insightTone${item.tone}`]}`}
-                key={item.title}
-              >
-                <span className={styles.insightIcon} aria-hidden="true" />
-                <div>
-                  <strong>{item.title}</strong>
-                  <small>{item.description}</small>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-        <Card title="关键指标" className={styles.keyMetricsPanel}>
-          <div className={styles.completeMetricGrid}>
-            <SummaryCard
-              accent="blue"
-              icon={<IconInbox size={18} />}
-              label={t('usage_analytics.calls')}
-              value={formatNumber(totalCalls)}
-              meta={usageTrendText}
-            />
-            <SummaryCard
-              accent="teal"
-              icon={<IconFileText size={18} />}
-              label={t('usage_analytics.tokens')}
-              value={formatCompactNumber(totalTokens)}
-              meta={t('usage_analytics.summary_token_full', { value: formatNumber(totalTokens) })}
-            />
-            <SummaryCard
-              accent="amber"
-              icon={<IconDollarSign size={18} />}
-              label={t('usage_analytics.cost')}
-              value={formatCost(summary?.total_cost)}
-              meta={comparisonText(`较前 ${currentRangeLabel}`, trendChangePercent)}
-            />
-            <SummaryCard
-              accent="green"
-              icon={<IconCheckCircle2 size={18} />}
-              label={t('usage_analytics.success_rate')}
-              value={successRate(successCalls, totalCalls)}
-              meta={t('usage_analytics.summary_p95_latency', {
-                value: formatDuration(eventMetrics.p95LatencyMs),
-              })}
-            />
-          </div>
-        </Card>
-      </div>
+      {renderCompleteMetricCards()}
 
-      <div className={styles.completeMainGrid}>
+      <div className={styles.completeDashboardGrid}>
         <Card
           title="流量、Token 与费用趋势"
           extra={
             <Select
               className={styles.compactSelect}
-              value={range}
-              onChange={(value) => setRange(value as RangeKey)}
+              value={trendBucketForRange(range)}
+              onChange={handleTrendBucketChange}
               options={[
-                { value: '24h', label: '按小时' },
-                { value: '7d', label: '按天' },
-                { value: '30d', label: '按天' },
+                { value: 'hour', label: '按小时' },
+                { value: 'day', label: '按天' },
               ]}
-              ariaLabel="完整分析趋势范围"
+              ariaLabel="完整分析趋势粒度"
               size="sm"
             />
           }
-          className={styles.chartPanel}
+          className={`${styles.chartPanel} ${styles.completeTrendPanel}`}
         >
           <div className={styles.lineLegend}>
             <span>
@@ -1769,11 +1803,13 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
             <polyline points={lineCost} className={styles.lineCost} />
           </svg>
         </Card>
-        {renderInsights(false)}
-      </div>
 
-      <div className={styles.analysisGrid}>
-        <Card title="Provider 贡献" className={styles.providerCard}>
+        <div className={styles.completeInsightColumn}>{renderInsights(false)}</div>
+
+        <Card
+          title="Provider 贡献"
+          className={`${styles.providerCard} ${styles.completeProviderPanel}`}
+        >
           <div className={styles.donutLayout}>
             <div className={styles.donutChart} style={{ background: donutGradient }}>
               <span>
@@ -1792,7 +1828,11 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
             </div>
           </div>
         </Card>
-        <Card title="模型贡献排行" className={styles.compactRankCard}>
+
+        <Card
+          title="模型贡献排行"
+          className={`${styles.compactRankCard} ${styles.completeModelRankPanel}`}
+        >
           <div className={styles.compactRankList}>
             {(data?.model_stats ?? []).slice(0, 6).map((row, index) => (
               <div className={styles.compactRankRow} key={row.model || index}>
@@ -1809,16 +1849,79 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
               </div>
             ))}
           </div>
-          <button
-            className={styles.textAction}
-            type="button"
-            onClick={() => setAnalysisMode('overview')}
-          >
+          <button className={styles.textAction} type="button">
             查看全部模型
             <span aria-hidden="true">→</span>
           </button>
         </Card>
-        <Card title="失败原因分析" className={styles.compactRankCard}>
+
+        <Card
+          title="时间段热力图"
+          className={`${styles.compactRankCard} ${styles.completeHeatmapPanel}`}
+          extra={
+            <Select
+              className={styles.compactSelect}
+              value={trendBucketForRange(range)}
+              onChange={handleTrendBucketChange}
+              options={[
+                { value: 'hour', label: '按小时' },
+                { value: 'day', label: '按天' },
+              ]}
+              ariaLabel="热力图粒度"
+              size="sm"
+            />
+          }
+        >
+          <div className={styles.heatmapGrid}>
+            {heatmapCells.map((cell) => (
+              <span
+                key={cell.hour}
+                className={styles.heatmapCell}
+                title={`${cell.hour}:00 ${formatNumber(cell.count)} 次`}
+                style={{ opacity: 0.24 + cell.intensity * 0.76 }}
+              />
+            ))}
+          </div>
+        </Card>
+
+        <Card title="费用拆分" className={`${styles.compactRankCard} ${styles.completeCostPanel}`}>
+          <div className={styles.compactRankList}>
+            {providerStats.map((row) => (
+              <div className={styles.compactRankRow} key={row.name}>
+                <span>
+                  <i style={{ background: row.color }} />
+                </span>
+                <strong>{row.name}</strong>
+                <div>
+                  <i
+                    style={{ width: `${Math.max(4, (row.cost / Math.max(totalCost, 1)) * 100)}%` }}
+                  />
+                </div>
+                <small>{formatCost(row.cost)}</small>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card
+          title="API Key 用量排行"
+          className={`${styles.compactRankCard} ${styles.completeApiKeyPanel}`}
+        >
+          <StatTable
+            rows={(data?.api_key_stats ?? []).slice(0, 5)}
+            columns={apiKeyColumns}
+            empty={t('usage_analytics.no_data')}
+          />
+          <button className={styles.textAction} type="button">
+            查看全部 API Key
+            <span aria-hidden="true">→</span>
+          </button>
+        </Card>
+
+        <Card
+          title="失败原因分析"
+          className={`${styles.compactRankCard} ${styles.completeFailurePanel}`}
+        >
           <div className={styles.failureList}>
             {(failureStats.length > 0
               ? failureStats
@@ -1848,77 +1951,31 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
             ))}
           </div>
         </Card>
-      </div>
 
-      <div className={styles.analysisGrid}>
         <Card
-          title="时间段热力图"
-          extra={
-            <Select
-              className={styles.compactSelect}
-              value={range}
-              onChange={(value) => setRange(value as RangeKey)}
-              options={[
-                { value: '24h', label: '按天' },
-                { value: '7d', label: '按天' },
-                { value: '30d', label: '按天' },
-              ]}
-              ariaLabel="热力图范围"
-              size="sm"
-            />
-          }
+          title="优化建议"
+          className={`${styles.recommendationPanel} ${styles.completeRecommendationPanel}`}
         >
-          <div className={styles.heatmapGrid}>
-            {heatmapCells.map((cell) => (
-              <span
-                key={cell.hour}
-                className={styles.heatmapCell}
-                title={`${cell.hour}:00 ${formatNumber(cell.count)} 次`}
-                style={{ opacity: 0.24 + cell.intensity * 0.76 }}
-              />
-            ))}
-          </div>
-        </Card>
-        <Card title="费用拆分" className={styles.compactRankCard}>
-          <div className={styles.compactRankList}>
-            {providerStats.map((row) => (
-              <div className={styles.compactRankRow} key={row.name}>
-                <span>
-                  <i style={{ background: row.color }} />
-                </span>
-                <strong>{row.name}</strong>
-                <div>
-                  <i
-                    style={{ width: `${Math.max(4, (row.cost / Math.max(totalCost, 1)) * 100)}%` }}
-                  />
-                </div>
-                <small>{formatCost(row.cost)}</small>
-              </div>
-            ))}
+          <div className={styles.recommendationGrid}>
+            <div className={styles.recommendationItem}>
+              <strong>削峰分流</strong>
+              <small>高峰时段集中时，建议开启更细的模型或 Key 级别路由。</small>
+            </div>
+            <div className={styles.recommendationItem}>
+              <strong>清理低效 Key</strong>
+              <small>失败率高的 API Key 可以先禁用观察，降低重试成本。</small>
+            </div>
+            <div className={styles.recommendationItem}>
+              <strong>模型路由优化</strong>
+              <small>按模型消耗和成功率调整优先级，避免高价模型被误用。</small>
+            </div>
+            <div className={styles.recommendationItem}>
+              <strong>失败监控告警</strong>
+              <small>429 或上游超时集中时，建议配合请求监控排查。</small>
+            </div>
           </div>
         </Card>
       </div>
-
-      <Card title="优化建议" className={styles.recommendationPanel}>
-        <div className={styles.recommendationGrid}>
-          <div className={styles.recommendationItem}>
-            <strong>削峰分流</strong>
-            <small>高峰时段集中时，建议开启更细的模型或 Key 级别路由。</small>
-          </div>
-          <div className={styles.recommendationItem}>
-            <strong>清理低效 Key</strong>
-            <small>失败率高的 API Key 可以先禁用观察，降低重试成本。</small>
-          </div>
-          <div className={styles.recommendationItem}>
-            <strong>模型路由优化</strong>
-            <small>按模型消耗和成功率调整优先级，避免高价模型被误用。</small>
-          </div>
-          <div className={styles.recommendationItem}>
-            <strong>失败监控告警</strong>
-            <small>429 或上游超时集中时，建议配合请求监控排查。</small>
-          </div>
-        </div>
-      </Card>
     </>
   );
 
@@ -2364,40 +2421,54 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
 
   return (
     <div className={styles.container}>
-      <div className={styles.pageHeader}>
-        <div>
-          {!isMonitoringView && analysisMode === 'complete' ? (
-            <div className={styles.breadcrumb}>用量分析 / 完整分析</div>
-          ) : null}
-          <h1 className={styles.pageTitle}>
-            {!isMonitoringView && analysisMode === 'complete'
-              ? '完整分析'
-              : t(isMonitoringView ? 'request_monitoring.title' : 'usage_analytics.title')}
-          </h1>
-          <p className={styles.pageSubtitle}>
-            {!isMonitoringView && analysisMode === 'complete'
-              ? '按时间、Provider、模型、API Key 与认证文件深入查看系统消耗、异常波动与优化建议。'
-              : t(isMonitoringView ? 'request_monitoring.subtitle' : 'usage_analytics.subtitle')}
-          </p>
-        </div>
-        <div className={styles.headerActions}>
-          {!isMonitoringView && analysisMode === 'complete' ? (
-            <Button variant="secondary" onClick={() => setAnalysisMode('overview')}>
-              返回概览
+      {isCompleteAnalysisView ? (
+        <div className={styles.completeHeader}>
+          <div className={styles.completeHeaderMain}>
+            <div className={styles.breadcrumb}>
+              用量分析 <span>/</span> <strong>完整分析</strong>
+            </div>
+            <Button
+              className={styles.completeBackButton}
+              variant="secondary"
+              onClick={() => switchAnalysisMode('overview')}
+            >
+              <IconChevronLeft size={15} />
+              返回用量分析
             </Button>
-          ) : null}
-          <Button variant="secondary" onClick={() => void handleExport()} loading={exportLoading}>
-            <IconDownload size={16} />
-            {!isMonitoringView && analysisMode === 'complete'
-              ? '导出报告'
-              : t('usage_analytics.export')}
-          </Button>
-          <Button onClick={() => void load()} loading={loading}>
-            <IconRefreshCw size={16} />
-            {isMonitoringView ? '刷新数据' : t('common.refresh')}
-          </Button>
+          </div>
+          <div className={styles.headerActions}>
+            <Button variant="secondary" onClick={() => void handleExport()} loading={exportLoading}>
+              <IconDownload size={16} />
+              导出报告
+            </Button>
+            <Button onClick={() => void load()} loading={loading}>
+              <IconRefreshCw size={16} />
+              刷新数据
+            </Button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className={styles.pageHeader}>
+          <div>
+            <h1 className={styles.pageTitle}>
+              {t(isMonitoringView ? 'request_monitoring.title' : 'usage_analytics.title')}
+            </h1>
+            <p className={styles.pageSubtitle}>
+              {t(isMonitoringView ? 'request_monitoring.subtitle' : 'usage_analytics.subtitle')}
+            </p>
+          </div>
+          <div className={styles.headerActions}>
+            <Button variant="secondary" onClick={() => void handleExport()} loading={exportLoading}>
+              <IconDownload size={16} />
+              {t('usage_analytics.export')}
+            </Button>
+            <Button onClick={() => void load()} loading={loading}>
+              <IconRefreshCw size={16} />
+              {isMonitoringView ? '刷新数据' : t('common.refresh')}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {!isMonitoringView ? renderFilters() : null}
 
