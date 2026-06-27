@@ -172,7 +172,7 @@
 
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
 
   @media (max-width: 1280px) {
@@ -182,6 +182,13 @@
   @include mobile {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+.breadcrumb {
+  margin-bottom: 8px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .metricCard {
@@ -331,6 +338,479 @@
 
   @include mobile {
     grid-template-columns: 1fr;
+  }
+}
+
+.overviewMainGrid,
+.completeMainGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: $spacing-lg;
+
+  @media (max-width: 1180px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rankGrid,
+.completeHeroGrid,
+.analysisGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-lg;
+
+  @media (max-width: 1080px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.completeHeroGrid {
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.45fr);
+
+  @media (max-width: 1080px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.trendCard,
+.chartPanel,
+.tableCard,
+.summaryPanel,
+.keyMetricsPanel,
+.providerCard,
+.compactRankCard,
+.recommendationPanel,
+.insightRail {
+  background: var(--ops-panel-bg);
+  border-color: var(--ops-panel-border);
+  box-shadow: 0 12px 36px color-mix(in srgb, #8b6f55 8%, transparent);
+}
+
+.compactSelect {
+  width: 112px;
+
+  button {
+    height: 34px;
+    border-radius: $radius-full;
+    border-color: color-mix(in srgb, #c75f3a 28%, var(--ops-panel-strong-border));
+    color: #b65432;
+    font-size: 12px;
+    font-weight: 800;
+  }
+}
+
+.horizontalTrend {
+  display: grid;
+  gap: 8px;
+}
+
+.trendLegend,
+.lineLegend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  i {
+    width: 8px;
+    height: 8px;
+    border-radius: $radius-full;
+  }
+}
+
+.legendInput {
+  background: #2f6f94;
+}
+
+.legendOutput {
+  background: #d36b3d;
+}
+
+.legendCalls {
+  background: #6aa06a;
+}
+
+.legendCost {
+  background: #c7a14a;
+}
+
+.trendBarRow {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 74px;
+  gap: 12px;
+  align-items: center;
+  min-height: 26px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+
+  > span {
+    color: var(--text-secondary);
+  }
+
+  > strong {
+    color: var(--text-primary);
+    font-size: 12px;
+    text-align: right;
+  }
+}
+
+.stackedTrack {
+  height: 10px;
+  overflow: hidden;
+  border-radius: $radius-full;
+  background: color-mix(in srgb, var(--bg-tertiary) 62%, transparent);
+}
+
+.stackedTotal {
+  display: flex;
+  height: 100%;
+  min-width: 2px;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.stackedInput {
+  height: 100%;
+  background: linear-gradient(90deg, #2f6f94, #4f7f78);
+}
+
+.stackedOutput {
+  flex: 1 1 auto;
+  height: 100%;
+  background: linear-gradient(90deg, #d36b3d, #c75f3a);
+}
+
+.insightRail {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.insightList,
+.analysisSummaryList {
+  display: grid;
+  gap: 12px;
+}
+
+.insightItem {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--ops-panel-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--insight-color, #2f6f94) 5%, transparent);
+
+  strong,
+  small {
+    display: block;
+    min-width: 0;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  small {
+    margin-top: 3px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+}
+
+.insightIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--insight-color, #2f6f94) 28%, transparent), transparent),
+    color-mix(in srgb, var(--insight-color, #2f6f94) 10%, var(--bg-primary));
+}
+
+.insightToneblue {
+  --insight-color: #2f6f94;
+}
+
+.insightTonegreen {
+  --insight-color: #5d9b61;
+}
+
+.insightTonered {
+  --insight-color: #d9582f;
+}
+
+.insightToneamber {
+  --insight-color: #c7a14a;
+}
+
+.textAction {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin-top: auto;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--ops-panel-border);
+  color: color-mix(in srgb, #c75f3a 76%, var(--text-primary));
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:hover {
+    color: #a74324;
+  }
+}
+
+.tableCard {
+  min-width: 0;
+
+  .table {
+    min-width: 680px;
+  }
+}
+
+.summaryPanel,
+.keyMetricsPanel {
+  min-width: 0;
+}
+
+.completeMetricGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+
+  .metricCard {
+    min-height: 116px;
+    padding: 13px;
+  }
+
+  @media (max-width: 1220px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lineChart {
+  display: block;
+  width: 100%;
+  min-height: 260px;
+
+  path {
+    fill: none;
+    stroke: color-mix(in srgb, var(--border-color) 72%, transparent);
+    stroke-width: 1;
+  }
+
+  polyline {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+
+.lineCalls {
+  stroke: #6aa06a;
+}
+
+.lineTokens {
+  stroke: #2f6f94;
+}
+
+.lineCost {
+  stroke: #d36b3d;
+}
+
+.donutLayout {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: $spacing-lg;
+  align-items: center;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.donutChart {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 150px;
+  aspect-ratio: 1;
+  border-radius: $radius-full;
+  box-shadow: inset 0 0 0 1px var(--ops-panel-border);
+
+  &::after {
+    position: absolute;
+    width: 92px;
+    aspect-ratio: 1;
+    border-radius: inherit;
+    background: var(--ops-panel-bg);
+    content: '';
+  }
+
+  span {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 3px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-align: center;
+
+    strong {
+      color: var(--text-primary);
+      font-size: 18px;
+    }
+  }
+}
+
+.donutLegend {
+  display: grid;
+  gap: 10px;
+
+  span {
+    display: grid;
+    grid-template-columns: 10px minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  i {
+    width: 10px;
+    height: 10px;
+    border-radius: $radius-full;
+  }
+
+  strong {
+    color: var(--text-primary);
+  }
+}
+
+.compactRankList,
+.failureList {
+  display: grid;
+  gap: 10px;
+}
+
+.compactRankRow,
+.failureBar {
+  display: grid;
+  grid-template-columns: 28px minmax(110px, 1fr) minmax(100px, 1.2fr) auto;
+  gap: 10px;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+
+  strong {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  > div {
+    height: 8px;
+    overflow: hidden;
+    border-radius: $radius-full;
+    background: color-mix(in srgb, var(--bg-tertiary) 68%, transparent);
+  }
+
+  div i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #2f6f94, #d36b3d);
+  }
+
+  small {
+    color: var(--text-secondary);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+}
+
+.failureBar {
+  grid-template-columns: minmax(90px, 1fr) minmax(120px, 1.4fr) 42px;
+
+  div i {
+    background: linear-gradient(90deg, #d9582f, #c7a14a);
+  }
+
+  strong {
+    text-align: right;
+  }
+}
+
+.heatmapGrid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px 0;
+}
+
+.heatmapCell {
+  aspect-ratio: 1;
+  border-radius: 5px;
+  background: #d9582f;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffffff 44%, transparent);
+}
+
+.recommendationGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+
+  @media (max-width: 1180px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.recommendationItem {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border-left: 1px solid var(--ops-panel-border);
+
+  strong {
+    color: var(--text-primary);
+    font-size: 13px;
+  }
+
+  small {
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.5;
   }
 }
 
