@@ -1,8 +1,5 @@
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
-import {
-  hasDisableAllModelsRule,
-  stripDisableAllModelsRule,
-} from '@/components/providers/utils';
+import { hasDisableAllModelsRule, stripDisableAllModelsRule } from '@/components/providers/utils';
 import { maskApiKey } from '@/utils/format';
 import type {
   ProviderBrand,
@@ -99,10 +96,7 @@ export function vertexToResource(config: ProviderKeyConfig, index: number): Prov
   return providerKeyToResource('vertex', config, index);
 }
 
-export function openaiToResource(
-  config: OpenAIProviderConfig,
-  index: number
-): ProviderResource {
+export function openaiToResource(config: OpenAIProviderConfig, index: number): ProviderResource {
   const name = (config.name ?? '').trim();
   const firstEntry = config.apiKeyEntries?.[0];
   const previewApiKey = firstEntry?.apiKey ? maskApiKey(firstEntry.apiKey) : null;

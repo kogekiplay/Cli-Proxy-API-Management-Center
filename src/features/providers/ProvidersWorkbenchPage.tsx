@@ -74,10 +74,8 @@ const getResourceRecentSuccess = (
   usageByProvider: ProviderRecentUsageMap
 ): number => {
   if (resource.brand === 'openaiCompatibility') {
-    return getOpenAIProviderRecentWindowStats(
-      resource.raw as OpenAIProviderConfig,
-      usageByProvider
-    ).success;
+    return getOpenAIProviderRecentWindowStats(resource.raw as OpenAIProviderConfig, usageByProvider)
+      .success;
   }
   return getProviderRecentWindowStats(
     usageByProvider,
@@ -96,9 +94,7 @@ export function ProvidersWorkbenchPage() {
   const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
 
   const workbench = useProviderWorkbench();
-  const [uiState, setUiState] = useState<ProvidersWorkbenchUiState>(
-    readProvidersWorkbenchUiState
-  );
+  const [uiState, setUiState] = useState<ProvidersWorkbenchUiState>(readProvidersWorkbenchUiState);
   const [sheetState, setSheetState] = useState<SheetState>({
     open: false,
     brand: 'gemini',
@@ -113,10 +109,7 @@ export function ProvidersWorkbenchPage() {
   });
 
   const handleRefresh = useCallback(async () => {
-    await Promise.allSettled([
-      workbench.refetch(),
-      refreshRecentRequests().catch(() => undefined),
-    ]);
+    await Promise.allSettled([workbench.refetch(), refreshRecentRequests().catch(() => undefined)]);
   }, [refreshRecentRequests, workbench]);
 
   useHeaderRefresh(handleRefresh, isCurrentLayer);
@@ -154,8 +147,7 @@ export function ProvidersWorkbenchPage() {
   const filter = activeFilterState.filter;
   const providerSortBy = activeFilterState.sortBy;
   const providerSortDir = activeFilterState.sortDir;
-  const activeGroup =
-    groups.find((g) => g.id === activeBrand) ?? groups[0] ?? null;
+  const activeGroup = groups.find((g) => g.id === activeBrand) ?? groups[0] ?? null;
 
   const updateActiveFilterState = useCallback(
     (patch: Partial<ProviderFilterState>) => {
@@ -194,9 +186,7 @@ export function ProvidersWorkbenchPage() {
   const selectedModels = useMemo(() => {
     if (availableModels.length === 0) return new Set<string>();
     const availableModelSet = new Set(availableModels);
-    return new Set(
-      activeFilterState.selectedModels.filter((name) => availableModelSet.has(name))
-    );
+    return new Set(activeFilterState.selectedModels.filter((name) => availableModelSet.has(name)));
   }, [activeFilterState.selectedModels, availableModels]);
 
   const visibleResources = useMemo(() => {
@@ -223,13 +213,7 @@ export function ProvidersWorkbenchPage() {
     });
 
     return sorted;
-  }, [
-    filteredResources,
-    providerSortBy,
-    providerSortDir,
-    selectedModels,
-    usageByProvider,
-  ]);
+  }, [filteredResources, providerSortBy, providerSortDir, selectedModels, usageByProvider]);
 
   const toolbarControls = useMemo<ProviderPanelControls | undefined>(() => {
     if (!activeGroup) return undefined;
@@ -256,29 +240,21 @@ export function ProvidersWorkbenchPage() {
 
   const totalResources = useMemo(
     () =>
-      groups.reduce(
-        (sum, g) => sum + g.resources.filter((r) => !r.flags.isPlaceholder).length,
-        0
-      ),
+      groups.reduce((sum, g) => sum + g.resources.filter((r) => !r.flags.isPlaceholder).length, 0),
     [groups]
   );
 
   const totalActive = useMemo(
     () =>
       groups.reduce(
-        (sum, g) =>
-          sum +
-          g.resources.filter((r) => !r.disabled && !r.flags.isPlaceholder).length,
+        (sum, g) => sum + g.resources.filter((r) => !r.disabled && !r.flags.isPlaceholder).length,
         0
       ),
     [groups]
   );
 
   const providerFamilies = useMemo(
-    () =>
-      groups.filter(
-        (g) => g.resources.some((r) => !r.flags.isPlaceholder)
-      ).length,
+    () => groups.filter((g) => g.resources.some((r) => !r.flags.isPlaceholder)).length,
     [groups]
   );
   const updatedAtLabel = workbench.snapshot
@@ -314,8 +290,7 @@ export function ProvidersWorkbenchPage() {
 
   const handleDelete = useCallback(
     (resource: ProviderResource) => {
-      const name =
-        resource.name ?? resource.apiKeyPreview ?? resource.identifier ?? '';
+      const name = resource.name ?? resource.apiKeyPreview ?? resource.identifier ?? '';
       showConfirmation({
         title: t('providersPage.delete.title'),
         message: t('providersPage.delete.confirm', { name }),
@@ -340,17 +315,12 @@ export function ProvidersWorkbenchPage() {
       try {
         await workbench.toggleDisabled(resource, disabled);
         showNotification(
-          disabled
-            ? t('providersPage.toast.disabled')
-            : t('providersPage.toast.enabled'),
+          disabled ? t('providersPage.toast.disabled') : t('providersPage.toast.enabled'),
           'success'
         );
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        showNotification(
-          `${t('providersPage.toast.toggleFailed')}: ${msg}`,
-          'error'
-        );
+        showNotification(`${t('providersPage.toast.toggleFailed')}: ${msg}`, 'error');
       }
     },
     [showNotification, t, workbench]

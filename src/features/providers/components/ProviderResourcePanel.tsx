@@ -56,30 +56,19 @@ export function ProviderResourcePanel({
     styles.logo,
     logo?.darkSrc ? styles.logoThemeLight : '',
     logo?.invertOnDark ? styles.logoInvertOnDark : '',
-  ].filter(Boolean).join(' ');
-  const darkLogoClassName = [
-    styles.logo,
-    styles.logoThemeDark,
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const darkLogoClassName = [styles.logo, styles.logoThemeDark].filter(Boolean).join(' ');
 
   const realResources = filteredResources.filter((r) => !r.flags.isPlaceholder);
   const titleContent = (
     <>
       {logo ? (
         <>
-          <img
-            src={logo.src}
-            alt=""
-            aria-hidden="true"
-            className={logoClassName}
-          />
+          <img src={logo.src} alt="" aria-hidden="true" className={logoClassName} />
           {logo.darkSrc ? (
-            <img
-              src={logo.darkSrc}
-              alt=""
-              aria-hidden="true"
-              className={darkLogoClassName}
-            />
+            <img src={logo.darkSrc} alt="" aria-hidden="true" className={darkLogoClassName} />
           ) : null}
         </>
       ) : null}
