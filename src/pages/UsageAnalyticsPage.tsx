@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Input } from '@/components/ui/Input';
+import { Select, type SelectOption } from '@/components/ui/Select';
 import { Sheet } from '@/components/ui/Sheet';
 import {
   IconAlertTriangle,
@@ -18,7 +18,7 @@ import {
   IconTimer,
 } from '@/components/ui/icons';
 import { displayOpenCodeGoAccountName } from '@/features/opencodeGo/helpers';
-import { authFilesApi } from '@/services/api';
+import { apiKeysApi, authFilesApi } from '@/services/api';
 import { opencodeGoApi } from '@/services/api/opencodeGo';
 import {
   usageAnalyticsApi,
@@ -35,6 +35,7 @@ import type { OpenCodeGoAccount } from '@/types/opencodeGo';
 import { copyToClipboard } from '@/utils/clipboard';
 import { downloadBlob } from '@/utils/download';
 import { getErrorMessage } from '@/utils/helpers';
+import { hashAPIKeyForUsage } from '@/utils/usageApiKeyHash';
 import styles from './UsageAnalyticsPage.module.scss';
 
 type RangeKey = '24h' | '7d' | '30d';
@@ -49,12 +50,7 @@ const RANGE_MS: Record<RangeKey, number> = {
 const EVENT_LIMIT = 80;
 const EXPORT_EVENT_LIMIT = 50000;
 const EMPTY_EVENTS: UsageAnalyticsEventRow[] = [];
-
-const splitFilter = (value: string): string[] =>
-  value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
+const ALL_FILTER_VALUE = '';
 
 const numberFormatter = new Intl.NumberFormat();
 const compactNumberFormatter = new Intl.NumberFormat(undefined, {
@@ -113,6 +109,36 @@ const compactHash = (value: string | undefined | null, length = 12) => {
   const trimmed = value?.trim() ?? '';
   if (!trimmed) return '';
   return trimmed.length <= length ? trimmed : `${trimmed.slice(0, length)}...`;
+};
+
+const maskClientAPIKey = (value: string, index: number) => {
+  const trimmed = value.trim();
+  if (!trimmed) return `API Key ${index + 1}`;
+  const visiblePrefix = trimmed.slice(0, Math.min(7, trimmed.length));
+  const visibleSuffix = trimmed.length > 11 ? trimmed.slice(-4) : '';
+  return `API Key ${index + 1} · ${visiblePrefix}${visibleSuffix ? `...${visibleSuffix}` : ''}`;
+};
+
+const buildFilterOptions = (
+  entries: Array<{ value?: string | null; label?: string | null }>,
+  allLabel: string,
+  selectedValue?: string
+): SelectOption[] => {
+  const map = new Map<string, string>();
+  entries.forEach((entry) => {
+    const value = entry.value?.trim() ?? '';
+    if (!value) return;
+    const label = entry.label?.trim() || value;
+    if (!map.has(value)) map.set(value, label);
+  });
+  const selected = selectedValue?.trim() ?? '';
+  if (selected && !map.has(selected)) {
+    map.set(selected, selected);
+  }
+  const options = Array.from(map.entries())
+    .map(([value, label]) => ({ value, label }))
+    .sort((left, right) => left.label.localeCompare(right.label, undefined, { numeric: true }));
+  return [{ value: ALL_FILTER_VALUE, label: allLabel }, ...options];
 };
 
 const statusCodeOf = (row: UsageAnalyticsEventRow) =>
@@ -377,6 +403,7 @@ export function UsageAnalyticsPage() {
   const [data, setData] = useState<UsageAnalyticsResponse | null>(null);
   const [authFiles, setAuthFiles] = useState<AuthFileItem[]>([]);
   const [opencodeAccounts, setOpenCodeAccounts] = useState<OpenCodeGoAccount[]>([]);
+  const [clientAPIKeyOptions, setClientAPIKeyOptions] = useState<SelectOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [eventsLoadingMore, setEventsLoadingMore] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
@@ -395,10 +422,10 @@ export function UsageAnalyticsPage() {
         from_ms: from,
         to_ms: to,
         filters: {
-          providers: splitFilter(providerFilter),
-          models: splitFilter(modelFilter),
-          auth_indices: splitFilter(authIndexFilter),
-          api_key_hashes: splitFilter(apiKeyHashFilter),
+          providers: providerFilter ? [providerFilter] : [],
+          models: modelFilter ? [modelFilter] : [],
+          auth_indices: authIndexFilter ? [authIndexFilter] : [],
+          api_key_hashes: apiKeyHashFilter ? [apiKeyHashFilter] : [],
           failed_only: failedOnly,
         },
         include: {
@@ -447,6 +474,32 @@ export function UsageAnalyticsPage() {
         setOpenCodeAccounts(opencodeResult.value.accounts ?? []);
       }
     });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void apiKeysApi
+      .list()
+      .then(async (keys) => {
+        const options = await Promise.all(
+          keys.map(async (key, index) => {
+            const hash = await hashAPIKeyForUsage(key);
+            return hash ? { value: hash, label: maskClientAPIKey(key, index) } : null;
+          })
+        );
+        if (cancelled) return;
+        const deduped = new Map<string, SelectOption>();
+        options.forEach((option) => {
+          if (option && !deduped.has(option.value)) deduped.set(option.value, option);
+        });
+        setClientAPIKeyOptions(Array.from(deduped.values()));
+      })
+      .catch(() => {
+        if (!cancelled) setClientAPIKeyOptions([]);
+      });
     return () => {
       cancelled = true;
     };
@@ -557,6 +610,70 @@ export function UsageAnalyticsPage() {
       );
     },
     [authFileByIndex, opencodeByID]
+  );
+
+  const providerFilterOptions = useMemo(() => {
+    const entries: Array<{ value: string; label: string }> = [];
+    data?.api_key_stats?.forEach((row) => {
+      (row.providers && row.providers.length > 0 ? row.providers : [row.provider]).forEach((provider) => {
+        entries.push({ value: provider, label: providerLabel(provider) });
+      });
+    });
+    data?.credential_stats?.forEach((row) => {
+      entries.push({ value: row.provider, label: providerLabel(row.provider) });
+    });
+    events.forEach((row) => {
+      entries.push({ value: row.provider, label: providerLabel(row.provider) });
+    });
+    return buildFilterOptions(
+      entries,
+      t('usage_analytics.all_providers', { defaultValue: '全部 Provider' }),
+      providerFilter
+    );
+  }, [data?.api_key_stats, data?.credential_stats, events, providerFilter, t]);
+
+  const modelFilterOptions = useMemo(() => {
+    const entries: Array<{ value: string; label: string }> = [];
+    data?.model_stats?.forEach((row) => entries.push({ value: row.model, label: row.model }));
+    events.forEach((row) => entries.push({ value: row.model, label: row.model }));
+    return buildFilterOptions(
+      entries,
+      t('usage_analytics.all_models', { defaultValue: '全部模型' }),
+      modelFilter
+    );
+  }, [data?.model_stats, events, modelFilter, t]);
+
+  const authIndexFilterOptions = useMemo(() => {
+    const entries: Array<{ value: string; label: string }> = [];
+    authFiles.forEach((file) => {
+      const index = authIndexOf(file);
+      if (index) entries.push({ value: index, label: authFileDisplayName(file) });
+    });
+    data?.credential_stats?.forEach((row) => {
+      if (row.auth_index) {
+        entries.push({ value: row.auth_index, label: credentialText(row) || row.auth_index });
+      }
+    });
+    events.forEach((row) => {
+      if (row.auth_index) {
+        entries.push({ value: row.auth_index, label: credentialText(row) || row.auth_index });
+      }
+    });
+    return buildFilterOptions(
+      entries,
+      t('usage_analytics.all_auth_files', { defaultValue: '全部认证文件' }),
+      authIndexFilter
+    );
+  }, [authFiles, authIndexFilter, credentialText, data?.credential_stats, events, t]);
+
+  const apiKeyFilterOptions = useMemo(
+    () =>
+      buildFilterOptions(
+        clientAPIKeyOptions,
+        t('usage_analytics.all_api_keys', { defaultValue: '全部 API Key' }),
+        apiKeyHashFilter
+      ),
+    [apiKeyHashFilter, clientAPIKeyOptions, t]
   );
 
   const buildEventsCSV = useCallback(
@@ -886,32 +1003,47 @@ export function UsageAnalyticsPage() {
               </button>
             ))}
           </div>
-          <Input
+          <Select
+            className={styles.filterSelect}
             value={providerFilter}
-            onChange={(event) => setProviderFilter(event.target.value)}
+            onChange={setProviderFilter}
+            options={providerFilterOptions}
             placeholder={t('usage_analytics.provider_filter')}
+            ariaLabel={t('usage_analytics.provider_filter')}
           />
-          <Input
+          <Select
+            className={styles.filterSelect}
             value={modelFilter}
-            onChange={(event) => setModelFilter(event.target.value)}
+            onChange={setModelFilter}
+            options={modelFilterOptions}
             placeholder={t('usage_analytics.model_filter')}
+            ariaLabel={t('usage_analytics.model_filter')}
           />
-          <Input
+          <Select
+            className={styles.filterSelect}
             value={authIndexFilter}
-            onChange={(event) => setAuthIndexFilter(event.target.value)}
+            onChange={setAuthIndexFilter}
+            options={authIndexFilterOptions}
             placeholder={t('usage_analytics.auth_filter')}
+            ariaLabel={t('usage_analytics.auth_filter')}
           />
-          <Input
+          <Select
+            className={styles.filterSelect}
             value={apiKeyHashFilter}
-            onChange={(event) => setAPIKeyHashFilter(event.target.value)}
+            onChange={setAPIKeyHashFilter}
+            options={apiKeyFilterOptions}
             placeholder={t('usage_analytics.api_key_filter')}
+            ariaLabel={t('usage_analytics.api_key_filter')}
           />
-          <label className={styles.checkboxLabel}>
+          <label
+            className={`${styles.checkboxLabel} ${failedOnly ? styles.checkboxLabelActive : ''}`}
+          >
             <input
               type="checkbox"
               checked={failedOnly}
               onChange={(event) => setFailedOnly(event.target.checked)}
             />
+            <IconAlertTriangle size={14} />
             <span>{t('usage_analytics.failed_only')}</span>
           </label>
         </div>
@@ -1042,7 +1174,9 @@ export function UsageAnalyticsPage() {
           empty={t('usage_analytics.no_data')}
           getRowKey={(row) => eventRowKey(row)}
           onRowClick={setSelectedEvent}
-          rowClassName={(row) => (row.failed ? styles.eventRowFailed : undefined)}
+          rowClassName={(row) =>
+            [styles.eventRow, row.failed ? styles.eventRowFailed : ''].filter(Boolean).join(' ')
+          }
         />
         {data?.events?.has_more ? (
           <div className={styles.loadMoreBar}>

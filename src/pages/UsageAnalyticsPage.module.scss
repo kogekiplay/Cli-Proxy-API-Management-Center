@@ -45,13 +45,15 @@
 }
 
 .filterCard {
-  padding: 12px $spacing-lg;
+  padding: 10px 12px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
 }
 
 .filters {
-  display: grid;
-  grid-template-columns: minmax(260px, 330px) repeat(4, minmax(0, 1fr)) auto;
-  gap: $spacing-sm;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
 
   :global(.form-group) {
@@ -62,33 +64,27 @@
   :global(input) {
     min-width: 0;
   }
-
-  @media (max-width: 1180px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  @include mobile {
-    grid-template-columns: 1fr;
-  }
 }
 
 .rangeGroup {
   display: inline-grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  flex: 1 1 250px;
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--border-color);
-  border-radius: $radius-md;
-  background: var(--bg-secondary);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-secondary) 72%, var(--bg-primary));
 }
 
 .rangeButton {
   @include button-reset;
-  min-height: 30px;
+  min-height: 32px;
   padding: 0 10px;
-  border-radius: $radius-sm;
+  border-radius: 8px;
   color: var(--text-secondary);
   font-size: 13px;
+  font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -99,18 +95,66 @@
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary-color) 22%, transparent);
 }
 
+.filterSelect {
+  flex: 1 1 170px;
+  min-width: 150px;
+
+  button {
+    height: 40px;
+    border-radius: 10px;
+    box-shadow: none;
+    font-size: 13px;
+    font-weight: 650;
+  }
+}
+
 .checkboxLabel {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 42px;
-  padding: 0 4px;
+  justify-content: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
   color: var(--text-secondary);
   font-size: 13px;
+  font-weight: 700;
   white-space: nowrap;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  svg {
+    color: var(--text-tertiary);
+  }
+
+  &:hover {
+    border-color: var(--border-hover);
+    color: var(--text-primary);
+  }
 
   @include mobile {
     min-height: 34px;
+  }
+}
+
+.checkboxLabelActive {
+  border-color: color-mix(in srgb, #dc2626 34%, var(--border-color));
+  background: color-mix(in srgb, #ef4444 9%, var(--bg-primary));
+  color: #b91c1c;
+
+  svg {
+    color: #dc2626;
   }
 }
 
@@ -363,6 +407,16 @@
     outline: 2px solid var(--primary-color);
     outline-offset: -2px;
   }
+}
+
+.eventRow td {
+  vertical-align: middle;
+}
+
+.eventRow .requestCell,
+.eventRow .usageCell,
+.eventRow .statusCell {
+  align-content: center;
 }
 
 .eventRowFailed td {
