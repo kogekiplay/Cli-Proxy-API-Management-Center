@@ -94,7 +94,9 @@ export function DashboardPage() {
   const [dashboardTrendData, setDashboardTrendData] = useState<UsageAnalyticsResponse | null>(null);
   const [dashboardTrendLoading, setDashboardTrendLoading] = useState(false);
   const [dashboardTrendError, setDashboardTrendError] = useState('');
-  const [dashboardRecentData, setDashboardRecentData] = useState<UsageAnalyticsResponse | null>(null);
+  const [dashboardRecentData, setDashboardRecentData] = useState<UsageAnalyticsResponse | null>(
+    null
+  );
   const [dashboardRecentLoading, setDashboardRecentLoading] = useState(false);
   const [dashboardRecentError, setDashboardRecentError] = useState('');
   const [dashboardUsageRange, setDashboardUsageRange] = useState<DashboardUsageRange>('7d');
@@ -436,18 +438,18 @@ export function DashboardPage() {
   return (
     <div className={styles.dashboard}>
       <section className={styles.dashboardShell}>
-        <main className={styles.mainColumn}>
-          <section className={styles.pageMasthead}>
-            <span className={styles.eyebrow}>OPERATIONS CONSOLE</span>
-            <h1>{t('dashboard.operations_title', { defaultValue: 'CLI Proxy 运行概览' })}</h1>
-            <p>
-              {t('dashboard.operations_desc', {
-                defaultValue:
-                  '聚合访问密钥、AI 提供商、认证文件和模型状态，优先呈现每天排障最需要看的信息。',
-              })}
-            </p>
-          </section>
+        <section className={styles.pageMasthead}>
+          <span className={styles.eyebrow}>OPERATIONS CONSOLE</span>
+          <h1>{t('dashboard.operations_title', { defaultValue: 'CLI Proxy 运行概览' })}</h1>
+          <p>
+            {t('dashboard.operations_desc', {
+              defaultValue:
+                '聚合访问密钥、AI 提供商、认证文件和模型状态，优先呈现每天排障最需要看的信息。',
+            })}
+          </p>
+        </section>
 
+        <main className={styles.mainColumn}>
           <div className={styles.summaryGrid}>
             {quickStats.map((stat) => (
               <Link key={stat.path} to={stat.path} className={styles.summaryCard}>

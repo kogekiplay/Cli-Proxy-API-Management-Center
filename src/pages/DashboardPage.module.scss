@@ -19,6 +19,7 @@
 }
 
 .pageMasthead {
+  grid-column: 1 / -1;
   min-width: 0;
   padding-top: 4px;
 
@@ -146,14 +147,6 @@
 .rightRail {
   display: grid;
   gap: 16px;
-}
-
-.rightRail {
-  padding-top: 146px;
-
-  @media (max-width: 1500px) {
-    padding-top: 0;
-  }
 }
 
 .summaryGrid {

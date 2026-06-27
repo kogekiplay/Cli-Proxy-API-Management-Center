@@ -53,6 +53,10 @@ describe('Claude-style visual direction adoption', () => {
     expect(dashboard).not.toContain('providerHealthText');
     expect(dashboard).not.toContain("title: t('nav.ai_providers')");
     expect(dashboard).not.toContain("t('dashboard.build_info'");
-    expect(styles).toContain('padding-top: 146px;');
+    expect(dashboard.indexOf('className={styles.pageMasthead}')).toBeLessThan(
+      dashboard.indexOf('className={styles.mainColumn}')
+    );
+    expect(styles).toContain('grid-column: 1 / -1;');
+    expect(styles).not.toContain('padding-top: 146px;');
   });
 });
