@@ -54,6 +54,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   oauth: <IconSidebarOauth size={18} />,
   quota: <IconSidebarQuota size={18} />,
   usageAnalytics: <IconChartLine size={18} />,
+  requestMonitoring: <IconSidebarLogs size={18} />,
   plugins: <IconSidebarPlugins size={18} />,
   pluginStore: <IconSidebarStore size={18} />,
   config: <IconSidebarConfig size={18} />,
@@ -89,7 +90,7 @@ interface SidebarNavGroup {
 }
 
 const flattenNavItems = (items: SidebarNavItem[]): SidebarNavLinkItem[] =>
-  items.flatMap((item) => item.kind === 'drawer' ? item.children : [item]);
+  items.flatMap((item) => (item.kind === 'drawer' ? item.children : [item]));
 
 /** 点击菜单外或按下 Escape 时关闭弹出菜单 */
 function useMenuDismiss(
@@ -564,6 +565,12 @@ export function MainLayout() {
           icon: sidebarIcons.usageAnalytics,
         },
         {
+          path: '/monitoring',
+          labelKey: 'nav.request_monitoring',
+          metaKey: 'nav_meta.request_monitoring',
+          icon: sidebarIcons.requestMonitoring,
+        },
+        {
           path: '/logs',
           labelKey: 'nav.logs',
           metaKey: 'nav_meta.logs',
@@ -940,9 +947,11 @@ export function MainLayout() {
                 className={`nav-group ${group.id === 'plugin-pages' ? 'nav-group-bottom' : ''}`}
                 key={group.id}
               >
-                {showSidebarLabels
-                  ? <div className="nav-group-label">{t(group.labelKey)}</div>
-                  : idx > 0 && <div className="nav-group-divider" aria-hidden="true" />}
+                {showSidebarLabels ? (
+                  <div className="nav-group-label">{t(group.labelKey)}</div>
+                ) : (
+                  idx > 0 && <div className="nav-group-divider" aria-hidden="true" />
+                )}
                 {group.items.map((item) => renderNavItem(item))}
               </div>
             ))}

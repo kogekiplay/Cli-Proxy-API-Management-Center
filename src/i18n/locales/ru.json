@@ -117,6 +117,7 @@
     "oauth": "OAuth вход",
     "quota_management": "Управление квотами",
     "usage_analytics": "Аналитика",
+    "request_monitoring": "Мониторинг запросов",
     "plugins": "Плагины",
     "plugin_store": "Магазин плагинов",
     "config_management": "Панель конфигурации",
@@ -135,7 +136,8 @@
     "auth_files": "Файлы и учётные данные",
     "oauth": "Авторизация OAuth",
     "quota_management": "API ключи и лимиты",
-    "usage_analytics": "Мониторинг запросов и расхода",
+    "usage_analytics": "Модели, ключи и расход учётных данных",
+    "request_monitoring": "Отдельные запросы, задержки и ошибки",
     "plugins": "Переключатели и ресурсы плагинов",
     "plugin_store": "Поиск и установка плагинов",
     "logs": "Трассировка запросов",
@@ -144,7 +146,7 @@
   },
   "usage_analytics": {
     "title": "Аналитика расхода",
-    "subtitle": "Статистика фактических запросов CPA по моделям, API keys, учётным данным и событиям.",
+    "subtitle": "Статистика фактического расхода CPA по моделям, API keys и учётным данным.",
     "range_24h": "24 ч",
     "range_7d": "7 д",
     "range_30d": "30 д",
@@ -215,6 +217,10 @@
     "copy_success": "Детали ошибки скопированы",
     "copy_failed": "Не удалось скопировать детали ошибки",
     "api_key_badge": "API Key"
+  },
+  "request_monitoring": {
+    "title": "Мониторинг запросов",
+    "subtitle": "Просмотр последних запросов CPA, кодов статуса, задержки, TTFT, token и деталей ошибок."
   },
   "opencode_go": {
     "title": "Аккаунты OpenCode Go",

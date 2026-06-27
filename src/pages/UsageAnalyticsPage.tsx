@@ -18,6 +18,15 @@ import {
   IconTimer,
 } from '@/components/ui/icons';
 import { displayOpenCodeGoAccountName } from '@/features/opencodeGo/helpers';
+import {
+  buildUsageAPIKeyOptions,
+  buildUsageAuthIndexOptions,
+  buildUsageModelOptions,
+  buildUsageProviderOptions,
+  type UsageFilterSelection,
+  type UsageFilterSource,
+} from '@/features/usageAnalytics/usageAnalyticsFilterOptions';
+import { maskUsageAnalyticsClientAPIKey } from '@/features/usageAnalytics/usageAnalyticsLabels';
 import { apiKeysApi, authFilesApi } from '@/services/api';
 import { opencodeGoApi } from '@/services/api/opencodeGo';
 import {
@@ -35,10 +44,12 @@ import type { OpenCodeGoAccount } from '@/types/opencodeGo';
 import { copyToClipboard } from '@/utils/clipboard';
 import { downloadBlob } from '@/utils/download';
 import { getErrorMessage } from '@/utils/helpers';
+import { resolveAuthProvider } from '@/utils/quota/validators';
 import { hashAPIKeyForUsage } from '@/utils/usageApiKeyHash';
 import styles from './UsageAnalyticsPage.module.scss';
 
 type RangeKey = '24h' | '7d' | '30d';
+type UsageAnalyticsView = 'analytics' | 'monitoring';
 type SummaryAccent = 'blue' | 'green' | 'red' | 'amber' | 'teal' | 'cyan';
 
 const RANGE_MS: Record<RangeKey, number> = {
@@ -50,7 +61,6 @@ const RANGE_MS: Record<RangeKey, number> = {
 const EVENT_LIMIT = 80;
 const EXPORT_EVENT_LIMIT = 50000;
 const EMPTY_EVENTS: UsageAnalyticsEventRow[] = [];
-const ALL_FILTER_VALUE = '';
 
 const numberFormatter = new Intl.NumberFormat();
 const compactNumberFormatter = new Intl.NumberFormat(undefined, {
@@ -109,36 +119,6 @@ const compactHash = (value: string | undefined | null, length = 12) => {
   const trimmed = value?.trim() ?? '';
   if (!trimmed) return '';
   return trimmed.length <= length ? trimmed : `${trimmed.slice(0, length)}...`;
-};
-
-const maskClientAPIKey = (value: string, index: number) => {
-  const trimmed = value.trim();
-  if (!trimmed) return `API Key ${index + 1}`;
-  const visiblePrefix = trimmed.slice(0, Math.min(7, trimmed.length));
-  const visibleSuffix = trimmed.length > 11 ? trimmed.slice(-4) : '';
-  return `API Key ${index + 1} · ${visiblePrefix}${visibleSuffix ? `...${visibleSuffix}` : ''}`;
-};
-
-const buildFilterOptions = (
-  entries: Array<{ value?: string | null; label?: string | null }>,
-  allLabel: string,
-  selectedValue?: string
-): SelectOption[] => {
-  const map = new Map<string, string>();
-  entries.forEach((entry) => {
-    const value = entry.value?.trim() ?? '';
-    if (!value) return;
-    const label = entry.label?.trim() || value;
-    if (!map.has(value)) map.set(value, label);
-  });
-  const selected = selectedValue?.trim() ?? '';
-  if (selected && !map.has(selected)) {
-    map.set(selected, selected);
-  }
-  const options = Array.from(map.entries())
-    .map(([value, label]) => ({ value, label }))
-    .sort((left, right) => left.label.localeCompare(right.label, undefined, { numeric: true }));
-  return [{ value: ALL_FILTER_VALUE, label: allLabel }, ...options];
 };
 
 const statusCodeOf = (row: UsageAnalyticsEventRow) =>
@@ -391,8 +371,9 @@ function ErrorSummary({ row, emptyLabel }: { row: UsageAnalyticsEventRow; emptyL
   );
 }
 
-export function UsageAnalyticsPage() {
+export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyticsView } = {}) {
   const { t } = useTranslation();
+  const isMonitoringView = view === 'monitoring';
   const showNotification = useNotificationStore((state) => state.showNotification);
   const [range, setRange] = useState<RangeKey>('24h');
   const [providerFilter, setProviderFilter] = useState('');
@@ -485,9 +466,9 @@ export function UsageAnalyticsPage() {
       .list()
       .then(async (keys) => {
         const options = await Promise.all(
-          keys.map(async (key, index) => {
+          keys.map(async (key) => {
             const hash = await hashAPIKeyForUsage(key);
-            return hash ? { value: hash, label: maskClientAPIKey(key, index) } : null;
+            return hash ? { value: hash, label: maskUsageAnalyticsClientAPIKey(key) } : null;
           })
         );
         if (cancelled) return;
@@ -515,8 +496,14 @@ export function UsageAnalyticsPage() {
   const eventMetrics = useMemo(
     () => ({
       averageLatencyMs: average(events.map((row) => row.latency_ms)),
-      p95LatencyMs: percentile(events.map((row) => row.latency_ms), 0.95),
-      p95TtftMs: percentile(events.map((row) => row.ttft_ms), 0.95),
+      p95LatencyMs: percentile(
+        events.map((row) => row.latency_ms),
+        0.95
+      ),
+      p95TtftMs: percentile(
+        events.map((row) => row.ttft_ms),
+        0.95
+      ),
     }),
     [events]
   );
@@ -582,13 +569,7 @@ export function UsageAnalyticsPage() {
         accountID && accountID !== label ? accountID : '',
       ].filter(Boolean);
 
-      return (
-        <IdentityPill
-          provider={provider}
-          label={label}
-          meta={metaParts.join(' · ')}
-        />
-      );
+      return <IdentityPill provider={provider} label={label} meta={metaParts.join(' · ')} />;
     },
     [authFileByIndex, opencodeByID, t]
   );
@@ -612,68 +593,128 @@ export function UsageAnalyticsPage() {
     [authFileByIndex, opencodeByID]
   );
 
-  const providerFilterOptions = useMemo(() => {
-    const entries: Array<{ value: string; label: string }> = [];
+  const usageFilterSelection = useMemo<UsageFilterSelection>(
+    () => ({
+      provider: providerFilter,
+      model: modelFilter,
+      authIndex: authIndexFilter,
+      apiKeyHash: apiKeyHashFilter,
+    }),
+    [apiKeyHashFilter, authIndexFilter, modelFilter, providerFilter]
+  );
+
+  const clientAPIKeyLabelByHash = useMemo(() => {
+    const map = new Map<string, string>();
+    clientAPIKeyOptions.forEach((option) => {
+      if (option.value && !map.has(option.value)) map.set(option.value, option.label);
+    });
+    return map;
+  }, [clientAPIKeyOptions]);
+
+  const usageFilterRows = useMemo<UsageFilterSource[]>(() => {
+    const rows: UsageFilterSource[] = [];
+
     data?.api_key_stats?.forEach((row) => {
-      (row.providers && row.providers.length > 0 ? row.providers : [row.provider]).forEach((provider) => {
-        entries.push({ value: provider, label: providerLabel(provider) });
+      const providers = row.providers && row.providers.length > 0 ? row.providers : [row.provider];
+      providers.forEach((provider) => {
+        rows.push({
+          provider,
+          providerLabel: providerLabel(provider),
+          apiKeyHash: row.api_key_hash,
+          apiKeyLabel: clientAPIKeyLabelByHash.get(row.api_key_hash) || row.api_key_preview,
+        });
       });
     });
-    data?.credential_stats?.forEach((row) => {
-      entries.push({ value: row.provider, label: providerLabel(row.provider) });
-    });
-    events.forEach((row) => {
-      entries.push({ value: row.provider, label: providerLabel(row.provider) });
-    });
-    return buildFilterOptions(
-      entries,
-      t('usage_analytics.all_providers', { defaultValue: '全部 Provider' }),
-      providerFilter
-    );
-  }, [data?.api_key_stats, data?.credential_stats, events, providerFilter, t]);
 
-  const modelFilterOptions = useMemo(() => {
-    const entries: Array<{ value: string; label: string }> = [];
-    data?.model_stats?.forEach((row) => entries.push({ value: row.model, label: row.model }));
-    events.forEach((row) => entries.push({ value: row.model, label: row.model }));
-    return buildFilterOptions(
-      entries,
-      t('usage_analytics.all_models', { defaultValue: '全部模型' }),
-      modelFilter
-    );
-  }, [data?.model_stats, events, modelFilter, t]);
-
-  const authIndexFilterOptions = useMemo(() => {
-    const entries: Array<{ value: string; label: string }> = [];
-    authFiles.forEach((file) => {
-      const index = authIndexOf(file);
-      if (index) entries.push({ value: index, label: authFileDisplayName(file) });
-    });
     data?.credential_stats?.forEach((row) => {
-      if (row.auth_index) {
-        entries.push({ value: row.auth_index, label: credentialText(row) || row.auth_index });
-      }
+      rows.push({
+        provider: row.provider,
+        providerLabel: providerLabel(row.provider),
+        authIndex: row.auth_index,
+        authLabel: credentialText(row),
+      });
     });
+
+    data?.model_stats?.forEach((row) => {
+      rows.push({ model: row.model });
+    });
+
     events.forEach((row) => {
-      if (row.auth_index) {
-        entries.push({ value: row.auth_index, label: credentialText(row) || row.auth_index });
-      }
+      rows.push({
+        provider: row.provider,
+        providerLabel: providerLabel(row.provider),
+        model: row.model,
+        authIndex: row.auth_index,
+        authLabel: credentialText(row),
+        apiKeyHash: row.api_key_hash,
+        apiKeyLabel: clientAPIKeyLabelByHash.get(row.api_key_hash),
+      });
     });
-    return buildFilterOptions(
-      entries,
-      t('usage_analytics.all_auth_files', { defaultValue: '全部认证文件' }),
-      authIndexFilter
-    );
-  }, [authFiles, authIndexFilter, credentialText, data?.credential_stats, events, t]);
+
+    return rows;
+  }, [
+    clientAPIKeyLabelByHash,
+    credentialText,
+    data?.api_key_stats,
+    data?.credential_stats,
+    data?.model_stats,
+    events,
+  ]);
+
+  const authFileFilterSources = useMemo(
+    () =>
+      authFiles.map((file) => ({
+        provider: resolveAuthProvider(file),
+        authIndex: authIndexOf(file),
+        label: authFileDisplayName(file),
+      })),
+    [authFiles]
+  );
+
+  const providerFilterOptions = useMemo(
+    () =>
+      buildUsageProviderOptions({
+        allLabel: t('usage_analytics.all_providers', { defaultValue: '全部 Provider' }),
+        selectedValue: providerFilter,
+        selection: usageFilterSelection,
+        usageRows: usageFilterRows,
+      }),
+    [providerFilter, t, usageFilterRows, usageFilterSelection]
+  );
+
+  const modelFilterOptions = useMemo(
+    () =>
+      buildUsageModelOptions({
+        allLabel: t('usage_analytics.all_models', { defaultValue: '全部模型' }),
+        selectedValue: modelFilter,
+        selection: usageFilterSelection,
+        usageRows: usageFilterRows,
+      }),
+    [modelFilter, t, usageFilterRows, usageFilterSelection]
+  );
+
+  const authIndexFilterOptions = useMemo(
+    () =>
+      buildUsageAuthIndexOptions({
+        allLabel: t('usage_analytics.all_auth_files', { defaultValue: '全部认证文件' }),
+        authFiles: authFileFilterSources,
+        selectedValue: authIndexFilter,
+        selection: usageFilterSelection,
+        usageRows: usageFilterRows,
+      }),
+    [authFileFilterSources, authIndexFilter, t, usageFilterRows, usageFilterSelection]
+  );
 
   const apiKeyFilterOptions = useMemo(
     () =>
-      buildFilterOptions(
-        clientAPIKeyOptions,
-        t('usage_analytics.all_api_keys', { defaultValue: '全部 API Key' }),
-        apiKeyHashFilter
-      ),
-    [apiKeyHashFilter, clientAPIKeyOptions, t]
+      buildUsageAPIKeyOptions({
+        allLabel: t('usage_analytics.all_api_keys', { defaultValue: '全部 API Key' }),
+        configuredAPIKeys: clientAPIKeyOptions,
+        selectedValue: apiKeyHashFilter,
+        selection: usageFilterSelection,
+        usageRows: usageFilterRows,
+      }),
+    [apiKeyHashFilter, clientAPIKeyOptions, t, usageFilterRows, usageFilterSelection]
   );
 
   const buildEventsCSV = useCallback(
@@ -957,7 +998,9 @@ export function UsageAnalyticsPage() {
         label: t('usage_analytics.cost'),
         render: (row: UsageAnalyticsEventRow) => (
           <span className={row.missing_price_model_name ? styles.warnText : undefined}>
-            {row.missing_price_model_name ? t('usage_analytics.price_missing') : formatCost(row.estimated_cost_usd)}
+            {row.missing_price_model_name
+              ? t('usage_analytics.price_missing')
+              : formatCost(row.estimated_cost_usd)}
           </span>
         ),
       },
@@ -974,8 +1017,12 @@ export function UsageAnalyticsPage() {
     <div className={styles.container}>
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>{t('usage_analytics.title')}</h1>
-          <p className={styles.pageSubtitle}>{t('usage_analytics.subtitle')}</p>
+          <h1 className={styles.pageTitle}>
+            {t(isMonitoringView ? 'request_monitoring.title' : 'usage_analytics.title')}
+          </h1>
+          <p className={styles.pageSubtitle}>
+            {t(isMonitoringView ? 'request_monitoring.subtitle' : 'usage_analytics.subtitle')}
+          </p>
         </div>
         <div className={styles.headerActions}>
           <Button variant="secondary" onClick={() => void handleExport()} loading={exportLoading}>
@@ -1049,277 +1096,285 @@ export function UsageAnalyticsPage() {
         </div>
       </Card>
 
-      {error ? (
-        <EmptyState title={t('usage_analytics.load_failed')} description={error} />
+      {error ? <EmptyState title={t('usage_analytics.load_failed')} description={error} /> : null}
+
+      {!isMonitoringView ? (
+        <>
+          <div className={styles.summaryGrid}>
+            <SummaryCard
+              accent="blue"
+              icon={<IconInbox size={18} />}
+              label={t('usage_analytics.calls')}
+              value={formatNumber(totalCalls)}
+              meta={t('usage_analytics.summary_success_failed', {
+                success: formatNumber(successCalls),
+                failed: formatNumber(failureCalls),
+              })}
+            />
+            <SummaryCard
+              accent="green"
+              icon={<IconCheckCircle2 size={18} />}
+              label={t('usage_analytics.success_rate')}
+              value={successRate(successCalls, totalCalls)}
+              meta={t('usage_analytics.summary_p95_latency', {
+                value: formatDuration(eventMetrics.p95LatencyMs),
+              })}
+              tone={failureCalls > 0 ? 'warn' : 'good'}
+            />
+            <SummaryCard
+              accent="red"
+              icon={<IconAlertTriangle size={18} />}
+              label={t('usage_analytics.failed_calls')}
+              value={formatNumber(failureCalls)}
+              meta={t('usage_analytics.summary_p95_ttft', {
+                value: formatDuration(eventMetrics.p95TtftMs),
+              })}
+              tone={failureCalls > 0 ? 'bad' : 'good'}
+            />
+            <SummaryCard
+              accent="amber"
+              icon={<IconDollarSign size={18} />}
+              label={t('usage_analytics.cost')}
+              value={formatCost(summary?.total_cost)}
+              meta={t('usage_analytics.summary_avg_latency', {
+                value: formatDuration(eventMetrics.averageLatencyMs),
+              })}
+            />
+            <SummaryCard
+              accent="teal"
+              icon={<IconFileText size={18} />}
+              label={t('usage_analytics.tokens')}
+              value={formatCompactNumber(totalTokens)}
+              meta={t('usage_analytics.summary_token_full', { value: formatNumber(totalTokens) })}
+            />
+            <SummaryCard
+              accent="cyan"
+              icon={<IconKey size={18} />}
+              label={t('usage_analytics.loaded_events')}
+              value={formatNumber(events.length)}
+              meta={t('usage_analytics.total_events_meta', {
+                total: formatNumber(data?.events?.total_count ?? events.length),
+              })}
+            />
+          </div>
+
+          <Card title={t('usage_analytics.timeline')}>
+            {(data?.timeline ?? []).length === 0 ? (
+              <div className={styles.tableEmpty}>{t('usage_analytics.no_data')}</div>
+            ) : (
+              <div className={styles.timelineList}>
+                {(data?.timeline ?? []).map((point) => (
+                  <div className={styles.timelineRow} key={point.bucket_ms}>
+                    <span>{formatDateTime(point.bucket_ms)}</span>
+                    <div className={styles.timelineBarTrack}>
+                      <div
+                        className={styles.timelineBar}
+                        style={{
+                          width: `${Math.max(4, (point.total_tokens / timelineMax) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <strong>{formatNumber(point.total_tokens)}</strong>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <div className={styles.gridTwo}>
+            <Card title={t('usage_analytics.model_stats')}>
+              <StatTable
+                rows={data?.model_stats ?? []}
+                columns={modelColumns}
+                empty={t('usage_analytics.no_data')}
+              />
+            </Card>
+            <Card title={t('usage_analytics.api_key_stats')}>
+              <StatTable
+                rows={data?.api_key_stats ?? []}
+                columns={apiKeyColumns}
+                empty={t('usage_analytics.no_data')}
+              />
+            </Card>
+          </div>
+
+          <Card title={t('usage_analytics.credential_stats')}>
+            <StatTable
+              rows={data?.credential_stats ?? []}
+              columns={credentialColumns}
+              empty={t('usage_analytics.no_data')}
+            />
+          </Card>
+        </>
       ) : null}
 
-      <div className={styles.summaryGrid}>
-        <SummaryCard
-          accent="blue"
-          icon={<IconInbox size={18} />}
-          label={t('usage_analytics.calls')}
-          value={formatNumber(totalCalls)}
-          meta={t('usage_analytics.summary_success_failed', {
-            success: formatNumber(successCalls),
-            failed: formatNumber(failureCalls),
-          })}
-        />
-        <SummaryCard
-          accent="green"
-          icon={<IconCheckCircle2 size={18} />}
-          label={t('usage_analytics.success_rate')}
-          value={successRate(successCalls, totalCalls)}
-          meta={t('usage_analytics.summary_p95_latency', {
-            value: formatDuration(eventMetrics.p95LatencyMs),
-          })}
-          tone={failureCalls > 0 ? 'warn' : 'good'}
-        />
-        <SummaryCard
-          accent="red"
-          icon={<IconAlertTriangle size={18} />}
-          label={t('usage_analytics.failed_calls')}
-          value={formatNumber(failureCalls)}
-          meta={t('usage_analytics.summary_p95_ttft', {
-            value: formatDuration(eventMetrics.p95TtftMs),
-          })}
-          tone={failureCalls > 0 ? 'bad' : 'good'}
-        />
-        <SummaryCard
-          accent="amber"
-          icon={<IconDollarSign size={18} />}
-          label={t('usage_analytics.cost')}
-          value={formatCost(summary?.total_cost)}
-          meta={t('usage_analytics.summary_avg_latency', {
-            value: formatDuration(eventMetrics.averageLatencyMs),
-          })}
-        />
-        <SummaryCard
-          accent="teal"
-          icon={<IconFileText size={18} />}
-          label={t('usage_analytics.tokens')}
-          value={formatCompactNumber(totalTokens)}
-          meta={t('usage_analytics.summary_token_full', { value: formatNumber(totalTokens) })}
-        />
-        <SummaryCard
-          accent="cyan"
-          icon={<IconKey size={18} />}
-          label={t('usage_analytics.loaded_events')}
-          value={formatNumber(events.length)}
-          meta={t('usage_analytics.total_events_meta', {
-            total: formatNumber(data?.events?.total_count ?? events.length),
-          })}
-        />
-      </div>
+      {isMonitoringView ? (
+        <Card
+          title={t('usage_analytics.recent_requests')}
+          extra={
+            <span className={styles.cardMeta}>
+              {t('usage_analytics.events_loaded_meta', {
+                loaded: formatNumber(events.length),
+                total: formatNumber(data?.events?.total_count ?? events.length),
+              })}
+            </span>
+          }
+        >
+          <StatTable
+            rows={events}
+            columns={eventColumns}
+            empty={t('usage_analytics.no_data')}
+            getRowKey={(row) => eventRowKey(row)}
+            onRowClick={setSelectedEvent}
+            rowClassName={(row) =>
+              [styles.eventRow, row.failed ? styles.eventRowFailed : ''].filter(Boolean).join(' ')
+            }
+          />
+          {data?.events?.has_more ? (
+            <div className={styles.loadMoreBar}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void handleLoadMoreEvents()}
+                loading={eventsLoadingMore}
+              >
+                {t('usage_analytics.load_more')}
+              </Button>
+            </div>
+          ) : events.length > 0 ? (
+            <div className={styles.loadMoreBar}>
+              <span>{t('usage_analytics.no_more_events')}</span>
+            </div>
+          ) : null}
+        </Card>
+      ) : null}
 
-      <Card title={t('usage_analytics.timeline')}>
-        {(data?.timeline ?? []).length === 0 ? (
-          <div className={styles.tableEmpty}>{t('usage_analytics.no_data')}</div>
-        ) : (
-          <div className={styles.timelineList}>
-            {(data?.timeline ?? []).map((point) => (
-              <div className={styles.timelineRow} key={point.bucket_ms}>
-                <span>{formatDateTime(point.bucket_ms)}</span>
-                <div className={styles.timelineBarTrack}>
-                  <div
-                    className={styles.timelineBar}
-                    style={{ width: `${Math.max(4, (point.total_tokens / timelineMax) * 100)}%` }}
+      {isMonitoringView ? (
+        <Sheet
+          open={selectedEvent !== null}
+          onClose={() => setSelectedEvent(null)}
+          size="lg"
+          eyebrow={selectedEvent ? <StatusBadge row={selectedEvent} /> : undefined}
+          title={t('usage_analytics.request_detail')}
+          description={selectedEvent?.request_id || selectedEvent?.model || undefined}
+          footer={
+            selectedEvent ? (
+              <Button
+                variant="secondary"
+                onClick={() => void handleCopySelectedFailure()}
+                disabled={!selectedEvent.fail_summary && !selectedEvent.fail_body}
+              >
+                <IconCopy size={16} />
+                {t('usage_analytics.copy_error_detail')}
+              </Button>
+            ) : undefined
+          }
+        >
+          {selectedEvent ? (
+            <div className={styles.detailContent}>
+              <div className={styles.detailGrid}>
+                <DetailItem
+                  label={t('usage_analytics.time')}
+                  value={formatFullDateTime(selectedEvent.timestamp_ms)}
+                />
+                <DetailItem
+                  label={t('usage_analytics.request_id')}
+                  value={selectedEvent.request_id || '-'}
+                />
+                <DetailItem
+                  label={t('usage_analytics.status_code')}
+                  value={<StatusBadge row={selectedEvent} />}
+                />
+                <DetailItem
+                  label={t('usage_analytics.latency')}
+                  value={formatDuration(selectedEvent.latency_ms)}
+                />
+                <DetailItem
+                  label={t('usage_analytics.ttft')}
+                  value={formatDuration(selectedEvent.ttft_ms)}
+                />
+                <DetailItem
+                  label={t('usage_analytics.output_speed')}
+                  value={formatTokensPerSecond(selectedEvent)}
+                />
+                <DetailItem
+                  label={t('usage_analytics.provider')}
+                  value={providerLabel(selectedEvent.provider)}
+                />
+                <DetailItem label={t('usage_analytics.model')} value={selectedEvent.model || '-'} />
+                <DetailItem
+                  label={t('usage_analytics.endpoint')}
+                  value={selectedEvent.endpoint || '-'}
+                />
+                <DetailItem
+                  label={t('usage_analytics.credential')}
+                  value={credentialText(selectedEvent) || '-'}
+                />
+                <DetailItem
+                  label={t('usage_analytics.api_key_hash')}
+                  value={selectedEvent.api_key_hash || selectedEvent.credential_key_hash || '-'}
+                />
+                <DetailItem
+                  label={t('usage_analytics.auth_type')}
+                  value={selectedEvent.auth_type || '-'}
+                />
+                <DetailItem
+                  label={t('usage_analytics.service_tier')}
+                  value={selectedEvent.service_tier || '-'}
+                />
+                <DetailItem
+                  label={t('usage_analytics.cost')}
+                  value={
+                    selectedEvent.missing_price_model_name
+                      ? t('usage_analytics.price_missing')
+                      : formatCost(selectedEvent.estimated_cost_usd)
+                  }
+                />
+              </div>
+              <section className={styles.detailSection}>
+                <h3>
+                  <IconFileText size={16} />
+                  {t('usage_analytics.token_breakdown')}
+                </h3>
+                <div className={styles.tokenDetailGrid}>
+                  <DetailItem
+                    label={t('usage_analytics.tokens')}
+                    value={formatNumber(selectedEvent.tokens?.total_tokens)}
+                  />
+                  <DetailItem
+                    label={t('usage_analytics.input_tokens')}
+                    value={formatNumber(selectedEvent.tokens?.input_tokens)}
+                  />
+                  <DetailItem
+                    label={t('usage_analytics.output_tokens')}
+                    value={formatNumber(selectedEvent.tokens?.output_tokens)}
+                  />
+                  <DetailItem
+                    label={t('usage_analytics.reasoning_tokens')}
+                    value={formatNumber(selectedEvent.tokens?.reasoning_tokens)}
+                  />
+                  <DetailItem
+                    label={t('usage_analytics.cache_read_tokens')}
+                    value={formatNumber(selectedEvent.tokens?.cache_read_tokens)}
+                  />
+                  <DetailItem
+                    label={t('usage_analytics.cache_creation_tokens')}
+                    value={formatNumber(selectedEvent.tokens?.cache_creation_tokens)}
                   />
                 </div>
-                <strong>{formatNumber(point.total_tokens)}</strong>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-
-      <div className={styles.gridTwo}>
-        <Card title={t('usage_analytics.model_stats')}>
-          <StatTable
-            rows={data?.model_stats ?? []}
-            columns={modelColumns}
-            empty={t('usage_analytics.no_data')}
-          />
-        </Card>
-        <Card title={t('usage_analytics.api_key_stats')}>
-          <StatTable
-            rows={data?.api_key_stats ?? []}
-            columns={apiKeyColumns}
-            empty={t('usage_analytics.no_data')}
-          />
-        </Card>
-      </div>
-
-      <Card title={t('usage_analytics.credential_stats')}>
-        <StatTable
-          rows={data?.credential_stats ?? []}
-          columns={credentialColumns}
-          empty={t('usage_analytics.no_data')}
-        />
-      </Card>
-
-      <Card
-        title={t('usage_analytics.recent_requests')}
-        extra={
-          <span className={styles.cardMeta}>
-            {t('usage_analytics.events_loaded_meta', {
-              loaded: formatNumber(events.length),
-              total: formatNumber(data?.events?.total_count ?? events.length),
-            })}
-          </span>
-        }
-      >
-        <StatTable
-          rows={events}
-          columns={eventColumns}
-          empty={t('usage_analytics.no_data')}
-          getRowKey={(row) => eventRowKey(row)}
-          onRowClick={setSelectedEvent}
-          rowClassName={(row) =>
-            [styles.eventRow, row.failed ? styles.eventRowFailed : ''].filter(Boolean).join(' ')
-          }
-        />
-        {data?.events?.has_more ? (
-          <div className={styles.loadMoreBar}>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => void handleLoadMoreEvents()}
-              loading={eventsLoadingMore}
-            >
-              {t('usage_analytics.load_more')}
-            </Button>
-          </div>
-        ) : events.length > 0 ? (
-          <div className={styles.loadMoreBar}>
-            <span>{t('usage_analytics.no_more_events')}</span>
-          </div>
-        ) : null}
-      </Card>
-
-      <Sheet
-        open={selectedEvent !== null}
-        onClose={() => setSelectedEvent(null)}
-        size="lg"
-        eyebrow={selectedEvent ? <StatusBadge row={selectedEvent} /> : undefined}
-        title={t('usage_analytics.request_detail')}
-        description={selectedEvent?.request_id || selectedEvent?.model || undefined}
-        footer={
-          selectedEvent ? (
-            <Button
-              variant="secondary"
-              onClick={() => void handleCopySelectedFailure()}
-              disabled={!selectedEvent.fail_summary && !selectedEvent.fail_body}
-            >
-              <IconCopy size={16} />
-              {t('usage_analytics.copy_error_detail')}
-            </Button>
-          ) : undefined
-        }
-      >
-        {selectedEvent ? (
-          <div className={styles.detailContent}>
-            <div className={styles.detailGrid}>
-              <DetailItem
-                label={t('usage_analytics.time')}
-                value={formatFullDateTime(selectedEvent.timestamp_ms)}
-              />
-              <DetailItem
-                label={t('usage_analytics.request_id')}
-                value={selectedEvent.request_id || '-'}
-              />
-              <DetailItem
-                label={t('usage_analytics.status_code')}
-                value={<StatusBadge row={selectedEvent} />}
-              />
-              <DetailItem
-                label={t('usage_analytics.latency')}
-                value={formatDuration(selectedEvent.latency_ms)}
-              />
-              <DetailItem
-                label={t('usage_analytics.ttft')}
-                value={formatDuration(selectedEvent.ttft_ms)}
-              />
-              <DetailItem
-                label={t('usage_analytics.output_speed')}
-                value={formatTokensPerSecond(selectedEvent)}
-              />
-              <DetailItem
-                label={t('usage_analytics.provider')}
-                value={providerLabel(selectedEvent.provider)}
-              />
-              <DetailItem label={t('usage_analytics.model')} value={selectedEvent.model || '-'} />
-              <DetailItem
-                label={t('usage_analytics.endpoint')}
-                value={selectedEvent.endpoint || '-'}
-              />
-              <DetailItem
-                label={t('usage_analytics.credential')}
-                value={credentialText(selectedEvent) || '-'}
-              />
-              <DetailItem
-                label={t('usage_analytics.api_key_hash')}
-                value={selectedEvent.api_key_hash || selectedEvent.credential_key_hash || '-'}
-              />
-              <DetailItem
-                label={t('usage_analytics.auth_type')}
-                value={selectedEvent.auth_type || '-'}
-              />
-              <DetailItem
-                label={t('usage_analytics.service_tier')}
-                value={selectedEvent.service_tier || '-'}
-              />
-              <DetailItem
-                label={t('usage_analytics.cost')}
-                value={
-                  selectedEvent.missing_price_model_name
-                    ? t('usage_analytics.price_missing')
-                    : formatCost(selectedEvent.estimated_cost_usd)
-                }
-              />
+              </section>
+              <section className={styles.failureSection}>
+                <h3>
+                  <IconTimer size={16} />
+                  {t('usage_analytics.error_summary')}
+                </h3>
+                <p>{selectedEvent.fail_summary || t('usage_analytics.no_error_summary')}</p>
+                {selectedEvent.fail_body ? <pre>{selectedEvent.fail_body}</pre> : null}
+              </section>
             </div>
-            <section className={styles.detailSection}>
-              <h3>
-                <IconFileText size={16} />
-                {t('usage_analytics.token_breakdown')}
-              </h3>
-              <div className={styles.tokenDetailGrid}>
-                <DetailItem
-                  label={t('usage_analytics.tokens')}
-                  value={formatNumber(selectedEvent.tokens?.total_tokens)}
-                />
-                <DetailItem
-                  label={t('usage_analytics.input_tokens')}
-                  value={formatNumber(selectedEvent.tokens?.input_tokens)}
-                />
-                <DetailItem
-                  label={t('usage_analytics.output_tokens')}
-                  value={formatNumber(selectedEvent.tokens?.output_tokens)}
-                />
-                <DetailItem
-                  label={t('usage_analytics.reasoning_tokens')}
-                  value={formatNumber(selectedEvent.tokens?.reasoning_tokens)}
-                />
-                <DetailItem
-                  label={t('usage_analytics.cache_read_tokens')}
-                  value={formatNumber(selectedEvent.tokens?.cache_read_tokens)}
-                />
-                <DetailItem
-                  label={t('usage_analytics.cache_creation_tokens')}
-                  value={formatNumber(selectedEvent.tokens?.cache_creation_tokens)}
-                />
-              </div>
-            </section>
-            <section className={styles.failureSection}>
-              <h3>
-                <IconTimer size={16} />
-                {t('usage_analytics.error_summary')}
-              </h3>
-              <p>{selectedEvent.fail_summary || t('usage_analytics.no_error_summary')}</p>
-              {selectedEvent.fail_body ? <pre>{selectedEvent.fail_body}</pre> : null}
-            </section>
-          </div>
-        ) : null}
-      </Sheet>
+          ) : null}
+        </Sheet>
+      ) : null}
     </div>
   );
 }

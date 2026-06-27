@@ -117,6 +117,7 @@
     "oauth": "OAuth Login",
     "quota_management": "Quota Management",
     "usage_analytics": "Usage Analytics",
+    "request_monitoring": "Request Monitoring",
     "plugins": "Plugins",
     "plugin_store": "Plugin Store",
     "config_management": "Config Panel",
@@ -136,7 +137,8 @@
     "auth_files": "Auth files & credentials",
     "oauth": "OAuth authorization",
     "quota_management": "API keys & limits",
-    "usage_analytics": "Request monitoring & usage",
+    "usage_analytics": "Models, keys & credential spend",
+    "request_monitoring": "Per-request latency and errors",
     "plugins": "Plugin toggles & config",
     "plugin_store": "Discover & install plugins",
     "logs": "Request tracing",
@@ -145,7 +147,7 @@
   },
   "usage_analytics": {
     "title": "Usage Analytics",
-    "subtitle": "Analyze actual CPA requests by model, API key, credential, and recent events.",
+    "subtitle": "Analyze actual CPA request usage by model, API key, and credential.",
     "range_24h": "24h",
     "range_7d": "7d",
     "range_30d": "30d",
@@ -216,6 +218,10 @@
     "copy_success": "Error detail copied",
     "copy_failed": "Failed to copy error detail",
     "api_key_badge": "API Key"
+  },
+  "request_monitoring": {
+    "title": "Request Monitoring",
+    "subtitle": "Inspect recent CPA requests, status codes, latency, TTFT, tokens, and error details."
   },
   "opencode_go": {
     "title": "OpenCode Go Accounts",

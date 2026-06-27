@@ -117,6 +117,7 @@
     "oauth": "OAuth 登入",
     "quota_management": "配額管理",
     "usage_analytics": "用量分析",
+    "request_monitoring": "請求監控",
     "plugins": "插件管理",
     "plugin_store": "插件商店",
     "config_management": "設定面板",
@@ -136,7 +137,8 @@
     "auth_files": "Auth 檔案與憑證",
     "oauth": "OAuth 授權登入",
     "quota_management": "API Key 與限額",
-    "usage_analytics": "請求監控與用量分析",
+    "usage_analytics": "模型、金鑰與憑證消耗",
+    "request_monitoring": "單次請求、延遲與錯誤",
     "plugins": "插件啟停與設定",
     "plugin_store": "探索並安裝插件",
     "logs": "請求追蹤與排查",
@@ -145,7 +147,7 @@
   },
   "usage_analytics": {
     "title": "用量分析",
-    "subtitle": "依 CPA 實際請求統計模型、API Key、驗證檔案和最近請求。",
+    "subtitle": "依 CPA 實際請求統計模型、API Key 和驗證檔案用量。",
     "range_24h": "24 小時",
     "range_7d": "7 天",
     "range_30d": "30 天",
@@ -216,6 +218,10 @@
     "copy_success": "錯誤詳情已複製",
     "copy_failed": "複製錯誤詳情失敗",
     "api_key_badge": "API Key"
+  },
+  "request_monitoring": {
+    "title": "請求監控",
+    "subtitle": "查看 CPA 最近請求、狀態碼、延遲、TTFT、Token 和錯誤詳情。"
   },
   "opencode_go": {
     "title": "OpenCode Go 帳號",

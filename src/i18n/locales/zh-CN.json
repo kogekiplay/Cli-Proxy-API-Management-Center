@@ -117,6 +117,7 @@
     "oauth": "OAuth 登录",
     "quota_management": "配额管理",
     "usage_analytics": "用量分析",
+    "request_monitoring": "请求监控",
     "plugins": "插件管理",
     "plugin_store": "插件商店",
     "config_management": "配置面板",
@@ -136,7 +137,8 @@
     "auth_files": "Auth 文件与凭证",
     "oauth": "OAuth 授权登录",
     "quota_management": "API Key 与限额",
-    "usage_analytics": "请求监控与用量分析",
+    "usage_analytics": "模型、密钥与凭证消耗",
+    "request_monitoring": "单次请求、延迟与错误",
     "plugins": "插件启停与配置",
     "plugin_store": "发现并安装插件",
     "logs": "请求追踪与排查",
@@ -145,7 +147,7 @@
   },
   "usage_analytics": {
     "title": "用量分析",
-    "subtitle": "按 CPA 实际请求统计模型、API Key、认证文件和最近请求。",
+    "subtitle": "按 CPA 实际请求统计模型、API Key 和认证文件用量。",
     "range_24h": "24 小时",
     "range_7d": "7 天",
     "range_30d": "30 天",
@@ -216,6 +218,10 @@
     "copy_success": "错误详情已复制",
     "copy_failed": "复制错误详情失败",
     "api_key_badge": "API Key"
+  },
+  "request_monitoring": {
+    "title": "请求监控",
+    "subtitle": "查看 CPA 最近请求、状态码、延迟、TTFT、Token 和错误详情。"
   },
   "opencode_go": {
     "title": "OpenCode Go 账号",
