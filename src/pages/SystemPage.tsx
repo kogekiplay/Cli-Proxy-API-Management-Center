@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { IconGithub, IconBookOpen, IconExternalLink, IconCode } from '@/components/ui/icons';
+import {
+  IconBookOpen,
+  IconChevronDown,
+  IconCode,
+  IconExternalLink,
+  IconRefreshCw,
+  IconTrash2,
+} from '@/components/ui/icons';
 import {
   useAuthStore,
   useConfigStore,
@@ -32,6 +38,8 @@ import iconDeepseek from '@/assets/icons/deepseek.svg';
 import iconMinimax from '@/assets/icons/minimax.svg';
 import styles from './SystemPage.module.scss';
 
+const MODEL_TAG_PREVIEW_LIMIT = 6;
+
 const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: string }> = {
   gpt: { light: iconOpenaiLight, dark: iconOpenaiDark },
   claude: iconClaude,
@@ -42,6 +50,19 @@ const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: strin
   grok: { light: iconGrok, dark: iconGrokDark },
   deepseek: iconDeepseek,
   minimax: iconMinimax,
+};
+
+const MODEL_CATEGORY_SUBTITLES: Record<string, string> = {
+  gpt: 'OpenAI',
+  claude: 'Anthropic',
+  gemini: 'Google',
+  qwen: 'Alibaba',
+  kimi: 'Moonshot',
+  glm: '智谱',
+  grok: 'xAI',
+  deepseek: '深度求索',
+  minimax: 'MiniMax',
+  other: 'Other',
 };
 
 const parseVersionSegments = (version?: string | null) => {
@@ -89,6 +110,7 @@ export function SystemPage() {
     type: 'success' | 'warning' | 'error' | 'muted';
     message: string;
   }>();
+  const [expandedModelGroups, setExpandedModelGroups] = useState<Set<string>>(new Set());
   const [requestLogModalOpen, setRequestLogModalOpen] = useState(false);
   const [requestLogDraft, setRequestLogDraft] = useState(false);
   const [requestLogTouched, setRequestLogTouched] = useState(false);
@@ -111,12 +133,26 @@ export function SystemPage() {
   const apiVersion = auth.serverVersion || t('system_info.version_unknown');
   const buildTime =
     formatDateTimeValue(auth.serverBuildDate, i18n.language) || t('system_info.version_unknown');
+  const connectionLabel = t(`common.${auth.connectionStatus}_status`);
+  const currentYear = new Date().getFullYear();
 
   const getIconForCategory = (categoryId: string): string | null => {
     const iconEntry = MODEL_CATEGORY_ICONS[categoryId];
     if (!iconEntry) return null;
     if (typeof iconEntry === 'string') return iconEntry;
     return resolvedTheme === 'dark' ? iconEntry.dark : iconEntry.light;
+  };
+
+  const toggleModelGroup = (groupId: string) => {
+    setExpandedModelGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
   };
 
   const resolveApiKeysForModels = useApiKeysForModels();
@@ -290,181 +326,255 @@ export function SystemPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('system_info.title')}</h1>
+      <header className={styles.pageHeader}>
+        <h1>{t('system_info.title')}</h1>
+        <p>
+          {t('system_info.page_desc', {
+            defaultValue: '查看系统运行信息、可用模型、快速连接与本地资源。',
+          })}
+        </p>
+      </header>
+
       <div className={styles.content}>
-        <Card className={styles.aboutCard}>
-          <div className={styles.aboutHeader}>
-            <img src={INLINE_LOGO_JPEG} alt="CPAMC" className={styles.aboutLogo} />
-            <div className={styles.aboutTitle}>{t('system_info.about_title')}</div>
+        <section className={`${styles.panelCard} ${styles.systemHero}`}>
+          <h2>{t('system_info.overview_title', { defaultValue: '系统概览' })}</h2>
+
+          <div className={styles.heroIdentity}>
+            <img src={INLINE_LOGO_JPEG} alt="CPAMC" className={styles.heroLogo} />
+            <div>
+              <h3>{t('system_info.about_title')}</h3>
+              <p>
+                {t('system_info.about_desc', {
+                  defaultValue: '集中管理 API 网关、模型路由、认证凭证与用量监控。',
+                })}
+              </p>
+            </div>
           </div>
 
-          <div className={styles.aboutInfoGrid}>
+          <div className={styles.infoGrid}>
             <button
               type="button"
               className={`${styles.infoTile} ${styles.tapTile}`}
               onClick={handleInfoVersionTap}
             >
-              <div className={styles.tileHeader}>
-                <div className={styles.tileLabel}>{t('footer.version')}</div>
-              </div>
-              <div className={styles.tileValue}>{appVersion}</div>
+              <span>{t('footer.version')}</span>
+              <strong>{appVersion}</strong>
             </button>
 
             <div className={styles.infoTile}>
               <div className={styles.tileHeader}>
-                <div className={styles.tileLabel}>{t('footer.api_version')}</div>
-                <Button
+                <span>{t('footer.api_version')}</span>
+                <button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className={styles.tileAction}
+                  className={styles.inlineAction}
                   onClick={() => void handleVersionCheck()}
-                  loading={checkingVersion}
+                  disabled={checkingVersion}
                   title={t('system_info.version_check_button')}
                   aria-label={t('system_info.version_check_button')}
                 >
                   {t('system_info.version_check_button')}
-                </Button>
+                  <IconRefreshCw
+                    className={checkingVersion ? styles.spinIcon : undefined}
+                    size={15}
+                  />
+                </button>
               </div>
-              <div className={styles.tileValue}>{apiVersion}</div>
+              <strong>{apiVersion}</strong>
             </div>
 
             <div className={styles.infoTile}>
-              <div className={styles.tileLabel}>{t('footer.build_date')}</div>
-              <div className={styles.tileValue}>{buildTime}</div>
+              <span>{t('footer.build_date')}</span>
+              <strong>{buildTime}</strong>
             </div>
 
             <div className={styles.infoTile}>
-              <div className={styles.tileLabel}>{t('connection.status')}</div>
-              <div className={styles.tileValue}>{t(`common.${auth.connectionStatus}_status`)}</div>
-              <div className={styles.tileSub}>{auth.apiBase || '-'}</div>
+              <span>{t('connection.status')}</span>
+              <strong className={styles.connectionValue}>
+                <span
+                  className={`${styles.statusDot} ${styles[auth.connectionStatus] ?? ''}`}
+                  aria-hidden="true"
+                />
+                {connectionLabel}
+              </strong>
+              <small>{auth.apiBase || '-'}</small>
             </div>
           </div>
-        </Card>
+        </section>
 
-        <Card title={t('system_info.quick_links_title')}>
-          <p className={styles.sectionDescription}>{t('system_info.quick_links_desc')}</p>
-          <div className={styles.quickLinks}>
+        <section className={styles.panelCard}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2>{t('system_info.quick_links_title')}</h2>
+              <p>{t('system_info.quick_links_desc')}</p>
+            </div>
+          </div>
+
+          <div className={styles.quickLinkGrid}>
             <a
               href="https://github.com/router-for-me/CLIProxyAPI"
               target="_blank"
               rel="noopener noreferrer"
-              className={styles.linkCard}
+              className={styles.quickLinkCard}
             >
-              <div className={`${styles.linkIcon} ${styles.github}`}>
-                <IconGithub size={22} />
-              </div>
-              <div className={styles.linkContent}>
-                <div className={styles.linkTitle}>
-                  {t('system_info.link_main_repo')}
-                  <IconExternalLink size={14} />
-                </div>
-                <div className={styles.linkDesc}>{t('system_info.link_main_repo_desc')}</div>
-              </div>
+              <span className={`${styles.quickLinkIcon} ${styles.darkIcon}`}>
+                <IconCode size={20} />
+              </span>
+              <span>
+                <strong>{t('system_info.link_main_repo')}</strong>
+                <small>{t('system_info.link_main_repo_desc')}</small>
+              </span>
+              <IconExternalLink size={15} />
             </a>
 
             <a
               href="https://github.com/router-for-me/Cli-Proxy-API-Management-Center"
               target="_blank"
               rel="noopener noreferrer"
-              className={styles.linkCard}
+              className={styles.quickLinkCard}
             >
-              <div className={`${styles.linkIcon} ${styles.github}`}>
-                <IconCode size={22} />
-              </div>
-              <div className={styles.linkContent}>
-                <div className={styles.linkTitle}>
-                  {t('system_info.link_webui_repo')}
-                  <IconExternalLink size={14} />
-                </div>
-                <div className={styles.linkDesc}>{t('system_info.link_webui_repo_desc')}</div>
-              </div>
+              <span className={`${styles.quickLinkIcon} ${styles.darkIcon}`}>
+                <IconCode size={20} />
+              </span>
+              <span>
+                <strong>{t('system_info.link_webui_repo')}</strong>
+                <small>{t('system_info.link_webui_repo_desc')}</small>
+              </span>
+              <IconExternalLink size={15} />
             </a>
 
             <a
               href="https://help.router-for.me/"
               target="_blank"
               rel="noopener noreferrer"
-              className={styles.linkCard}
+              className={styles.quickLinkCard}
             >
-              <div className={`${styles.linkIcon} ${styles.docs}`}>
-                <IconBookOpen size={22} />
-              </div>
-              <div className={styles.linkContent}>
-                <div className={styles.linkTitle}>
-                  {t('system_info.link_docs')}
-                  <IconExternalLink size={14} />
-                </div>
-                <div className={styles.linkDesc}>{t('system_info.link_docs_desc')}</div>
-              </div>
+              <span className={`${styles.quickLinkIcon} ${styles.docsIcon}`}>
+                <IconBookOpen size={20} />
+              </span>
+              <span>
+                <strong>{t('system_info.link_docs')}</strong>
+                <small>{t('system_info.link_docs_desc')}</small>
+              </span>
+              <IconExternalLink size={15} />
             </a>
           </div>
-        </Card>
+        </section>
 
-        <Card
-          title={t('system_info.models_title')}
-          extra={
-            <Button
-              variant="secondary"
-              size="sm"
+        <section className={styles.panelCard}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2>{t('system_info.models_title')}</h2>
+              <p>{t('system_info.models_desc')}</p>
+            </div>
+            <button
+              type="button"
+              className={styles.refreshButton}
               onClick={() => fetchModels({ forceRefresh: true })}
-              loading={modelsLoading}
+              disabled={modelsLoading}
             >
+              <IconRefreshCw className={modelsLoading ? styles.spinIcon : undefined} size={15} />
               {t('common.refresh')}
-            </Button>
-          }
-        >
-          <p className={styles.sectionDescription}>{t('system_info.models_desc')}</p>
-          {modelStatus && (
-            <div className={`status-badge ${modelStatus.type}`}>{modelStatus.message}</div>
-          )}
-          {modelsError && <div className="error-box">{modelsError}</div>}
+            </button>
+          </div>
+
+          <div className={styles.modelsToolbar}>
+            <span className={styles.modelsCountPill}>
+              {t('system_info.models_count', { count: models.length })}
+            </span>
+            {modelStatus && modelStatus.type !== 'success' && (
+              <span className={`${styles.modelStatus} ${styles[modelStatus.type]}`}>
+                {modelStatus.message}
+              </span>
+            )}
+          </div>
+
+          {modelsError && <div className={styles.errorBox}>{modelsError}</div>}
           {modelsLoading ? (
-            <div className="hint">{t('common.loading')}</div>
+            <div className={styles.emptyState}>{t('common.loading')}</div>
           ) : models.length === 0 ? (
-            <div className="hint">{t('system_info.models_empty')}</div>
+            <div className={styles.emptyState}>{t('system_info.models_empty')}</div>
           ) : (
-            <div className="item-list">
+            <div className={styles.modelGroupList}>
               {groupedModels.map((group) => {
                 const iconSrc = getIconForCategory(group.id);
+                const expanded = expandedModelGroups.has(group.id);
+                const visibleModels = expanded
+                  ? group.items
+                  : group.items.slice(0, MODEL_TAG_PREVIEW_LIMIT);
+                const hiddenCount = Math.max(0, group.items.length - visibleModels.length);
+
                 return (
-                  <div key={group.id} className="item-row">
-                    <div className="item-meta">
-                      <div className={styles.groupTitle}>
-                        {iconSrc && <img src={iconSrc} alt="" className={styles.groupIcon} />}
-                        <span className="item-title">{group.label}</span>
-                      </div>
-                      <div className="item-subtitle">
-                        {t('system_info.models_count', { count: group.items.length })}
-                      </div>
+                  <div key={group.id} className={styles.modelGroupRow}>
+                    <div className={styles.modelProvider}>
+                      <span className={styles.modelIconShell}>
+                        {iconSrc ? (
+                          <img src={iconSrc} alt="" className={styles.groupIcon} />
+                        ) : (
+                          <IconCode size={18} />
+                        )}
+                      </span>
+                      <span>
+                        <strong>{group.label}</strong>
+                        <small>{MODEL_CATEGORY_SUBTITLES[group.id] ?? group.id}</small>
+                      </span>
                     </div>
+
                     <div className={styles.modelTags}>
-                      {group.items.map((model) => (
+                      {visibleModels.map((model) => (
                         <span
                           key={`${model.name}-${model.alias ?? 'default'}`}
                           className={styles.modelTag}
-                          title={model.description || ''}
+                          title={model.description || model.alias || model.name}
                         >
                           <span className={styles.modelName}>{model.name}</span>
                           {model.alias && <span className={styles.modelAlias}>{model.alias}</span>}
                         </span>
                       ))}
+                      {hiddenCount > 0 && (
+                        <button
+                          type="button"
+                          className={styles.moreModels}
+                          onClick={() => toggleModelGroup(group.id)}
+                        >
+                          +{hiddenCount}
+                        </button>
+                      )}
                     </div>
+
+                    <button
+                      type="button"
+                      className={styles.modelGroupToggle}
+                      onClick={() => toggleModelGroup(group.id)}
+                      aria-expanded={expanded}
+                    >
+                      <span>{t('system_info.models_count', { count: group.items.length })}</span>
+                      <IconChevronDown
+                        className={expanded ? styles.chevronOpen : undefined}
+                        size={15}
+                      />
+                    </button>
                   </div>
                 );
               })}
             </div>
           )}
-        </Card>
+        </section>
 
-        <Card title={t('system_info.clear_login_title')}>
-          <p className={styles.sectionDescription}>{t('system_info.clear_login_desc')}</p>
-          <div className={styles.clearLoginActions}>
-            <Button variant="danger" onClick={handleClearLoginStorage}>
-              {t('system_info.clear_login_button')}
-            </Button>
+        <section className={`${styles.panelCard} ${styles.localResourceCard}`}>
+          <div>
+            <h2>{t('system_info.clear_login_title')}</h2>
+            <p>{t('system_info.clear_login_desc')}</p>
           </div>
-        </Card>
+          <Button variant="danger" onClick={handleClearLoginStorage} className={styles.clearButton}>
+            <IconTrash2 size={15} />
+            {t('system_info.clear_login_button')}
+          </Button>
+        </section>
+
+        <footer className={styles.systemFooter}>
+          <span>© {currentYear} CPA System. All rights reserved.</span>
+          <span>{t('dashboard.timezone', { defaultValue: '时区' })}: Asia/Shanghai</span>
+        </footer>
       </div>
 
       <Modal
