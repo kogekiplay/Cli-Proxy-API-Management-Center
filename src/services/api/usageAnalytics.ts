@@ -83,6 +83,12 @@ export interface UsageAnalyticsEventRow {
   account_ref: string;
   auth_type?: string;
   service_tier: string;
+  status_code?: number;
+  latency_ms?: number | null;
+  ttft_ms?: number | null;
+  fail_status_code?: number;
+  fail_summary?: string;
+  fail_body?: string;
   tokens: UsageAnalyticsTokens;
   failed: boolean;
   estimated_cost_usd?: number | null;

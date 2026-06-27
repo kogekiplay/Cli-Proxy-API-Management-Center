@@ -18,6 +18,19 @@
   }
 }
 
+.headerActions {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+
+  @include mobile {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
 .pageTitle {
   margin: 0;
   color: var(--text-primary);
@@ -177,7 +190,8 @@
 .timelineBar {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--primary-color), color-mix(in srgb, var(--primary-color) 58%, #36a3ff));
+  background: linear-gradient(90deg, #1f6feb, #16a3b8);
+  box-shadow: 0 0 0 1px color-mix(in srgb, #0f766e 28%, transparent);
 }
 
 .tableWrap {
@@ -219,6 +233,19 @@
   }
 }
 
+.clickableRow {
+  cursor: pointer;
+
+  &:hover td {
+    background: color-mix(in srgb, var(--primary-color) 6%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+  }
+}
+
 .tableEmpty {
   padding: 18px 0;
   color: var(--text-secondary);
@@ -237,10 +264,10 @@
 .identityBadge {
   flex: 0 0 auto;
   padding: 3px 7px;
-  border: 1px solid color-mix(in srgb, var(--primary-color) 24%, var(--border-color));
+  border: 1px solid color-mix(in srgb, var(--primary-color) 34%, var(--border-color));
   border-radius: $radius-full;
-  background: color-mix(in srgb, var(--primary-color) 9%, transparent);
-  color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+  color: color-mix(in srgb, var(--primary-color) 86%, var(--text-primary));
   font-size: 11px;
   font-weight: 700;
   line-height: 1.2;
@@ -271,5 +298,104 @@
     color: var(--text-tertiary);
     font-size: 11px;
     line-height: 1.2;
+  }
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  padding: 3px 8px;
+  border-radius: $radius-full;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.statusSuccess {
+  border: 1px solid color-mix(in srgb, #15803d 28%, var(--border-color));
+  background: color-mix(in srgb, #16a34a 10%, transparent);
+  color: #15803d;
+}
+
+.statusFailed {
+  border: 1px solid color-mix(in srgb, #dc2626 30%, var(--border-color));
+  background: color-mix(in srgb, #ef4444 10%, transparent);
+  color: #b91c1c;
+}
+
+.detailContent {
+  display: grid;
+  gap: $spacing-lg;
+}
+
+.detailGrid,
+.tokenDetailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-sm;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detailItem {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-secondary);
+
+  span {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--text-tertiary);
+    font-size: 12px;
+  }
+
+  strong {
+    display: block;
+    min-width: 0;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+}
+
+.failureSection {
+  display: grid;
+  gap: $spacing-sm;
+
+  h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 15px;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  pre {
+    max-height: 320px;
+    margin: 0;
+    overflow: auto;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-md;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 12px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
 }

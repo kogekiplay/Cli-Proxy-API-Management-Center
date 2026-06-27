@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
-import { IconRefreshCw } from '@/components/ui/icons';
+import { Sheet } from '@/components/ui/Sheet';
+import { IconDownload, IconRefreshCw } from '@/components/ui/icons';
 import { authFilesApi } from '@/services/api';
 import { opencodeGoApi } from '@/services/api/opencodeGo';
 import {
@@ -18,6 +19,7 @@ import {
 import type { AuthFileItem } from '@/types';
 import type { OpenCodeGoAccount } from '@/types/opencodeGo';
 import { displayOpenCodeGoAccountName } from '@/features/opencodeGo/helpers';
+import { downloadBlob } from '@/utils/download';
 import { getErrorMessage } from '@/utils/helpers';
 import styles from './UsageAnalyticsPage.module.scss';
 
@@ -30,6 +32,7 @@ const RANGE_MS: Record<RangeKey, number> = {
 };
 
 const EVENT_LIMIT = 80;
+const EXPORT_EVENT_LIMIT = 50000;
 
 const splitFilter = (value: string): string[] =>
   value
@@ -60,6 +63,12 @@ const formatDateTime = (value: number | undefined | null) => {
   });
 };
 
+const formatDuration = (value: number | undefined | null) => {
+  if (value === undefined || value === null || !Number.isFinite(value) || value <= 0) return '-';
+  if (value < 1000) return `${Math.round(value)} ms`;
+  return `${(value / 1000).toFixed(value < 10_000 ? 2 : 1)} s`;
+};
+
 const successRate = (success: number, total: number) =>
   total > 0 ? `${Math.round((success / total) * 100)}%` : '-';
 
@@ -67,6 +76,14 @@ const compactHash = (value: string | undefined | null, length = 12) => {
   const trimmed = value?.trim() ?? '';
   if (!trimmed) return '';
   return trimmed.length <= length ? trimmed : `${trimmed.slice(0, length)}...`;
+};
+
+const statusCodeOf = (row: UsageAnalyticsEventRow) =>
+  row.status_code || row.fail_status_code || (row.failed ? 500 : 200);
+
+const csvEscape = (value: unknown) => {
+  const text = value === undefined || value === null ? '' : String(value);
+  return `"${text.replace(/"/g, '""')}"`;
 };
 
 const providerLabel = (value: string | undefined | null) => {
@@ -113,10 +130,14 @@ function StatTable<T>({
   rows,
   columns,
   empty,
+  getRowKey,
+  onRowClick,
 }: {
   rows: T[];
   columns: Array<{ key: string; label: string; render: (row: T) => ReactNode }>;
   empty: string;
+  getRowKey?: (row: T, index: number) => string | number;
+  onRowClick?: (row: T) => void;
 }) {
   if (rows.length === 0) {
     return <div className={styles.tableEmpty}>{empty}</div>;
@@ -133,7 +154,22 @@ function StatTable<T>({
         </thead>
         <tbody>
           {rows.map((row, index) => (
-            <tr key={index}>
+            <tr
+              key={getRowKey ? getRowKey(row, index) : index}
+              className={onRowClick ? styles.clickableRow : undefined}
+              tabIndex={onRowClick ? 0 : undefined}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+              onKeyDown={
+                onRowClick
+                  ? (event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onRowClick(row);
+                      }
+                    }
+                  : undefined
+              }
+            >
               {columns.map((column) => (
                 <td key={column.key}>{column.render(row)}</td>
               ))}
@@ -141,6 +177,15 @@ function StatTable<T>({
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function DetailItem({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className={styles.detailItem}>
+      <span>{label}</span>
+      <strong>{value}</strong>
     </div>
   );
 }
@@ -157,40 +202,46 @@ export function UsageAnalyticsPage() {
   const [authFiles, setAuthFiles] = useState<AuthFileItem[]>([]);
   const [opencodeAccounts, setOpenCodeAccounts] = useState<OpenCodeGoAccount[]>([]);
   const [loading, setLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState<UsageAnalyticsEventRow | null>(null);
 
-  const load = useCallback(async () => {
+  const buildAnalyticsRequest = useCallback((limit: number) => {
     const to = Date.now();
     const from = to - RANGE_MS[range];
+    return {
+      from_ms: from,
+      to_ms: to,
+      filters: {
+        providers: splitFilter(providerFilter),
+        models: splitFilter(modelFilter),
+        auth_indices: splitFilter(authIndexFilter),
+        api_key_hashes: splitFilter(apiKeyHashFilter),
+        failed_only: failedOnly,
+      },
+      include: {
+        summary: true,
+        timeline: true,
+        model_stats: true,
+        api_key_stats: true,
+        credential_stats: true,
+        events_page: { limit },
+      },
+    };
+  }, [apiKeyHashFilter, authIndexFilter, failedOnly, modelFilter, providerFilter, range]);
+
+  const load = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const response = await usageAnalyticsApi.query({
-        from_ms: from,
-        to_ms: to,
-        filters: {
-          providers: splitFilter(providerFilter),
-          models: splitFilter(modelFilter),
-          auth_indices: splitFilter(authIndexFilter),
-          api_key_hashes: splitFilter(apiKeyHashFilter),
-          failed_only: failedOnly,
-        },
-        include: {
-          summary: true,
-          timeline: true,
-          model_stats: true,
-          api_key_stats: true,
-          credential_stats: true,
-          events_page: { limit: EVENT_LIMIT },
-        },
-      });
+      const response = await usageAnalyticsApi.query(buildAnalyticsRequest(EVENT_LIMIT));
       setData(response);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
-  }, [apiKeyHashFilter, authIndexFilter, failedOnly, modelFilter, providerFilter, range]);
+  }, [buildAnalyticsRequest]);
 
   useEffect(() => {
     void load();
@@ -276,6 +327,94 @@ export function UsageAnalyticsPage() {
     [authFileByIndex, opencodeByID, t]
   );
 
+  const credentialText = useCallback(
+    (row: UsageAnalyticsCredentialStat | UsageAnalyticsEventRow) => {
+      const provider = row.provider;
+      const accountID = accountIdFromRef(row.account_ref);
+      const opencodeAccount = provider === 'opencode-go' && accountID ? opencodeByID.get(accountID) : undefined;
+      const authFile = row.auth_index ? authFileByIndex.get(row.auth_index) : undefined;
+      return (
+        row.credential_display_name ||
+        (opencodeAccount ? displayOpenCodeGoAccountName(opencodeAccount) : '') ||
+        (authFile ? authFileDisplayName(authFile) : '') ||
+        row.auth_file_name ||
+        accountID ||
+        ''
+      );
+    },
+    [authFileByIndex, opencodeByID]
+  );
+
+  const buildEventsCSV = useCallback(
+    (rows: UsageAnalyticsEventRow[]) => {
+      const headers = [
+        'request_id',
+        'timestamp',
+        'provider',
+        'model',
+        'endpoint',
+        'credential',
+        'api_key_hash',
+        'status_code',
+        'latency_ms',
+        'ttft_ms',
+        'failed',
+        'total_tokens',
+        'input_tokens',
+        'output_tokens',
+        'reasoning_tokens',
+        'cache_read_tokens',
+        'cache_creation_tokens',
+        'estimated_cost_usd',
+        'fail_summary',
+      ];
+      const lines = rows.map((row) =>
+        [
+          row.request_id,
+          new Date(row.timestamp_ms).toISOString(),
+          row.provider,
+          row.model,
+          row.endpoint,
+          credentialText(row),
+          row.api_key_hash || row.credential_key_hash,
+          statusCodeOf(row),
+          row.latency_ms ?? '',
+          row.ttft_ms ?? '',
+          row.failed ? 'true' : 'false',
+          row.tokens?.total_tokens ?? 0,
+          row.tokens?.input_tokens ?? 0,
+          row.tokens?.output_tokens ?? 0,
+          row.tokens?.reasoning_tokens ?? 0,
+          row.tokens?.cache_read_tokens ?? 0,
+          row.tokens?.cache_creation_tokens ?? 0,
+          row.estimated_cost_usd ?? '',
+          row.fail_summary ?? '',
+        ].map(csvEscape).join(',')
+      );
+      return [headers.join(','), ...lines].join('\n');
+    },
+    [credentialText]
+  );
+
+  const handleExport = useCallback(async () => {
+    setExportLoading(true);
+    setError('');
+    try {
+      const response = await usageAnalyticsApi.query(buildAnalyticsRequest(EXPORT_EVENT_LIMIT));
+      const rows = response.events?.items ?? [];
+      const csv = buildEventsCSV(rows);
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      downloadBlob({
+        filename: `cpa-usage-events-${stamp}.csv`,
+        blob: new Blob([csv], { type: 'text/csv;charset=utf-8' }),
+      });
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setExportLoading(false);
+    }
+  }, [buildAnalyticsRequest, buildEventsCSV]);
+
   const modelColumns = useMemo(
     () => [
       { key: 'model', label: t('usage_analytics.model'), render: (row: UsageAnalyticsModelStat) => row.model || '-' },
@@ -316,11 +455,26 @@ export function UsageAnalyticsPage() {
   const eventColumns = useMemo(
     () => [
       { key: 'time', label: t('usage_analytics.time'), render: (row: UsageAnalyticsEventRow) => formatDateTime(row.timestamp_ms) },
-      { key: 'provider', label: t('usage_analytics.provider'), render: (row: UsageAnalyticsEventRow) => row.provider || '-' },
+      {
+        key: 'statusCode',
+        label: t('usage_analytics.status_code'),
+        render: (row: UsageAnalyticsEventRow) => (
+          <span className={`${styles.statusBadge} ${row.failed ? styles.statusFailed : styles.statusSuccess}`}>
+            {statusCodeOf(row)}
+          </span>
+        ),
+      },
+      { key: 'provider', label: t('usage_analytics.provider'), render: (row: UsageAnalyticsEventRow) => providerLabel(row.provider) },
       { key: 'model', label: t('usage_analytics.model'), render: (row: UsageAnalyticsEventRow) => row.model || '-' },
       { key: 'credential', label: t('usage_analytics.credential'), render: renderCredentialIdentity },
+      { key: 'latency', label: t('usage_analytics.latency'), render: (row: UsageAnalyticsEventRow) => formatDuration(row.latency_ms) },
+      { key: 'ttft', label: t('usage_analytics.ttft'), render: (row: UsageAnalyticsEventRow) => formatDuration(row.ttft_ms) },
       { key: 'tokens', label: t('usage_analytics.tokens'), render: (row: UsageAnalyticsEventRow) => formatNumber(row.tokens?.total_tokens) },
-      { key: 'status', label: t('usage_analytics.status'), render: (row: UsageAnalyticsEventRow) => row.failed ? t('usage_analytics.failed') : t('usage_analytics.success') },
+      {
+        key: 'error',
+        label: t('usage_analytics.error_summary'),
+        render: (row: UsageAnalyticsEventRow) => row.fail_summary || '-',
+      },
     ],
     [renderCredentialIdentity, t]
   );
@@ -332,10 +486,16 @@ export function UsageAnalyticsPage() {
           <h1 className={styles.pageTitle}>{t('usage_analytics.title')}</h1>
           <p className={styles.pageSubtitle}>{t('usage_analytics.subtitle')}</p>
         </div>
-        <Button onClick={() => void load()} loading={loading}>
-          <IconRefreshCw size={16} />
-          {t('common.refresh')}
-        </Button>
+        <div className={styles.headerActions}>
+          <Button variant="secondary" onClick={() => void handleExport()} loading={exportLoading}>
+            <IconDownload size={16} />
+            {t('usage_analytics.export')}
+          </Button>
+          <Button onClick={() => void load()} loading={loading}>
+            <IconRefreshCw size={16} />
+            {t('common.refresh')}
+          </Button>
+        </div>
       </div>
 
       <Card className={styles.filterCard}>
@@ -421,8 +581,54 @@ export function UsageAnalyticsPage() {
       </Card>
 
       <Card title={t('usage_analytics.recent_requests')}>
-        <StatTable rows={data?.events?.items ?? []} columns={eventColumns} empty={t('usage_analytics.no_data')} />
+        <StatTable
+          rows={data?.events?.items ?? []}
+          columns={eventColumns}
+          empty={t('usage_analytics.no_data')}
+          getRowKey={(row) => row.id || row.request_id}
+          onRowClick={setSelectedEvent}
+        />
       </Card>
+
+      <Sheet
+        open={selectedEvent !== null}
+        onClose={() => setSelectedEvent(null)}
+        size="lg"
+        title={t('usage_analytics.request_detail')}
+        description={selectedEvent?.request_id || selectedEvent?.model || undefined}
+      >
+        {selectedEvent ? (
+          <div className={styles.detailContent}>
+            <div className={styles.detailGrid}>
+              <DetailItem label={t('usage_analytics.time')} value={formatDateTime(selectedEvent.timestamp_ms)} />
+              <DetailItem label={t('usage_analytics.status_code')} value={statusCodeOf(selectedEvent)} />
+              <DetailItem label={t('usage_analytics.latency')} value={formatDuration(selectedEvent.latency_ms)} />
+              <DetailItem label={t('usage_analytics.ttft')} value={formatDuration(selectedEvent.ttft_ms)} />
+              <DetailItem label={t('usage_analytics.provider')} value={providerLabel(selectedEvent.provider)} />
+              <DetailItem label={t('usage_analytics.model')} value={selectedEvent.model || '-'} />
+              <DetailItem label={t('usage_analytics.endpoint')} value={selectedEvent.endpoint || '-'} />
+              <DetailItem label={t('usage_analytics.credential')} value={credentialText(selectedEvent) || '-'} />
+              <DetailItem label={t('usage_analytics.api_key_hash')} value={selectedEvent.api_key_hash || selectedEvent.credential_key_hash || '-'} />
+              <DetailItem label={t('usage_analytics.auth_type')} value={selectedEvent.auth_type || '-'} />
+              <DetailItem label={t('usage_analytics.service_tier')} value={selectedEvent.service_tier || '-'} />
+              <DetailItem label={t('usage_analytics.cost')} value={formatCost(selectedEvent.estimated_cost_usd)} />
+            </div>
+            <div className={styles.tokenDetailGrid}>
+              <DetailItem label={t('usage_analytics.tokens')} value={formatNumber(selectedEvent.tokens?.total_tokens)} />
+              <DetailItem label={t('usage_analytics.input_tokens')} value={formatNumber(selectedEvent.tokens?.input_tokens)} />
+              <DetailItem label={t('usage_analytics.output_tokens')} value={formatNumber(selectedEvent.tokens?.output_tokens)} />
+              <DetailItem label={t('usage_analytics.reasoning_tokens')} value={formatNumber(selectedEvent.tokens?.reasoning_tokens)} />
+              <DetailItem label={t('usage_analytics.cache_read_tokens')} value={formatNumber(selectedEvent.tokens?.cache_read_tokens)} />
+              <DetailItem label={t('usage_analytics.cache_creation_tokens')} value={formatNumber(selectedEvent.tokens?.cache_creation_tokens)} />
+            </div>
+            <section className={styles.failureSection}>
+              <h3>{t('usage_analytics.error_summary')}</h3>
+              <p>{selectedEvent.fail_summary || t('usage_analytics.no_error_summary')}</p>
+              {selectedEvent.fail_body ? <pre>{selectedEvent.fail_body}</pre> : null}
+            </section>
+          </div>
+        ) : null}
+      </Sheet>
     </div>
   );
 }
