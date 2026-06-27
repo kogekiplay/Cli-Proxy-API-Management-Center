@@ -27,7 +27,10 @@ import {
   type UsageFilterSource,
 } from '@/features/usageAnalytics/usageAnalyticsFilterOptions';
 import { resolveUsageAnalyticsErrorDisplay } from '@/features/usageAnalytics/usageAnalyticsErrorDisplay';
-import { maskUsageAnalyticsClientAPIKey } from '@/features/usageAnalytics/usageAnalyticsLabels';
+import {
+  maskUsageAnalyticsClientAPIKey,
+  resolveUsageAnalyticsAPIKeyDisplay,
+} from '@/features/usageAnalytics/usageAnalyticsLabels';
 import { apiKeysApi, authFilesApi } from '@/services/api';
 import { opencodeGoApi } from '@/services/api/opencodeGo';
 import {
@@ -614,6 +617,20 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     });
     return map;
   }, [clientAPIKeyOptions]);
+
+  const resolveEventAPIKeyDisplay = useCallback(
+    (row: UsageAnalyticsEventRow) =>
+      resolveUsageAnalyticsAPIKeyDisplay(row, {
+        clientAPIKeyLabelByHash,
+        opencodeAccountsByID: opencodeByID,
+      }),
+    [clientAPIKeyLabelByHash, opencodeByID]
+  );
+
+  const selectedEventAPIKeyDisplay = useMemo(
+    () => (selectedEvent ? resolveEventAPIKeyDisplay(selectedEvent) : null),
+    [resolveEventAPIKeyDisplay, selectedEvent]
+  );
 
   const usageFilterRows = useMemo<UsageFilterSource[]>(() => {
     const rows: UsageFilterSource[] = [];
@@ -1317,8 +1334,8 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                   value={credentialText(selectedEvent) || '-'}
                 />
                 <DetailItem
-                  label={t('usage_analytics.api_key_hash')}
-                  value={selectedEvent.api_key_hash || selectedEvent.credential_key_hash || '-'}
+                  label={t(selectedEventAPIKeyDisplay?.labelKey ?? 'usage_analytics.api_key_hash')}
+                  value={selectedEventAPIKeyDisplay?.value ?? '-'}
                 />
                 <DetailItem
                   label={t('usage_analytics.auth_type')}
