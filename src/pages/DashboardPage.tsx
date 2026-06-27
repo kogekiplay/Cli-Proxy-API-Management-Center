@@ -24,6 +24,7 @@ import {
   summarizeDashboardUsage,
 } from '@/features/dashboard/dashboardUsage';
 import { authFilesApi } from '@/services/api';
+import { configApi } from '@/services/api/config';
 import { usageAnalyticsApi, type UsageAnalyticsResponse } from '@/services/api/usageAnalytics';
 import { useApiKeysForModels } from '@/hooks/useApiKeysForModels';
 import { formatDateValue } from '@/utils/format';
@@ -90,6 +91,9 @@ export function DashboardPage() {
   const [dashboardUsageData, setDashboardUsageData] = useState<UsageAnalyticsResponse | null>(null);
   const [dashboardUsageLoading, setDashboardUsageLoading] = useState(false);
   const [dashboardUsageError, setDashboardUsageError] = useState('');
+  const [dashboardUsageRefreshToken, setDashboardUsageRefreshToken] = useState(0);
+  const [routingStrategy, setRoutingStrategy] = useState('');
+  const [routingStrategyRefreshToken, setRoutingStrategyRefreshToken] = useState(0);
 
   const [currentTime, setCurrentTime] = useState(() => new Date());
 
@@ -115,6 +119,14 @@ export function DashboardPage() {
       // Ignore model fetch errors on dashboard
     }
   }, [connectionStatus, apiBase, resolveApiKeysForModels, fetchModelsFromStore]);
+
+  const refreshDashboardUsage = useCallback(() => {
+    setDashboardUsageRefreshToken((token) => token + 1);
+  }, []);
+
+  const refreshRoutingStrategy = useCallback(() => {
+    setRoutingStrategyRefreshToken((token) => token + 1);
+  }, []);
 
   useEffect(() => {
     if (connectionStatus !== 'connected') {
@@ -174,7 +186,29 @@ export function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [connectionStatus]);
+  }, [connectionStatus, dashboardUsageRefreshToken]);
+
+  useEffect(() => {
+    if (connectionStatus !== 'connected') {
+      setRoutingStrategy('');
+      return;
+    }
+
+    let cancelled = false;
+
+    configApi
+      .getRoutingStrategy()
+      .then((strategy) => {
+        if (!cancelled) setRoutingStrategy(strategy);
+      })
+      .catch(() => {
+        if (!cancelled) setRoutingStrategy('');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [connectionStatus, routingStrategyRefreshToken]);
 
   const configLoading = !config;
   const providerStats = config
@@ -232,13 +266,12 @@ export function DashboardPage() {
     },
   ];
 
-  const routingStrategyRaw = config?.routingStrategy?.trim() || '';
-  const routingStrategyDisplay = !routingStrategyRaw
-    ? '-'
-    : routingStrategyRaw === 'round-robin'
-      ? t('basic_settings.routing_strategy_round_robin')
-      : routingStrategyRaw === 'fill-first'
-        ? t('basic_settings.routing_strategy_fill_first')
+  const routingStrategyRaw = (routingStrategy || config?.routingStrategy || 'round-robin').trim();
+  const routingStrategyDisplay =
+    routingStrategyRaw === 'fill-first'
+      ? t('basic_settings.routing_strategy_fill_first')
+      : routingStrategyRaw === 'round-robin'
+        ? t('basic_settings.routing_strategy_round_robin')
         : routingStrategyRaw;
 
   const formattedDate = currentTime.toLocaleDateString(i18n.language, {
@@ -386,12 +419,22 @@ export function DashboardPage() {
           </div>
 
           <div className={styles.workbenchGrid}>
-            <Link to="/monitoring" className={`${styles.panelCard} ${styles.recentPanel}`}>
+            <article className={`${styles.panelCard} ${styles.recentPanel}`}>
               <div className={styles.panelHeader}>
                 <h2>{t('dashboard.recent_requests', { defaultValue: '最近请求' })}</h2>
-                <span className={styles.iconButton} aria-hidden="true">
+                <button
+                  type="button"
+                  className={styles.iconButton}
+                  onClick={refreshDashboardUsage}
+                  aria-label={t('dashboard.refresh_recent_requests', {
+                    defaultValue: '刷新最近请求',
+                  })}
+                  title={t('dashboard.refresh_recent_requests', {
+                    defaultValue: '刷新最近请求',
+                  })}
+                >
                   <IconFileText size={16} />
-                </span>
+                </button>
               </div>
               {dashboardUsageLoading ? (
                 <div className={styles.emptyState}>
@@ -450,19 +493,29 @@ export function DashboardPage() {
                   </span>
                 </div>
               )}
-              <span className={styles.panelAction}>
+              <Link to="/monitoring" className={styles.panelAction}>
                 {t('dashboard.view_all_requests', { defaultValue: '查看全部请求' })}
                 <IconChevronLeft size={15} />
-              </span>
-            </Link>
+              </Link>
+            </article>
 
-            <Link to="/usage-analytics" className={`${styles.panelCard} ${styles.usagePanel}`}>
+            <article className={`${styles.panelCard} ${styles.usagePanel}`}>
               <div className={styles.panelHeader}>
                 <h2>{t('dashboard.usage_trend', { defaultValue: '用量趋势' })}</h2>
-                <span className={styles.periodBadge}>
+                <button
+                  type="button"
+                  className={styles.periodBadge}
+                  onClick={refreshDashboardUsage}
+                  aria-label={t('dashboard.refresh_usage_trend', {
+                    defaultValue: '刷新 7 天用量趋势',
+                  })}
+                  title={t('dashboard.refresh_usage_trend', {
+                    defaultValue: '刷新 7 天用量趋势',
+                  })}
+                >
                   7 天
                   <IconChevronDown size={14} />
-                </span>
+                </button>
               </div>
               <div className={styles.trendTotal}>
                 <strong>
@@ -503,18 +556,28 @@ export function DashboardPage() {
                   ))}
                 </div>
               </div>
-              <span className={styles.panelAction}>
+              <Link to="/usage-analytics" className={styles.panelAction}>
                 {t('dashboard.view_usage_analytics', { defaultValue: '查看用量分析' })}
                 <IconChevronLeft size={15} />
-              </span>
-            </Link>
+              </Link>
+            </article>
 
-            <Link to="/config" className={`${styles.panelCard} ${styles.routingPanel}`}>
+            <article className={`${styles.panelCard} ${styles.routingPanel}`}>
               <div className={styles.panelHeader}>
                 <h2>{t('dashboard.routing_strategy', { defaultValue: '路由策略' })}</h2>
-                <span className={styles.iconButton} aria-hidden="true">
+                <button
+                  type="button"
+                  className={styles.iconButton}
+                  onClick={refreshRoutingStrategy}
+                  aria-label={t('dashboard.refresh_routing_strategy', {
+                    defaultValue: '刷新路由策略',
+                  })}
+                  title={t('dashboard.refresh_routing_strategy', {
+                    defaultValue: '刷新路由策略',
+                  })}
+                >
                   <IconRefreshCw size={15} />
-                </span>
+                </button>
               </div>
               <strong className={styles.strategyValue}>
                 <IconNetwork size={15} />
@@ -542,11 +605,11 @@ export function DashboardPage() {
                   })}
                 </li>
               </ul>
-              <span className={styles.panelAction}>
+              <Link to="/config" className={styles.panelAction}>
                 {t('dashboard.manage_routing_strategy', { defaultValue: '管理路由策略' })}
                 <IconChevronLeft size={15} />
-              </span>
-            </Link>
+              </Link>
+            </article>
           </div>
 
           <section className={styles.systemOverview}>

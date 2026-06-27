@@ -10,6 +10,7 @@ import {
   IconCheck,
   IconChevronDown,
   IconChevronUp,
+  IconNetwork,
   IconRefreshCw,
   IconSearch,
 } from '@/components/ui/icons';
@@ -26,10 +27,39 @@ import {
   type ApiKeyAccessAuthTarget,
   type ApiKeyAccessProviderTargetResponse,
 } from '@/services/api';
+import { configApi } from '@/services/api/config';
 import { configFileApi } from '@/services/api/configFile';
 import styles from './ConfigPage.module.scss';
 
 type ConfigEditorTab = 'visual' | 'source';
+type RoutingStrategyValue = 'round-robin' | 'fill-first';
+
+const routingStrategyOptions: Array<{
+  value: RoutingStrategyValue;
+  labelKey: string;
+  defaultLabel: string;
+  descriptionKey: string;
+  defaultDescription: string;
+}> = [
+  {
+    value: 'round-robin',
+    labelKey: 'basic_settings.routing_strategy_round_robin',
+    defaultLabel: '轮询',
+    descriptionKey: 'config_management.routing_strategy.round_robin_desc',
+    defaultDescription: '按顺序分配请求，适合负载均衡和高可用。',
+  },
+  {
+    value: 'fill-first',
+    labelKey: 'basic_settings.routing_strategy_fill_first',
+    defaultLabel: '填满优先',
+    descriptionKey: 'config_management.routing_strategy.fill_first_desc',
+    defaultDescription: '优先使用前面的凭证，适合先消耗指定账号额度。',
+  },
+];
+
+function normalizeRoutingStrategyValue(value: unknown): RoutingStrategyValue {
+  return String(value ?? '').trim() === 'fill-first' ? 'fill-first' : 'round-robin';
+}
 
 const LazyConfigSourceEditor = lazy(() => import('@/components/config/ConfigSourceEditor'));
 
@@ -91,6 +121,10 @@ export function ConfigPage() {
   const [apiKeyAccessProviderTargets, setApiKeyAccessProviderTargets] = useState<
     ApiKeyAccessProviderTargetResponse[] | undefined
   >(undefined);
+  const [routingStrategy, setRoutingStrategy] = useState<RoutingStrategyValue>('round-robin');
+  const [routingStrategyLoading, setRoutingStrategyLoading] = useState(false);
+  const [routingStrategySaving, setRoutingStrategySaving] = useState(false);
+  const [routingStrategyError, setRoutingStrategyError] = useState('');
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,6 +143,13 @@ export function ConfigPage() {
   const hasVisualValidationErrors =
     activeTab === 'visual' &&
     (Object.values(visualValidationErrors).some(Boolean) || visualHasPayloadValidationErrors);
+  const routingStrategyDisabled =
+    disableControls ||
+    loading ||
+    saving ||
+    routingStrategyLoading ||
+    routingStrategySaving ||
+    isDirty;
   const unsavedChangesDialog = useMemo(
     () => ({
       title: t('common.unsaved_changes_title'),
@@ -166,9 +207,32 @@ export function ConfigPage() {
     }
   }, [loadVisualValuesFromYaml, refreshApiKeyAccessMetadata, t]);
 
+  const refreshRoutingStrategy = useCallback(async () => {
+    if (connectionStatus !== 'connected') {
+      setRoutingStrategyError('');
+      return;
+    }
+
+    setRoutingStrategyLoading(true);
+    setRoutingStrategyError('');
+    try {
+      const strategy = await configApi.getRoutingStrategy();
+      setRoutingStrategy(normalizeRoutingStrategyValue(strategy));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t('notification.refresh_failed');
+      setRoutingStrategyError(message);
+    } finally {
+      setRoutingStrategyLoading(false);
+    }
+  }, [connectionStatus, t]);
+
   useEffect(() => {
     loadConfig();
   }, [loadConfig]);
+
+  useEffect(() => {
+    void refreshRoutingStrategy();
+  }, [refreshRoutingStrategy]);
 
   useEffect(() => {
     if (activeTab !== 'visual' || !visualParseError) return;
@@ -302,6 +366,35 @@ export function ConfigPage() {
       setSaving(false);
     }
   };
+
+  const handleRoutingStrategyChange = useCallback(
+    async (nextStrategy: RoutingStrategyValue) => {
+      if (nextStrategy === routingStrategy || routingStrategyDisabled) return;
+
+      setRoutingStrategySaving(true);
+      setRoutingStrategyError('');
+      try {
+        await configApi.updateRoutingStrategy(nextStrategy);
+        setRoutingStrategy(nextStrategy);
+        useConfigStore.getState().clearCache();
+        await useConfigStore.getState().fetchConfig(undefined, true);
+        await loadConfig();
+        showNotification(
+          t('config_management.routing_strategy.save_success', {
+            defaultValue: '路由策略已更新',
+          }),
+          'success'
+        );
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : t('notification.save_failed');
+        setRoutingStrategyError(message);
+        showNotification(`${t('notification.save_failed')}: ${message}`, 'error');
+      } finally {
+        setRoutingStrategySaving(false);
+      }
+    },
+    [loadConfig, routingStrategy, routingStrategyDisabled, showNotification, t]
+  );
 
   const handleChange = useCallback((value: string) => {
     setContent(value);
@@ -579,6 +672,83 @@ export function ConfigPage() {
           </div>
         </div>
       </div>
+
+      <section className={styles.routingQuickCard}>
+        <div className={styles.routingQuickHeader}>
+          <span className={styles.routingQuickIcon} aria-hidden="true">
+            <IconNetwork size={18} />
+          </span>
+          <div className={styles.routingQuickCopy}>
+            <h2>
+              {t('config_management.routing_strategy.title', {
+                defaultValue: '路由策略',
+              })}
+            </h2>
+            <p>
+              {t('config_management.routing_strategy.description', {
+                defaultValue: '控制 CPA 在多个可用凭证之间如何分发请求。',
+              })}
+            </p>
+          </div>
+        </div>
+        <div
+          className={styles.routingQuickOptions}
+          role="group"
+          aria-label={t('config_management.routing_strategy.title', {
+            defaultValue: '路由策略',
+          })}
+        >
+          {routingStrategyOptions.map((option) => {
+            const active = option.value === routingStrategy;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                className={`${styles.routingStrategyButton} ${
+                  active ? styles.routingStrategyButtonActive : ''
+                }`}
+                onClick={() => handleRoutingStrategyChange(option.value)}
+                disabled={routingStrategyDisabled}
+                aria-pressed={active}
+              >
+                <strong>
+                  {t(option.labelKey, {
+                    defaultValue: option.defaultLabel,
+                  })}
+                </strong>
+                <span>
+                  {t(option.descriptionKey, {
+                    defaultValue: option.defaultDescription,
+                  })}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className={styles.routingQuickMeta}>
+          {routingStrategySaving || routingStrategyLoading ? (
+            <span>
+              {routingStrategySaving
+                ? t('common.saving', { defaultValue: '保存中' })
+                : t('common.loading', { defaultValue: '加载中' })}
+            </span>
+          ) : routingStrategyError ? (
+            <span className={styles.routingQuickError}>{routingStrategyError}</span>
+          ) : isDirty ? (
+            <span>
+              {t('config_management.routing_strategy.unsaved_hint', {
+                defaultValue: '有未保存修改时，请先保存或放弃修改后再切换路由策略。',
+              })}
+            </span>
+          ) : (
+            <span>
+              {t('config_management.routing_strategy.current_hint', {
+                defaultValue: '当前策略会立即影响后续请求分发。',
+              })}
+            </span>
+          )}
+        </div>
+      </section>
 
       <div className={styles.workspaceShell}>
         <div className={styles.content}>

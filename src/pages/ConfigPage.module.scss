@@ -84,6 +84,142 @@
   min-width: 0;
 }
 
+.routingQuickCard {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(420px, 1.3fr);
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+  box-shadow: 0 14px 34px rgb(31 26 20 / 0.035);
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.routingQuickHeader {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.routingQuickIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 22%, var(--border-color));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  color: var(--primary-color);
+}
+
+.routingQuickCopy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+
+  h2,
+  p {
+    margin: 0;
+  }
+
+  h2 {
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 760;
+    line-height: 1.35;
+  }
+
+  p {
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+
+.routingQuickOptions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.routingStrategyButton {
+  @include button-reset;
+  display: grid;
+  gap: 4px;
+  min-height: 66px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  text-align: left;
+  transition:
+    border-color $transition-fast,
+    background-color $transition-fast,
+    color $transition-fast,
+    opacity $transition-fast;
+
+  strong {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 760;
+    line-height: 1.25;
+  }
+
+  span {
+    color: var(--text-secondary);
+    font-size: 11.5px;
+    line-height: 1.45;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--primary-color) 30%, var(--border-color));
+    background: color-mix(in srgb, var(--primary-color) 7%, var(--bg-secondary));
+  }
+
+  &:disabled {
+    opacity: 0.62;
+    cursor: not-allowed;
+  }
+}
+
+.routingStrategyButtonActive {
+  border-color: color-mix(in srgb, var(--primary-color) 46%, var(--border-color));
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--bg-secondary));
+  color: var(--primary-color);
+
+  strong {
+    color: var(--primary-color);
+  }
+}
+
+.routingQuickMeta {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  min-height: 18px;
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.routingQuickError {
+  color: var(--warning-text);
+}
+
 .content {
   display: flex;
   flex-direction: column;

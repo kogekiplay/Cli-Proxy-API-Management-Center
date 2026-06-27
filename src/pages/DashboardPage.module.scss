@@ -309,6 +309,19 @@
   flex: 0 0 32px;
 }
 
+.iconButton,
+.periodBadge {
+  appearance: none;
+  border-color: var(--ops-panel-strong-border);
+  cursor: pointer;
+  font: inherit;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--primary-color) 28%, var(--ops-panel-strong-border));
+    color: var(--primary-color);
+  }
+}
+
 .systemLink {
   color: var(--text-primary);
 
@@ -475,6 +488,11 @@
   color: var(--text-primary);
   font-size: 12px;
   font-weight: 750;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--primary-color);
+  }
 
   svg {
     transform: rotate(180deg);
