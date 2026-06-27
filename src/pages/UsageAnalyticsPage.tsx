@@ -26,6 +26,7 @@ import {
   type UsageFilterSelection,
   type UsageFilterSource,
 } from '@/features/usageAnalytics/usageAnalyticsFilterOptions';
+import { resolveUsageAnalyticsErrorDisplay } from '@/features/usageAnalytics/usageAnalyticsErrorDisplay';
 import { maskUsageAnalyticsClientAPIKey } from '@/features/usageAnalytics/usageAnalyticsLabels';
 import { apiKeysApi, authFilesApi } from '@/services/api';
 import { opencodeGoApi } from '@/services/api/opencodeGo';
@@ -204,15 +205,19 @@ const tokenSummary = (row: UsageAnalyticsEventRow) => {
     .join(' · ');
 };
 
-const buildFailureCopyText = (row: UsageAnalyticsEventRow) =>
-  [
+const buildFailureCopyText = (row: UsageAnalyticsEventRow, emptyLabel: string) => {
+  const error = resolveUsageAnalyticsErrorDisplay(row, emptyLabel);
+  return [
     `request_id: ${row.request_id || '-'}`,
     `status_code: ${statusCodeOf(row)}`,
-    row.fail_summary ? `summary: ${row.fail_summary}` : '',
+    error.title ? `type: ${error.title}` : '',
+    error.summary ? `summary: ${error.summary}` : '',
+    error.detail ? `detail:\n${error.detail}` : '',
     row.fail_body ? `body:\n${row.fail_body}` : '',
   ]
     .filter(Boolean)
     .join('\n');
+};
 
 interface IdentityPillProps {
   provider?: string;
@@ -354,17 +359,16 @@ function StatusBadge({ row }: { row: UsageAnalyticsEventRow }) {
 }
 
 function ErrorSummary({ row, emptyLabel }: { row: UsageAnalyticsEventRow; emptyLabel: string }) {
-  const summary = row.fail_summary?.trim() ?? '';
-  if (!row.failed && !summary) return <span className={styles.mutedDash}>-</span>;
+  const error = resolveUsageAnalyticsErrorDisplay(row, emptyLabel);
+  if (!row.failed && !error.summary) return <span className={styles.mutedDash}>-</span>;
 
-  const body = row.fail_body?.trim() ?? '';
   return (
     <span className={styles.errorHint} tabIndex={0}>
-      <span>{summary || emptyLabel}</span>
-      {(summary || body) && (
+      <span>{error.summary || emptyLabel}</span>
+      {(error.title || error.detail) && (
         <span className={styles.errorTooltip} role="tooltip">
-          {summary ? <strong>{summary}</strong> : null}
-          {body ? <small>{body}</small> : null}
+          {error.title ? <strong>{error.title}</strong> : null}
+          {error.detail ? <small>{error.detail}</small> : null}
         </span>
       )}
     </span>
@@ -835,7 +839,9 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
 
   const handleCopySelectedFailure = useCallback(async () => {
     if (!selectedEvent) return;
-    const copied = await copyToClipboard(buildFailureCopyText(selectedEvent));
+    const copied = await copyToClipboard(
+      buildFailureCopyText(selectedEvent, t('usage_analytics.no_error_summary'))
+    );
     showNotification(
       t(copied ? 'usage_analytics.copy_success' : 'usage_analytics.copy_failed'),
       copied ? 'success' : 'error'
@@ -1368,8 +1374,19 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                   <IconTimer size={16} />
                   {t('usage_analytics.error_summary')}
                 </h3>
-                <p>{selectedEvent.fail_summary || t('usage_analytics.no_error_summary')}</p>
-                {selectedEvent.fail_body ? <pre>{selectedEvent.fail_body}</pre> : null}
+                {(() => {
+                  const error = resolveUsageAnalyticsErrorDisplay(
+                    selectedEvent,
+                    t('usage_analytics.no_error_summary')
+                  );
+                  return (
+                    <>
+                      <p>{error.summary}</p>
+                      {error.detail ? <pre>{error.detail}</pre> : null}
+                      {selectedEvent.fail_body ? <pre>{selectedEvent.fail_body}</pre> : null}
+                    </>
+                  );
+                })()}
               </section>
             </div>
           ) : null}
