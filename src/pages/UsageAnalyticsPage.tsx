@@ -86,7 +86,7 @@ interface InsightItem {
   title: string;
   description: string;
   icon: ReactNode;
-  tone: 'blue' | 'green' | 'red' | 'amber';
+  tone: 'blue' | 'green' | 'red' | 'amber' | 'purple';
 }
 
 const RANGE_MS: Record<RangeKey, number> = {
@@ -284,6 +284,37 @@ const bucketLabel = (timestamp: number, bucket: AnalysisTrendBucket) => {
   return date.toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' });
 };
 
+const fillTokenTrendRows = (
+  rows: TokenTrendRow[],
+  bucket: AnalysisTrendBucket,
+  range: RangeKey
+): TokenTrendRow[] => {
+  const minimumRows = range === '24h' ? 16 : range === '7d' ? 7 : 14;
+  const expectedRows = Math.max(minimumRows, rows.length);
+  const bucketMs = bucket === 'hour' ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+  const endBucket = startOfBucket(
+    rows.length > 0 ? Number(rows[rows.length - 1].key) || Date.now() : Date.now(),
+    bucket
+  );
+  const byKey = new Map(rows.map((row) => [String(startOfBucket(Number(row.key), bucket)), row]));
+
+  return Array.from({ length: expectedRows }, (_, index) => {
+    const timestamp = endBucket - (expectedRows - 1 - index) * bucketMs;
+    const key = String(timestamp);
+    return (
+      byKey.get(key) ?? {
+        key,
+        label: bucketLabel(timestamp, bucket),
+        input: 0,
+        output: 0,
+        total: 0,
+        calls: 0,
+        cost: 0,
+      }
+    );
+  });
+};
+
 const deriveTokenTrendRows = (
   timeline: UsageAnalyticsTimelinePoint[],
   events: UsageAnalyticsEventRow[],
@@ -334,7 +365,7 @@ const deriveTokenTrendRows = (
           (left, right) => Number(left.key) - Number(right.key)
         );
 
-  return rows.slice(range === '24h' ? -18 : -14);
+  return fillTokenTrendRows(rows, bucket, range).slice(range === '24h' ? -18 : -14);
 };
 
 const buildLinePoints = (values: number[], width: number, height: number, pad = 12) => {
@@ -1456,6 +1487,14 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
       icon: <IconDollarSign size={20} />,
       title: '费用变化',
       description: `${currentRangeLabel} 估算费用 ${formatCost(totalCost)}`,
+    },
+    {
+      tone: 'purple',
+      icon: <IconTimer size={20} />,
+      title: '延迟表现',
+      description: `P95 延迟 ${formatDuration(eventMetrics.p95LatencyMs)}，TTFT ${formatDuration(
+        eventMetrics.p95TtftMs
+      )}`,
     },
   ];
 

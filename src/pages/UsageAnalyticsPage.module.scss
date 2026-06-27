@@ -556,12 +556,17 @@
 
 .overviewMainGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.48fr);
   gap: $spacing-lg;
 
   @media (max-width: 1180px) {
     grid-template-columns: 1fr;
   }
+}
+
+.overviewMainGrid .trendCard,
+.overviewMainGrid .insightRail {
+  min-height: 438px;
 }
 
 .rankGrid,
@@ -690,7 +695,7 @@
 
 .horizontalTrend {
   display: grid;
-  gap: 8px;
+  gap: 9px;
 }
 
 .trendLegend,
@@ -735,10 +740,10 @@
 
 .trendBarRow {
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr) 74px;
+  grid-template-columns: 104px minmax(0, 1fr) 76px;
   gap: 12px;
   align-items: center;
-  min-height: 26px;
+  min-height: 24px;
   color: var(--text-secondary);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
@@ -755,7 +760,7 @@
 }
 
 .stackedTrack {
-  height: 10px;
+  height: 9px;
   overflow: hidden;
   border-radius: $radius-full;
   background: color-mix(in srgb, var(--bg-tertiary) 62%, transparent);
@@ -792,9 +797,13 @@
   gap: 0;
 }
 
+.overviewMainGrid .insightList {
+  flex: 1;
+}
+
 .insightItem {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: 44px minmax(0, 1fr) auto;
   gap: 14px;
   align-items: center;
   min-width: 0;
@@ -808,6 +817,13 @@
   &:last-child {
     padding-bottom: 4px;
     border-bottom: 0;
+  }
+
+  &::after {
+    color: color-mix(in srgb, var(--text-tertiary) 72%, transparent);
+    font-size: 18px;
+    line-height: 1;
+    content: '›';
   }
 
   strong,
@@ -860,6 +876,10 @@
 
 .insightToneamber {
   --insight-color: #c7a14a;
+}
+
+.insightTonepurple {
+  --insight-color: #8b5cf6;
 }
 
 .textAction {

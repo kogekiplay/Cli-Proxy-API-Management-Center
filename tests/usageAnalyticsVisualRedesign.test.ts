@@ -37,8 +37,13 @@ describe('usage analytics visual redesign', () => {
     expect(page).toContain('{item.icon}');
     expect(page).toContain('renderInsights(true)');
     expect(page).toContain('查看完整分析');
+    expect(page).toContain('fillTokenTrendRows');
+    expect(page).toContain('延迟表现');
+    expect(page).toContain("tone: 'purple'");
     expect(styles).toContain('.overviewMainGrid');
     expect(styles).toContain('.insightRail');
+    expect(styles).toContain('.overviewMainGrid .trendCard');
+    expect(styles).toContain('.insightTonepurple');
     expect(styles).toContain('.rankGrid');
     expect(styles).toContain('display: inline-grid');
     expect(styles).toContain('border-radius: $radius-full');
