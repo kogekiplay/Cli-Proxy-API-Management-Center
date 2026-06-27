@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  buildDashboardRangeTrend,
   buildDashboardDailyTrend,
   buildDashboardUsageRequest,
   summarizeDashboardUsage,
@@ -16,6 +17,14 @@ describe('dashboard usage data', () => {
     expect(request.include?.timeline).toBe(true);
     expect(request.include?.events_page?.limit).toBe(5);
     expect(request.filters?.include_failed).toBe(true);
+  });
+
+  test('requests the selected dashboard usage range', () => {
+    const now = Date.UTC(2026, 5, 27, 12, 0, 0);
+
+    expect(buildDashboardUsageRequest(now, '5h').from_ms).toBe(now - 5 * 60 * 60 * 1000);
+    expect(buildDashboardUsageRequest(now, '7d').from_ms).toBe(now - 7 * 24 * 60 * 60 * 1000);
+    expect(buildDashboardUsageRequest(now, '30d').from_ms).toBe(now - 30 * 24 * 60 * 60 * 1000);
   });
 
   test('summarizes calls, events and chart scale from usage analytics response', () => {
@@ -89,5 +98,31 @@ describe('dashboard usage data', () => {
     expect(trend.map((point) => point.calls)).toEqual([10, 0, 0, 0, 3, 0, 0]);
     expect(trend.at(0)?.label).toMatch(/6\/21|21\/6/);
     expect(trend.at(-1)?.label).toMatch(/6\/27|27\/6/);
+  });
+
+  test('builds hourly and monthly trend buckets for selectable dashboard ranges', () => {
+    const now = new Date(2026, 5, 27, 12, 30, 0).getTime();
+    const hourlyTrend = buildDashboardRangeTrend(
+      [
+        { bucket_ms: new Date(2026, 5, 27, 8, 10, 0).getTime(), calls: 2 },
+        { bucket_ms: new Date(2026, 5, 27, 12, 5, 0).getTime(), calls: 3 },
+      ],
+      now,
+      '5h'
+    );
+
+    expect(hourlyTrend).toHaveLength(6);
+    expect(hourlyTrend.map((point) => point.calls)).toEqual([0, 2, 0, 0, 0, 3]);
+    expect(hourlyTrend.at(0)?.label).toMatch(/07|7/);
+    expect(hourlyTrend.at(-1)?.label).toMatch(/12/);
+
+    const monthlyTrend = buildDashboardRangeTrend(
+      [{ bucket_ms: new Date(2026, 5, 1, 9, 0, 0).getTime(), calls: 9 }],
+      now,
+      '30d'
+    );
+
+    expect(monthlyTrend).toHaveLength(30);
+    expect(monthlyTrend.some((point) => point.calls === 9)).toBe(true);
   });
 });

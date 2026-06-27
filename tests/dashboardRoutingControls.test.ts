@@ -30,4 +30,20 @@ describe('dashboard routing controls', () => {
     expect(dashboard).toContain('type="button"');
     expect(dashboard).toContain('refreshDashboardUsage');
   });
+
+  test('turns dashboard utility controls into real range and refresh interactions', () => {
+    const dashboard = read('src/pages/DashboardPage.tsx');
+    const styles = read('src/pages/DashboardPage.module.scss');
+
+    expect(dashboard).toContain('dashboardUsageRange');
+    expect(dashboard).toContain('DASHBOARD_USAGE_RANGE_OPTIONS.map');
+    expect(dashboard).toContain('setUsageRangeMenuOpen((open) => !open)');
+    expect(dashboard).toContain('role="menu"');
+    expect(dashboard).toContain('buildDashboardUsageRequest(Date.now(), dashboardUsageRange)');
+    expect(dashboard).toContain('buildDashboardRangeTrend');
+    expect(dashboard).toContain('loadingIconButton');
+    expect(styles).toContain('.periodMenu');
+    expect(styles).toContain('.periodMenuItemActive');
+    expect(styles).toContain('.loadingIconButton');
+  });
 });

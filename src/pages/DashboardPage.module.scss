@@ -320,6 +320,19 @@
     border-color: color-mix(in srgb, var(--primary-color) 28%, var(--ops-panel-strong-border));
     color: var(--primary-color);
   }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.72;
+  }
+}
+
+.loadingIconButton {
+  color: var(--primary-color);
+
+  svg {
+    animation: dashboardSpin 0.9s linear infinite;
+  }
 }
 
 .systemLink {
@@ -470,10 +483,67 @@
 
 .periodBadge {
   gap: 4px;
+  position: relative;
   min-height: 30px;
+  min-width: 74px;
   padding: 0 10px;
   font-size: 12px;
   font-weight: 700;
+
+  svg {
+    transition: transform $transition-fast;
+  }
+}
+
+.periodChevronOpen {
+  transform: rotate(180deg);
+}
+
+.periodSelector {
+  position: relative;
+  display: inline-flex;
+}
+
+.periodMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 4px;
+  min-width: 116px;
+  padding: 6px;
+  border: 1px solid var(--ops-panel-strong-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-primary) 96%, transparent);
+  box-shadow: 0 18px 42px rgb(31 26 20 / 0.13);
+}
+
+.periodMenuItem {
+  appearance: none;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 720;
+  text-align: left;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--primary-color) 18%, transparent);
+    background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+    color: var(--text-primary);
+  }
+}
+
+.periodMenuItemActive {
+  border-color: color-mix(in srgb, var(--primary-color) 32%, var(--ops-panel-strong-border));
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  color: var(--primary-color);
 }
 
 .panelAction {
@@ -539,7 +609,6 @@
 
 .chartLabels {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
   margin-top: -12px;
   color: var(--text-secondary);
   font-size: 11px;
@@ -551,6 +620,12 @@
     overflow: hidden;
     text-overflow: clip;
     white-space: nowrap;
+  }
+}
+
+@keyframes dashboardSpin {
+  to {
+    transform: rotate(360deg);
   }
 }
 

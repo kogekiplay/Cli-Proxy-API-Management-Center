@@ -19,9 +19,12 @@ import {
 } from '@/components/ui/icons';
 import { useAuthStore, useConfigStore, useModelsStore } from '@/stores';
 import {
-  buildDashboardDailyTrend,
+  DASHBOARD_USAGE_RANGE_OPTIONS,
+  buildDashboardRangeTrend,
   buildDashboardUsageRequest,
+  getDashboardUsageRangeOption,
   summarizeDashboardUsage,
+  type DashboardUsageRange,
 } from '@/features/dashboard/dashboardUsage';
 import { authFilesApi } from '@/services/api';
 import { configApi } from '@/services/api/config';
@@ -91,7 +94,9 @@ export function DashboardPage() {
   const [dashboardUsageData, setDashboardUsageData] = useState<UsageAnalyticsResponse | null>(null);
   const [dashboardUsageLoading, setDashboardUsageLoading] = useState(false);
   const [dashboardUsageError, setDashboardUsageError] = useState('');
+  const [dashboardUsageRange, setDashboardUsageRange] = useState<DashboardUsageRange>('7d');
   const [dashboardUsageRefreshToken, setDashboardUsageRefreshToken] = useState(0);
+  const [usageRangeMenuOpen, setUsageRangeMenuOpen] = useState(false);
   const [routingStrategy, setRoutingStrategy] = useState('');
   const [routingStrategyRefreshToken, setRoutingStrategyRefreshToken] = useState(0);
 
@@ -169,7 +174,7 @@ export function DashboardPage() {
     setDashboardUsageError('');
 
     usageAnalyticsApi
-      .query(buildDashboardUsageRequest())
+      .query(buildDashboardUsageRequest(Date.now(), dashboardUsageRange))
       .then((response) => {
         if (!cancelled) setDashboardUsageData(response);
       })
@@ -186,7 +191,7 @@ export function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [connectionStatus, dashboardUsageRefreshToken]);
+  }, [connectionStatus, dashboardUsageRange, dashboardUsageRefreshToken]);
 
   useEffect(() => {
     if (connectionStatus !== 'connected') {
@@ -368,9 +373,14 @@ export function DashboardPage() {
     [dashboardUsageData]
   );
   const usageTimeline = useMemo(
-    () => buildDashboardDailyTrend(dashboardUsage.timeline, currentTime.getTime()),
-    [dashboardUsage.timeline, currentTime]
+    () =>
+      buildDashboardRangeTrend(dashboardUsage.timeline, currentTime.getTime(), dashboardUsageRange),
+    [dashboardUsage.timeline, currentTime, dashboardUsageRange]
   );
+  const selectedUsageRangeOption = getDashboardUsageRangeOption(dashboardUsageRange);
+  const selectedUsageRangeLabel = t(selectedUsageRangeOption.labelKey, {
+    defaultValue: selectedUsageRangeOption.defaultLabel,
+  });
   const usageTimelineMaxCalls = Math.max(...usageTimeline.map((point) => point.calls), 1);
   const chartPoints = useMemo(() => {
     const plotWidth = CHART_WIDTH - CHART_LEFT - CHART_RIGHT;
@@ -391,6 +401,10 @@ export function DashboardPage() {
         } ${CHART_BASELINE} Z`
       : '';
   const recentEvents = dashboardUsage.events.slice(0, 5);
+  const handleDashboardUsageRangeChange = useCallback((nextRange: DashboardUsageRange) => {
+    setDashboardUsageRange(nextRange);
+    setUsageRangeMenuOpen(false);
+  }, []);
 
   return (
     <div className={styles.dashboard}>
@@ -424,8 +438,11 @@ export function DashboardPage() {
                 <h2>{t('dashboard.recent_requests', { defaultValue: '最近请求' })}</h2>
                 <button
                   type="button"
-                  className={styles.iconButton}
+                  className={`${styles.iconButton} ${
+                    dashboardUsageLoading ? styles.loadingIconButton : ''
+                  }`}
                   onClick={refreshDashboardUsage}
+                  disabled={dashboardUsageLoading}
                   aria-label={t('dashboard.refresh_recent_requests', {
                     defaultValue: '刷新最近请求',
                   })}
@@ -433,7 +450,7 @@ export function DashboardPage() {
                     defaultValue: '刷新最近请求',
                   })}
                 >
-                  <IconFileText size={16} />
+                  <IconRefreshCw size={15} />
                 </button>
               </div>
               {dashboardUsageLoading ? (
@@ -502,20 +519,56 @@ export function DashboardPage() {
             <article className={`${styles.panelCard} ${styles.usagePanel}`}>
               <div className={styles.panelHeader}>
                 <h2>{t('dashboard.usage_trend', { defaultValue: '用量趋势' })}</h2>
-                <button
-                  type="button"
-                  className={styles.periodBadge}
-                  onClick={refreshDashboardUsage}
-                  aria-label={t('dashboard.refresh_usage_trend', {
-                    defaultValue: '刷新 7 天用量趋势',
-                  })}
-                  title={t('dashboard.refresh_usage_trend', {
-                    defaultValue: '刷新 7 天用量趋势',
-                  })}
+                <div
+                  className={styles.periodSelector}
+                  onBlur={(event) => {
+                    const nextTarget = event.relatedTarget;
+                    if (
+                      !(nextTarget instanceof Node) ||
+                      !event.currentTarget.contains(nextTarget)
+                    ) {
+                      setUsageRangeMenuOpen(false);
+                    }
+                  }}
                 >
-                  7 天
-                  <IconChevronDown size={14} />
-                </button>
+                  <button
+                    type="button"
+                    className={styles.periodBadge}
+                    onClick={() => setUsageRangeMenuOpen((open) => !open)}
+                    aria-haspopup="menu"
+                    aria-expanded={usageRangeMenuOpen}
+                    aria-label={t('dashboard.select_usage_range', {
+                      defaultValue: '选择用量趋势范围',
+                    })}
+                  >
+                    {selectedUsageRangeLabel}
+                    <IconChevronDown
+                      size={14}
+                      className={usageRangeMenuOpen ? styles.periodChevronOpen : ''}
+                    />
+                  </button>
+                  {usageRangeMenuOpen ? (
+                    <div className={styles.periodMenu} role="menu">
+                      {DASHBOARD_USAGE_RANGE_OPTIONS.map((option) => {
+                        const active = option.value === dashboardUsageRange;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={active}
+                            className={`${styles.periodMenuItem} ${
+                              active ? styles.periodMenuItemActive : ''
+                            }`}
+                            onClick={() => handleDashboardUsageRangeChange(option.value)}
+                          >
+                            {t(option.labelKey, { defaultValue: option.defaultLabel })}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
               </div>
               <div className={styles.trendTotal}>
                 <strong>
@@ -550,7 +603,12 @@ export function DashboardPage() {
                     />
                   ))}
                 </svg>
-                <div className={styles.chartLabels}>
+                <div
+                  className={styles.chartLabels}
+                  style={{
+                    gridTemplateColumns: `repeat(${usageTimeline.length}, minmax(0, 1fr))`,
+                  }}
+                >
                   {usageTimeline.map((point) => (
                     <span key={point.dayStartMs}>{point.label}</span>
                   ))}
