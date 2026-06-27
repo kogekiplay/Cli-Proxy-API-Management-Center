@@ -184,6 +184,162 @@
   }
 }
 
+.monitoringKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+
+  @media (max-width: 1320px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @include mobile {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.monitoringKpiCard {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  min-height: 104px;
+  padding: 18px;
+  border-color: var(--ops-panel-border);
+  background: var(--ops-panel-bg);
+  box-shadow: 0 14px 34px color-mix(in srgb, #8b6f55 6%, transparent);
+
+  span,
+  small {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 28px;
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.monitoringToolbar {
+  padding: 12px;
+}
+
+.monitoringFilters {
+  display: grid;
+  grid-template-columns:
+    minmax(184px, 0.9fr)
+    42px
+    minmax(140px, 1fr)
+    minmax(140px, 1fr)
+    minmax(150px, 1fr)
+    minmax(150px, 1fr)
+    minmax(132px, 0.85fr)
+    minmax(190px, 1.15fr);
+  gap: 10px;
+  align-items: center;
+
+  :global(.form-group) {
+    margin: 0;
+    min-width: 0;
+  }
+
+  @media (max-width: 1320px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.monitoringFilterSelect,
+.monitoringStatusSelect,
+.monitoringPageSize {
+  min-width: 0;
+
+  button {
+    border-color: var(--ops-panel-strong-border);
+    background: var(--bg-primary);
+    box-shadow: none;
+    font-size: 12px;
+    font-weight: 750;
+  }
+}
+
+.monitoringFilterSelect,
+.monitoringStatusSelect {
+  button {
+    height: 40px;
+    border-radius: 12px;
+  }
+}
+
+.monitoringIconButton,
+.monitoringActionButton,
+.monitoringPageButton {
+  @include button-reset;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--ops-panel-strong-border);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    border-color: color-mix(in srgb, #c75f3a 36%, var(--border-color));
+    color: #b65432;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+.monitoringIconButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.monitoringSearch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--ops-panel-strong-border);
+  border-radius: 12px;
+  background: var(--bg-primary);
+  color: var(--text-tertiary);
+
+  svg {
+    flex: 0 0 auto;
+  }
+
+  input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 650;
+
+    &::placeholder {
+      color: var(--text-tertiary);
+    }
+  }
+}
+
 .breadcrumb {
   margin-bottom: 8px;
   color: var(--text-tertiary);
@@ -205,7 +361,6 @@
   padding: 15px;
   border-color: color-mix(in srgb, var(--summary-accent) 20%, var(--ops-panel-border));
   background: var(--ops-panel-bg);
-
 }
 
 .metricCard::before {
@@ -213,7 +368,11 @@
   inset: 0;
   z-index: -1;
   border-radius: inherit;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--summary-accent) 8%, transparent), transparent 58%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--summary-accent) 8%, transparent),
+    transparent 58%
+  );
   content: '';
 }
 
@@ -548,7 +707,11 @@
   place-items: center;
   border-radius: $radius-full;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--insight-color, #2f6f94) 28%, transparent), transparent),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--insight-color, #2f6f94) 28%, transparent),
+      transparent
+    ),
     color-mix(in srgb, var(--insight-color, #2f6f94) 10%, var(--bg-primary));
   color: var(--insight-color, #2f6f94);
 }
@@ -868,6 +1031,215 @@
     0 4px 14px color-mix(in srgb, #2f6f94 18%, transparent);
 }
 
+.monitoringTableCard {
+  padding: 0;
+  overflow: hidden;
+  border-color: var(--ops-panel-border);
+  background: var(--ops-panel-bg);
+  box-shadow: 0 16px 44px color-mix(in srgb, #8b6f55 8%, transparent);
+}
+
+.monitoringTableWrap {
+  width: 100%;
+  overflow: auto;
+}
+
+.monitoringTable {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 15px 18px;
+    border-bottom: 1px solid color-mix(in srgb, var(--ops-panel-border) 84%, transparent);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  th {
+    color: var(--text-secondary);
+    background: color-mix(in srgb, var(--bg-secondary) 48%, transparent);
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  td {
+    color: var(--text-primary);
+    font-size: 13px;
+  }
+
+  tr:last-child td {
+    border-bottom: 0;
+  }
+}
+
+.monitoringRow {
+  min-height: 68px;
+}
+
+.monitoringRowFailed td {
+  background: color-mix(in srgb, #ef4444 7%, transparent);
+}
+
+.monitoringRowFailed:hover td {
+  background: color-mix(in srgb, #ef4444 10%, transparent);
+}
+
+.monitoringTime {
+  display: inline-block;
+  width: 96px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.35;
+}
+
+.monitoringRequestCell,
+.monitoringProviderCell,
+.monitoringCredentialCell,
+.monitoringStatusCell,
+.monitoringLatencyCell,
+.monitoringUsageCell,
+.monitoringCostCell {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.monitoringRequestCell,
+.monitoringCredentialCell,
+.monitoringLatencyCell,
+.monitoringUsageCell {
+  strong,
+  small {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.monitoringRequestCell strong,
+.monitoringCredentialCell strong,
+.monitoringLatencyCell strong,
+.monitoringUsageCell strong,
+.monitoringCostCell strong {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.monitoringRequestCell small,
+.monitoringCredentialCell small,
+.monitoringLatencyCell small,
+.monitoringUsageCell small {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.monitoringProviderCell {
+  grid-template-columns: auto minmax(80px, 1fr);
+  align-items: center;
+  gap: 8px;
+
+  strong {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 750;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.monitoringStatusCell {
+  align-items: start;
+  max-width: 180px;
+}
+
+.monitoringCostCell {
+  min-width: 92px;
+
+  strong {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.monitoringActionButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+}
+
+.monitoringPagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--ops-panel-border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+
+  @include mobile {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.monitoringPaginationActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.monitoringPageSize {
+  width: 108px;
+
+  button {
+    height: 32px;
+    border-radius: 10px;
+  }
+}
+
+.monitoringPageGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  i {
+    color: var(--text-tertiary);
+    font-style: normal;
+  }
+}
+
+.monitoringPageButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.monitoringPageButtonActive {
+  border-color: color-mix(in srgb, #c75f3a 54%, var(--border-color));
+  background: color-mix(in srgb, #c75f3a 8%, var(--bg-primary));
+  color: #b65432;
+}
+
+.monitoringNextIcon {
+  transform: rotate(180deg);
+}
+
 .tableWrap {
   width: 100%;
   overflow: auto;
@@ -959,7 +1331,8 @@
 .identityBadge {
   flex: 0 0 auto;
   padding: 3px 7px;
-  border: 1px solid color-mix(in srgb, var(--identity-color, var(--primary-color)) 34%, var(--border-color));
+  border: 1px solid
+    color-mix(in srgb, var(--identity-color, var(--primary-color)) 34%, var(--border-color));
   border-radius: $radius-full;
   background: color-mix(in srgb, var(--identity-color, var(--primary-color)) 14%, transparent);
   color: color-mix(in srgb, var(--identity-color, var(--primary-color)) 88%, var(--text-primary));
@@ -1146,7 +1519,8 @@
   small {
     color: var(--text-secondary);
     font-size: 11px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
   }
 }
 

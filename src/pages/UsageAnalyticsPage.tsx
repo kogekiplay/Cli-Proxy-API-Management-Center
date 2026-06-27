@@ -7,6 +7,7 @@ import { Select, type SelectOption } from '@/components/ui/Select';
 import { Sheet } from '@/components/ui/Sheet';
 import {
   IconAlertTriangle,
+  IconChevronLeft,
   IconCheckCircle2,
   IconCopy,
   IconDollarSign,
@@ -14,6 +15,7 @@ import {
   IconFileText,
   IconInbox,
   IconRefreshCw,
+  IconSearch,
   IconTimer,
   IconTrendingUp,
   IconTrophy,
@@ -58,6 +60,7 @@ type RangeKey = '24h' | '7d' | '30d';
 type UsageAnalyticsView = 'analytics' | 'monitoring';
 type SummaryAccent = 'blue' | 'green' | 'red' | 'amber' | 'teal' | 'cyan';
 type AnalysisTrendBucket = 'hour' | 'day';
+type MonitoringStatusFilter = '' | 'success' | 'failed' | '4xx' | '5xx';
 
 interface TokenTrendRow {
   key: string;
@@ -116,13 +119,14 @@ const formatCost = (value: number | undefined | null) =>
         maximumFractionDigits: 6,
       }).format(value);
 
-const formatDateTime = (value: number | undefined | null) => {
+const formatMonitoringDateTime = (value: number | undefined | null) => {
   if (!value) return '-';
   return new Date(value).toLocaleString(undefined, {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
+    second: '2-digit',
     hour12: false,
   });
 };
@@ -149,7 +153,8 @@ const formatDuration = (value: number | undefined | null) => {
 const successRate = (success: number, total: number) =>
   total > 0 ? `${((success / total) * 100).toFixed(1)}%` : '-';
 
-const successRateNumber = (success: number, total: number) => (total > 0 ? (success / total) * 100 : 0);
+const successRateNumber = (success: number, total: number) =>
+  total > 0 ? (success / total) * 100 : 0;
 
 const comparisonText = (label: string, value: number | undefined | null, suffix = '%') => {
   if (value === undefined || value === null || !Number.isFinite(value)) return `${label} -`;
@@ -325,7 +330,9 @@ const deriveTokenTrendRows = (
             cost: point.cost ?? fromEvents?.cost ?? 0,
           };
         })
-      : Array.from(eventBuckets.values()).sort((left, right) => Number(left.key) - Number(right.key));
+      : Array.from(eventBuckets.values()).sort(
+          (left, right) => Number(left.key) - Number(right.key)
+        );
 
   return rows.slice(range === '24h' ? -18 : -14);
 };
@@ -387,7 +394,9 @@ const buildProviderStats = (
     });
   }
 
-  return Array.from(map.values()).sort((left, right) => right.value - left.value).slice(0, 6);
+  return Array.from(map.values())
+    .sort((left, right) => right.value - left.value)
+    .slice(0, 6);
 };
 
 const buildDonutGradient = (rows: NamedStatRow[]) => {
@@ -406,7 +415,8 @@ const classifyFailureReason = (row: UsageAnalyticsEventRow) => {
   const code = statusCodeOf(row);
   const text = `${row.fail_summary ?? ''} ${row.fail_body ?? ''}`.toLowerCase();
   if (code === 429 || text.includes('limit') || text.includes('quota')) return '限流 429';
-  if (text.includes('timeout') || text.includes('closed') || text.includes('deadline')) return '上游超时';
+  if (text.includes('timeout') || text.includes('closed') || text.includes('deadline'))
+    return '上游超时';
   if (code === 401 || code === 403 || text.includes('auth')) return '认证失败';
   if (code >= 500) return '上游错误';
   return '路由回退';
@@ -434,7 +444,9 @@ const buildFailureStats = (events: UsageAnalyticsEventRow[]): NamedStatRow[] => 
       existing.failure += 1;
       map.set(name, existing);
     });
-  return Array.from(map.values()).sort((left, right) => right.value - left.value).slice(0, 5);
+  return Array.from(map.values())
+    .sort((left, right) => right.value - left.value)
+    .slice(0, 5);
 };
 
 const buildHeatmapCells = (events: UsageAnalyticsEventRow[]) => {
@@ -641,6 +653,10 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   const [error, setError] = useState('');
   const [selectedEvent, setSelectedEvent] = useState<UsageAnalyticsEventRow | null>(null);
   const [analysisMode, setAnalysisMode] = useState<'overview' | 'complete'>('overview');
+  const [monitoringStatusFilter, setMonitoringStatusFilter] = useState<MonitoringStatusFilter>('');
+  const [monitoringSearch, setMonitoringSearch] = useState('');
+  const [monitoringPageSize, setMonitoringPageSize] = useState('20');
+  const [monitoringPage, setMonitoringPage] = useState(1);
 
   const buildAnalyticsRequest = useCallback(
     (
@@ -744,6 +760,10 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   const eventMetrics = useMemo(
     () => ({
       averageLatencyMs: average(events.map((row) => row.latency_ms)),
+      p50LatencyMs: percentile(
+        events.map((row) => row.latency_ms),
+        0.5
+      ),
       p95LatencyMs: percentile(
         events.map((row) => row.latency_ms),
         0.95
@@ -979,6 +999,107 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     [apiKeyHashFilter, clientAPIKeyOptions, t, usageFilterRows, usageFilterSelection]
   );
 
+  const monitoringStatusOptions = useMemo<SelectOption[]>(
+    () => [
+      { value: '', label: '所有状态' },
+      { value: 'success', label: '成功' },
+      { value: 'failed', label: '失败' },
+      { value: '4xx', label: '4xx 错误' },
+      { value: '5xx', label: '5xx 错误' },
+    ],
+    []
+  );
+
+  const monitoringPageSizeOptions = useMemo<SelectOption[]>(
+    () => [
+      { value: '20', label: '20 条/页' },
+      { value: '50', label: '50 条/页' },
+      { value: '100', label: '100 条/页' },
+    ],
+    []
+  );
+
+  const handleMonitoringStatusFilterChange = useCallback((value: string) => {
+    const next = value as MonitoringStatusFilter;
+    setMonitoringStatusFilter(next);
+    setFailedOnly(next === 'failed');
+  }, []);
+
+  const monitoringFilteredEvents = useMemo(() => {
+    const search = monitoringSearch.trim().toLowerCase();
+    return events.filter((row) => {
+      const code = statusCodeOf(row);
+      const matchesStatus =
+        !monitoringStatusFilter ||
+        (monitoringStatusFilter === 'success' && !row.failed && code < 400) ||
+        (monitoringStatusFilter === 'failed' && (row.failed || code >= 400)) ||
+        (monitoringStatusFilter === '4xx' && code >= 400 && code < 500) ||
+        (monitoringStatusFilter === '5xx' && code >= 500);
+      if (!matchesStatus) return false;
+      if (!search) return true;
+
+      const apiKeyDisplay = resolveEventAPIKeyDisplay(row).value;
+      const haystack = [
+        row.request_id,
+        row.provider,
+        providerLabel(row.provider),
+        row.model,
+        row.endpoint,
+        credentialText(row),
+        apiKeyDisplay,
+        String(code),
+        row.fail_summary,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(search);
+    });
+  }, [credentialText, events, monitoringSearch, monitoringStatusFilter, resolveEventAPIKeyDisplay]);
+
+  const monitoringPageSizeNumber = Number(monitoringPageSize) || 20;
+  const monitoringPageCount = Math.max(
+    1,
+    Math.ceil(monitoringFilteredEvents.length / monitoringPageSizeNumber)
+  );
+  const safeMonitoringPage = Math.min(monitoringPage, monitoringPageCount);
+  const monitoringRows = monitoringFilteredEvents.slice(
+    (safeMonitoringPage - 1) * monitoringPageSizeNumber,
+    safeMonitoringPage * monitoringPageSizeNumber
+  );
+  const monitoringPageNumbers = useMemo(() => {
+    const pages = new Set(
+      [
+        1,
+        safeMonitoringPage - 1,
+        safeMonitoringPage,
+        safeMonitoringPage + 1,
+        monitoringPageCount,
+      ].filter((page) => page >= 1 && page <= monitoringPageCount)
+    );
+    return Array.from(pages).sort((left, right) => left - right);
+  }, [monitoringPageCount, safeMonitoringPage]);
+
+  useEffect(() => {
+    setMonitoringPage(1);
+  }, [
+    apiKeyHashFilter,
+    authIndexFilter,
+    failedOnly,
+    modelFilter,
+    monitoringPageSize,
+    monitoringSearch,
+    monitoringStatusFilter,
+    providerFilter,
+    range,
+  ]);
+
+  useEffect(() => {
+    if (monitoringPage > monitoringPageCount) {
+      setMonitoringPage(monitoringPageCount);
+    }
+  }, [monitoringPage, monitoringPageCount]);
+
   const buildEventsCSV = useCallback(
     (rows: UsageAnalyticsEventRow[]) => {
       const headers = [
@@ -1095,6 +1216,24 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     }
   }, [buildAnalyticsRequest, data?.events, eventsLoadingMore]);
 
+  const handleMonitoringNextPage = useCallback(async () => {
+    if (safeMonitoringPage < monitoringPageCount) {
+      setMonitoringPage(safeMonitoringPage + 1);
+      return;
+    }
+    if (data?.events?.has_more && !eventsLoadingMore) {
+      const nextPage = safeMonitoringPage + 1;
+      await handleLoadMoreEvents();
+      setMonitoringPage(nextPage);
+    }
+  }, [
+    data?.events?.has_more,
+    eventsLoadingMore,
+    handleLoadMoreEvents,
+    monitoringPageCount,
+    safeMonitoringPage,
+  ]);
+
   const handleCopySelectedFailure = useCallback(async () => {
     if (!selectedEvent) return;
     const copied = await copyToClipboard(
@@ -1195,83 +1334,6 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     [renderCredentialIdentity, t]
   );
 
-  const eventColumns = useMemo(
-    () => [
-      {
-        key: 'time',
-        label: t('usage_analytics.time'),
-        render: (row: UsageAnalyticsEventRow) => (
-          <span className={styles.eventTime}>{formatDateTime(row.timestamp_ms)}</span>
-        ),
-      },
-      {
-        key: 'request',
-        label: t('usage_analytics.request'),
-        render: (row: UsageAnalyticsEventRow) => (
-          <div className={styles.requestCell}>
-            <strong>{row.model || '-'}</strong>
-            <small>{[providerLabel(row.provider), row.endpoint].filter(Boolean).join(' · ')}</small>
-          </div>
-        ),
-      },
-      {
-        key: 'credential',
-        label: t('usage_analytics.credential'),
-        render: renderCredentialIdentity,
-      },
-      {
-        key: 'statusCode',
-        label: t('usage_analytics.status_code'),
-        render: (row: UsageAnalyticsEventRow) => (
-          <div className={styles.statusCell}>
-            <StatusBadge row={row} />
-            <ErrorSummary row={row} emptyLabel={t('usage_analytics.no_error_summary')} />
-          </div>
-        ),
-      },
-      {
-        key: 'latency',
-        label: t('usage_analytics.latency_ttft'),
-        render: (row: UsageAnalyticsEventRow) => (
-          <div className={styles.latencyCell}>
-            <span>
-              <strong>{formatDuration(row.latency_ms)}</strong>
-              <small>{t('usage_analytics.latency')}</small>
-            </span>
-            <i aria-hidden="true" />
-            <span>
-              <strong>{formatDuration(row.ttft_ms)}</strong>
-              <small>{t('usage_analytics.ttft')}</small>
-            </span>
-          </div>
-        ),
-      },
-      {
-        key: 'usage',
-        label: t('usage_analytics.usage'),
-        render: (row: UsageAnalyticsEventRow) => (
-          <div className={styles.usageCell}>
-            <strong>{formatNumber(row.tokens?.total_tokens)}</strong>
-            <small>{tokenSummary(row)}</small>
-            <small>{`${t('usage_analytics.output_speed')} ${formatTokensPerSecond(row)}`}</small>
-          </div>
-        ),
-      },
-      {
-        key: 'cost',
-        label: t('usage_analytics.cost'),
-        render: (row: UsageAnalyticsEventRow) => (
-          <span className={row.missing_price_model_name ? styles.warnText : undefined}>
-            {row.missing_price_model_name
-              ? t('usage_analytics.price_missing')
-              : formatCost(row.estimated_cost_usd)}
-          </span>
-        ),
-      },
-    ],
-    [renderCredentialIdentity, t]
-  );
-
   const failureCalls = summary?.failure_calls ?? 0;
   const totalCalls = summary?.total_calls ?? 0;
   const successCalls = summary?.success_calls ?? 0;
@@ -1288,12 +1350,8 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   const trendChangePercent = useMemo(() => {
     if (tokenTrendRows.length < 2) return null;
     const middle = Math.max(1, Math.floor(tokenTrendRows.length / 2));
-    const previous = tokenTrendRows
-      .slice(0, middle)
-      .reduce((sum, row) => sum + row.calls, 0);
-    const current = tokenTrendRows
-      .slice(middle)
-      .reduce((sum, row) => sum + row.calls, 0);
+    const previous = tokenTrendRows.slice(0, middle).reduce((sum, row) => sum + row.calls, 0);
+    const current = tokenTrendRows.slice(middle).reduce((sum, row) => sum + row.calls, 0);
     return previous > 0 ? ((current - previous) / previous) * 100 : null;
   }, [tokenTrendRows]);
   const providerStats = useMemo(
@@ -1410,7 +1468,9 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
           placeholder={t('usage_analytics.api_key_filter')}
           ariaLabel={t('usage_analytics.api_key_filter')}
         />
-        <label className={`${styles.checkboxLabel} ${failedOnly ? styles.checkboxLabelActive : ''}`}>
+        <label
+          className={`${styles.checkboxLabel} ${failedOnly ? styles.checkboxLabelActive : ''}`}
+        >
           <input
             type="checkbox"
             checked={failedOnly}
@@ -1437,7 +1497,10 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
         icon={<IconCheckCircle2 size={18} />}
         label={t('usage_analytics.success_rate')}
         value={successRate(successCalls, totalCalls)}
-        meta={comparisonText(`较前 ${currentRangeLabel}`, successRateNumber(successCalls, totalCalls) - 92)}
+        meta={comparisonText(
+          `较前 ${currentRangeLabel}`,
+          successRateNumber(successCalls, totalCalls) - 92
+        )}
         tone={failureCalls > 0 ? 'warn' : 'good'}
       />
       <SummaryCard
@@ -1473,7 +1536,10 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     <Card title="洞察" className={styles.insightRail}>
       <div className={styles.insightList}>
         {insightItems.map((item) => (
-          <div className={`${styles.insightItem} ${styles[`insightTone${item.tone}`]}`} key={item.title}>
+          <div
+            className={`${styles.insightItem} ${styles[`insightTone${item.tone}`]}`}
+            key={item.title}
+          >
             <span className={styles.insightIcon} aria-hidden="true">
               {item.icon}
             </span>
@@ -1485,7 +1551,11 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
         ))}
       </div>
       {showCompleteAction ? (
-        <button className={styles.textAction} type="button" onClick={() => setAnalysisMode('complete')}>
+        <button
+          className={styles.textAction}
+          type="button"
+          onClick={() => setAnalysisMode('complete')}
+        >
           查看完整分析
           <span aria-hidden="true">→</span>
         </button>
@@ -1561,7 +1631,11 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
             columns={modelColumns}
             empty={t('usage_analytics.no_data')}
           />
-          <button className={styles.textAction} type="button" onClick={() => setAnalysisMode('complete')}>
+          <button
+            className={styles.textAction}
+            type="button"
+            onClick={() => setAnalysisMode('complete')}
+          >
             查看全部模型
             <span aria-hidden="true">→</span>
           </button>
@@ -1572,7 +1646,11 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
             columns={apiKeyColumns}
             empty={t('usage_analytics.no_data')}
           />
-          <button className={styles.textAction} type="button" onClick={() => setAnalysisMode('complete')}>
+          <button
+            className={styles.textAction}
+            type="button"
+            onClick={() => setAnalysisMode('complete')}
+          >
             查看全部 API Key
             <span aria-hidden="true">→</span>
           </button>
@@ -1584,7 +1662,11 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
           columns={credentialColumns}
           empty={t('usage_analytics.no_data')}
         />
-        <button className={styles.textAction} type="button" onClick={() => setAnalysisMode('complete')}>
+        <button
+          className={styles.textAction}
+          type="button"
+          onClick={() => setAnalysisMode('complete')}
+        >
           查看全部认证文件
           <span aria-hidden="true">→</span>
         </button>
@@ -1598,7 +1680,10 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
         <Card title="分析摘要" className={styles.summaryPanel}>
           <div className={styles.analysisSummaryList}>
             {insightItems.slice(0, 3).map((item) => (
-              <div className={`${styles.insightItem} ${styles[`insightTone${item.tone}`]}`} key={item.title}>
+              <div
+                className={`${styles.insightItem} ${styles[`insightTone${item.tone}`]}`}
+                key={item.title}
+              >
                 <span className={styles.insightIcon} aria-hidden="true" />
                 <div>
                   <strong>{item.title}</strong>
@@ -1714,30 +1799,53 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                 <span>{index + 1}</span>
                 <strong>{row.model || '-'}</strong>
                 <div>
-                  <i style={{ width: `${Math.max(4, (row.total_tokens / Math.max(totalTokens, 1)) * 100)}%` }} />
+                  <i
+                    style={{
+                      width: `${Math.max(4, (row.total_tokens / Math.max(totalTokens, 1)) * 100)}%`,
+                    }}
+                  />
                 </div>
                 <small>{successRate(row.total_tokens, totalTokens)}</small>
               </div>
             ))}
           </div>
-          <button className={styles.textAction} type="button" onClick={() => setAnalysisMode('overview')}>
+          <button
+            className={styles.textAction}
+            type="button"
+            onClick={() => setAnalysisMode('overview')}
+          >
             查看全部模型
             <span aria-hidden="true">→</span>
           </button>
         </Card>
         <Card title="失败原因分析" className={styles.compactRankCard}>
           <div className={styles.failureList}>
-            {(failureStats.length > 0 ? failureStats : [{ name: '暂无失败', value: 0, calls: 0, success: 0, failure: 0, cost: 0, color: '#d7c8ba' }]).map(
-              (row) => (
-                <div className={styles.failureBar} key={row.name}>
-                  <span>{row.name}</span>
-                  <div>
-                    <i style={{ width: `${Math.max(4, (row.value / Math.max(failureCalls, 1)) * 100)}%` }} />
-                  </div>
-                  <strong>{formatNumber(row.value)}</strong>
+            {(failureStats.length > 0
+              ? failureStats
+              : [
+                  {
+                    name: '暂无失败',
+                    value: 0,
+                    calls: 0,
+                    success: 0,
+                    failure: 0,
+                    cost: 0,
+                    color: '#d7c8ba',
+                  },
+                ]
+            ).map((row) => (
+              <div className={styles.failureBar} key={row.name}>
+                <span>{row.name}</span>
+                <div>
+                  <i
+                    style={{
+                      width: `${Math.max(4, (row.value / Math.max(failureCalls, 1)) * 100)}%`,
+                    }}
+                  />
                 </div>
-              )
-            )}
+                <strong>{formatNumber(row.value)}</strong>
+              </div>
+            ))}
           </div>
         </Card>
       </div>
@@ -1780,7 +1888,9 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                 </span>
                 <strong>{row.name}</strong>
                 <div>
-                  <i style={{ width: `${Math.max(4, (row.cost / Math.max(totalCost, 1)) * 100)}%` }} />
+                  <i
+                    style={{ width: `${Math.max(4, (row.cost / Math.max(totalCost, 1)) * 100)}%` }}
+                  />
                 </div>
                 <small>{formatCost(row.cost)}</small>
               </div>
@@ -1812,45 +1922,306 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     </>
   );
 
-  const renderMonitoring = () => (
+  const renderMonitoringKpiCards = () => {
+    const failureRate = totalCalls > 0 ? `${((failureCalls / totalCalls) * 100).toFixed(1)}%` : '-';
+    return (
+      <div className={styles.monitoringKpiGrid}>
+        <Card className={styles.monitoringKpiCard}>
+          <span>总请求数</span>
+          <strong>{formatNumber(totalCalls)}</strong>
+          <small>过去 {currentRangeLabel}</small>
+        </Card>
+        <Card className={styles.monitoringKpiCard}>
+          <span>成功请求</span>
+          <strong>{formatNumber(successCalls)}</strong>
+          <small>{successRate(successCalls, totalCalls)}</small>
+        </Card>
+        <Card className={styles.monitoringKpiCard}>
+          <span>错误请求</span>
+          <strong>{formatNumber(failureCalls)}</strong>
+          <small>{failureRate}</small>
+        </Card>
+        <Card className={styles.monitoringKpiCard}>
+          <span>P50 延迟</span>
+          <strong>{formatDuration(eventMetrics.p50LatencyMs)}</strong>
+          <small>响应中位数</small>
+        </Card>
+        <Card className={styles.monitoringKpiCard}>
+          <span>P95 延迟</span>
+          <strong>{formatDuration(eventMetrics.p95LatencyMs)}</strong>
+          <small>长尾延迟</small>
+        </Card>
+        <Card className={styles.monitoringKpiCard}>
+          <span>总 Token</span>
+          <strong>{formatCompactNumber(totalTokens)}</strong>
+          <small>过去 {currentRangeLabel}</small>
+        </Card>
+      </div>
+    );
+  };
+
+  const renderMonitoringFilters = () => (
     <Card
-      title={t('usage_analytics.recent_requests')}
-      extra={
-        <span className={styles.cardMeta}>
-          {t('usage_analytics.events_loaded_meta', {
-            loaded: formatNumber(events.length),
-            total: formatNumber(data?.events?.total_count ?? events.length),
-          })}
-        </span>
-      }
+      className={`${styles.filterCard} ${styles.operationsToolbar} ${styles.monitoringToolbar}`}
     >
-      <StatTable
-        rows={events}
-        columns={eventColumns}
-        empty={t('usage_analytics.no_data')}
-        getRowKey={(row) => eventRowKey(row)}
-        onRowClick={setSelectedEvent}
-        rowClassName={(row) =>
-          [styles.eventRow, row.failed ? styles.eventRowFailed : ''].filter(Boolean).join(' ')
-        }
-      />
-      {data?.events?.has_more ? (
-        <div className={styles.loadMoreBar}>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => void handleLoadMoreEvents()}
-            loading={eventsLoadingMore}
-          >
-            {t('usage_analytics.load_more')}
-          </Button>
+      <div className={styles.monitoringFilters}>
+        <div className={styles.rangeGroup}>
+          {(['24h', '7d', '30d'] as RangeKey[]).map((item) => (
+            <button
+              key={item}
+              type="button"
+              className={`${styles.rangeButton} ${range === item ? styles.rangeButtonActive : ''}`}
+              onClick={() => setRange(item)}
+            >
+              {t(`usage_analytics.range_${item}`)}
+            </button>
+          ))}
         </div>
-      ) : events.length > 0 ? (
-        <div className={styles.loadMoreBar}>
-          <span>{t('usage_analytics.no_more_events')}</span>
-        </div>
-      ) : null}
+        <button className={styles.monitoringIconButton} type="button" aria-label="时间范围">
+          <IconTimer size={15} />
+        </button>
+        <Select
+          className={styles.monitoringFilterSelect}
+          value={providerFilter}
+          onChange={setProviderFilter}
+          options={providerFilterOptions}
+          placeholder={t('usage_analytics.provider_filter')}
+          ariaLabel={t('usage_analytics.provider_filter')}
+        />
+        <Select
+          className={styles.monitoringFilterSelect}
+          value={modelFilter}
+          onChange={setModelFilter}
+          options={modelFilterOptions}
+          placeholder={t('usage_analytics.model_filter')}
+          ariaLabel={t('usage_analytics.model_filter')}
+        />
+        <Select
+          className={styles.monitoringFilterSelect}
+          value={authIndexFilter}
+          onChange={setAuthIndexFilter}
+          options={authIndexFilterOptions}
+          placeholder={t('usage_analytics.auth_filter')}
+          ariaLabel={t('usage_analytics.auth_filter')}
+        />
+        <Select
+          className={styles.monitoringFilterSelect}
+          value={apiKeyHashFilter}
+          onChange={setAPIKeyHashFilter}
+          options={apiKeyFilterOptions}
+          placeholder={t('usage_analytics.api_key_filter')}
+          ariaLabel={t('usage_analytics.api_key_filter')}
+        />
+        <Select
+          className={styles.monitoringStatusSelect}
+          value={monitoringStatusFilter}
+          onChange={handleMonitoringStatusFilterChange}
+          options={monitoringStatusOptions}
+          placeholder="所有状态"
+          ariaLabel="状态筛选"
+        />
+        <label className={styles.monitoringSearch}>
+          <IconSearch size={15} />
+          <input
+            value={monitoringSearch}
+            onChange={(event) => setMonitoringSearch(event.target.value)}
+            placeholder="搜索请求、Key、模型..."
+            aria-label="搜索请求、Key、模型"
+          />
+        </label>
+      </div>
     </Card>
+  );
+
+  const renderMonitoringTable = () => (
+    <Card className={styles.monitoringTableCard}>
+      <div className={styles.monitoringTableWrap}>
+        <table className={styles.monitoringTable}>
+          <thead>
+            <tr>
+              <th>{t('usage_analytics.time')}</th>
+              <th>{t('usage_analytics.request')}</th>
+              <th>提供商 / 模型</th>
+              <th>认证 / API Key</th>
+              <th>{t('usage_analytics.status_code')}</th>
+              <th>{t('usage_analytics.latency_ttft')}</th>
+              <th>Token 用量</th>
+              <th>费用 (USD)</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {monitoringRows.map((row) => {
+              const apiKeyDisplay = resolveEventAPIKeyDisplay(row);
+              return (
+                <tr
+                  key={eventRowKey(row)}
+                  className={[
+                    styles.monitoringRow,
+                    styles.clickableRow,
+                    row.failed ? styles.monitoringRowFailed : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  tabIndex={0}
+                  onClick={() => setSelectedEvent(row)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setSelectedEvent(row);
+                    }
+                  }}
+                >
+                  <td>
+                    <span className={styles.monitoringTime}>
+                      {formatMonitoringDateTime(row.timestamp_ms)}
+                    </span>
+                  </td>
+                  <td>
+                    <div className={styles.monitoringRequestCell}>
+                      <strong>{row.endpoint || '-'}</strong>
+                      <small>
+                        {row.request_id ? `ID ${compactHash(row.request_id, 14)}` : '-'}
+                      </small>
+                    </div>
+                  </td>
+                  <td>
+                    <div className={styles.monitoringProviderCell}>
+                      <span
+                        className={`${styles.identityBadge} ${providerToneClass(row.provider)}`}
+                      >
+                        {providerLabel(row.provider)}
+                      </span>
+                      <strong>{row.model || '-'}</strong>
+                    </div>
+                  </td>
+                  <td>
+                    <div className={styles.monitoringCredentialCell}>
+                      <strong>{credentialText(row) || '-'}</strong>
+                      <small>{apiKeyDisplay.value || '-'}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div className={styles.monitoringStatusCell}>
+                      <StatusBadge row={row} />
+                      <ErrorSummary row={row} emptyLabel={t('usage_analytics.no_error_summary')} />
+                    </div>
+                  </td>
+                  <td>
+                    <div className={styles.monitoringLatencyCell}>
+                      <strong>
+                        {formatDuration(row.latency_ms)} / {formatDuration(row.ttft_ms)}
+                      </strong>
+                      <small>延迟 / TTFT</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div className={styles.monitoringUsageCell}>
+                      <strong>{formatNumber(row.tokens?.total_tokens)}</strong>
+                      <small>{tokenSummary(row) || '-'}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div className={styles.monitoringCostCell}>
+                      <strong>
+                        {row.missing_price_model_name
+                          ? t('usage_analytics.price_missing')
+                          : formatCost(row.estimated_cost_usd)}
+                      </strong>
+                    </div>
+                  </td>
+                  <td>
+                    <button
+                      className={styles.monitoringActionButton}
+                      type="button"
+                      aria-label="查看请求详情"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedEvent(row);
+                      }}
+                    >
+                      <IconFileText size={15} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {monitoringRows.length === 0 ? (
+          <div className={styles.tableEmpty}>{t('usage_analytics.no_data')}</div>
+        ) : null}
+      </div>
+      <div className={styles.monitoringPagination}>
+        <span>
+          共 {formatNumber(monitoringFilteredEvents.length)} 条
+          {data?.events?.has_more ? `，已加载 ${formatNumber(events.length)} 条` : ''}
+        </span>
+        <div className={styles.monitoringPaginationActions}>
+          {data?.events?.has_more ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => void handleLoadMoreEvents()}
+              loading={eventsLoadingMore}
+            >
+              {t('usage_analytics.load_more')}
+            </Button>
+          ) : null}
+          <Select
+            className={styles.monitoringPageSize}
+            value={monitoringPageSize}
+            onChange={setMonitoringPageSize}
+            options={monitoringPageSizeOptions}
+            ariaLabel="每页条数"
+            size="sm"
+          />
+          <button
+            className={styles.monitoringPageButton}
+            type="button"
+            aria-label="上一页"
+            disabled={safeMonitoringPage <= 1}
+            onClick={() => setMonitoringPage((page) => Math.max(1, page - 1))}
+          >
+            <IconChevronLeft size={15} />
+          </button>
+          {monitoringPageNumbers.map((page, index) => {
+            const previous = monitoringPageNumbers[index - 1];
+            return (
+              <span className={styles.monitoringPageGroup} key={page}>
+                {previous && page - previous > 1 ? <i>...</i> : null}
+                <button
+                  className={`${styles.monitoringPageButton} ${
+                    page === safeMonitoringPage ? styles.monitoringPageButtonActive : ''
+                  }`}
+                  type="button"
+                  onClick={() => setMonitoringPage(page)}
+                >
+                  {page}
+                </button>
+              </span>
+            );
+          })}
+          <button
+            className={styles.monitoringPageButton}
+            type="button"
+            aria-label="下一页"
+            disabled={safeMonitoringPage >= monitoringPageCount && !data?.events?.has_more}
+            onClick={() => void handleMonitoringNextPage()}
+          >
+            <IconChevronLeft className={styles.monitoringNextIcon} size={15} />
+          </button>
+        </div>
+      </div>
+    </Card>
+  );
+
+  const renderMonitoring = () => (
+    <>
+      {renderMonitoringKpiCards()}
+      {renderMonitoringFilters()}
+      {renderMonitoringTable()}
+    </>
   );
 
   const renderMonitoringDetailSheet = () => (
@@ -1885,12 +2256,18 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
               label={t('usage_analytics.request_id')}
               value={selectedEvent.request_id || '-'}
             />
-            <DetailItem label={t('usage_analytics.status_code')} value={<StatusBadge row={selectedEvent} />} />
+            <DetailItem
+              label={t('usage_analytics.status_code')}
+              value={<StatusBadge row={selectedEvent} />}
+            />
             <DetailItem
               label={t('usage_analytics.latency')}
               value={formatDuration(selectedEvent.latency_ms)}
             />
-            <DetailItem label={t('usage_analytics.ttft')} value={formatDuration(selectedEvent.ttft_ms)} />
+            <DetailItem
+              label={t('usage_analytics.ttft')}
+              value={formatDuration(selectedEvent.ttft_ms)}
+            />
             <DetailItem
               label={t('usage_analytics.output_speed')}
               value={formatTokensPerSecond(selectedEvent)}
@@ -1900,7 +2277,10 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
               value={providerLabel(selectedEvent.provider)}
             />
             <DetailItem label={t('usage_analytics.model')} value={selectedEvent.model || '-'} />
-            <DetailItem label={t('usage_analytics.endpoint')} value={selectedEvent.endpoint || '-'} />
+            <DetailItem
+              label={t('usage_analytics.endpoint')}
+              value={selectedEvent.endpoint || '-'}
+            />
             <DetailItem
               label={t('usage_analytics.credential')}
               value={credentialText(selectedEvent) || '-'}
@@ -2008,16 +2388,18 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
           ) : null}
           <Button variant="secondary" onClick={() => void handleExport()} loading={exportLoading}>
             <IconDownload size={16} />
-            {!isMonitoringView && analysisMode === 'complete' ? '导出报告' : t('usage_analytics.export')}
+            {!isMonitoringView && analysisMode === 'complete'
+              ? '导出报告'
+              : t('usage_analytics.export')}
           </Button>
           <Button onClick={() => void load()} loading={loading}>
             <IconRefreshCw size={16} />
-            {t('common.refresh')}
+            {isMonitoringView ? '刷新数据' : t('common.refresh')}
           </Button>
         </div>
       </div>
 
-      {renderFilters()}
+      {!isMonitoringView ? renderFilters() : null}
 
       {error ? <EmptyState title={t('usage_analytics.load_failed')} description={error} /> : null}
 

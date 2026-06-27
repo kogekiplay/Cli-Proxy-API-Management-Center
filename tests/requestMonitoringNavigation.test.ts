@@ -22,4 +22,25 @@ describe('request monitoring navigation', () => {
     expect(zhCN).toContain('"request_monitoring": "请求监控"');
     expect(zhCN).toContain('"title": "请求监控"');
   });
+
+  test('renders request monitoring with a dedicated console layout', () => {
+    const page = read('src/pages/UsageAnalyticsPage.tsx');
+    const styles = read('src/pages/UsageAnalyticsPage.module.scss');
+
+    expect(page).toContain('renderMonitoringKpiCards');
+    expect(page).toContain('renderMonitoringFilters');
+    expect(page).toContain('renderMonitoringTable');
+    expect(page).toContain('monitoringStatusFilter');
+    expect(page).toContain('monitoringSearch');
+    expect(page).toContain('monitoringPageSize');
+    expect(page).toContain('monitoringRows');
+    expect(page).toContain('总请求数');
+    expect(page).toContain('P50 延迟');
+
+    expect(styles).toContain('.monitoringKpiGrid');
+    expect(styles).toContain('.monitoringToolbar');
+    expect(styles).toContain('.monitoringSearch');
+    expect(styles).toContain('.monitoringTableCard');
+    expect(styles).toContain('.monitoringPagination');
+  });
 });
