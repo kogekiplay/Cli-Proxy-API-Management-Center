@@ -103,7 +103,6 @@ export function DashboardPage() {
   const [dashboardRecentRefreshToken, setDashboardRecentRefreshToken] = useState(0);
   const [usageRangeMenuOpen, setUsageRangeMenuOpen] = useState(false);
   const [routingStrategy, setRoutingStrategy] = useState('');
-  const [routingStrategyRefreshToken, setRoutingStrategyRefreshToken] = useState(0);
 
   const [currentTime, setCurrentTime] = useState(() => new Date());
 
@@ -132,10 +131,6 @@ export function DashboardPage() {
 
   const refreshDashboardRecentRequests = useCallback(() => {
     setDashboardRecentRefreshToken((token) => token + 1);
-  }, []);
-
-  const refreshRoutingStrategy = useCallback(() => {
-    setRoutingStrategyRefreshToken((token) => token + 1);
   }, []);
 
   useEffect(() => {
@@ -249,7 +244,7 @@ export function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [connectionStatus, routingStrategyRefreshToken]);
+  }, [connectionStatus]);
 
   const configLoading = !config;
   const providerStats = config
@@ -654,19 +649,6 @@ export function DashboardPage() {
             <article className={`${styles.panelCard} ${styles.routingPanel}`}>
               <div className={styles.panelHeader}>
                 <h2>{t('dashboard.routing_strategy', { defaultValue: '路由策略' })}</h2>
-                <button
-                  type="button"
-                  className={styles.iconButton}
-                  onClick={refreshRoutingStrategy}
-                  aria-label={t('dashboard.refresh_routing_strategy', {
-                    defaultValue: '刷新路由策略',
-                  })}
-                  title={t('dashboard.refresh_routing_strategy', {
-                    defaultValue: '刷新路由策略',
-                  })}
-                >
-                  <IconRefreshCw size={15} />
-                </button>
               </div>
               <strong className={styles.strategyValue}>
                 <IconNetwork size={15} />

@@ -14,6 +14,15 @@ describe('dashboard routing controls', () => {
     expect(dashboard).not.toContain("!routingStrategyRaw\n    ? '-'");
   });
 
+  test('does not show a dashboard routing strategy refresh control', () => {
+    const dashboard = read('src/pages/DashboardPage.tsx');
+
+    expect(dashboard).toContain('getRoutingStrategy()');
+    expect(dashboard).not.toContain('refreshRoutingStrategy');
+    expect(dashboard).not.toContain('routingStrategyRefreshToken');
+    expect(dashboard).not.toContain('refresh_routing_strategy');
+  });
+
   test('keeps dashboard panel controls clickable by limiting navigation to explicit actions', () => {
     const dashboard = read('src/pages/DashboardPage.tsx');
 
