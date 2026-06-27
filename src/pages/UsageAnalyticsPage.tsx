@@ -15,6 +15,8 @@ import {
   IconInbox,
   IconRefreshCw,
   IconTimer,
+  IconTrendingUp,
+  IconTrophy,
 } from '@/components/ui/icons';
 import { displayOpenCodeGoAccountName } from '@/features/opencodeGo/helpers';
 import {
@@ -80,6 +82,7 @@ interface NamedStatRow {
 interface InsightItem {
   title: string;
   description: string;
+  icon: ReactNode;
   tone: 'blue' | 'green' | 'red' | 'amber';
 }
 
@@ -1330,6 +1333,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   const insightItems: InsightItem[] = [
     {
       tone: 'blue',
+      icon: <IconTrendingUp size={20} />,
       title: '流量高峰时段',
       description: topTrendRow
         ? `${topTrendRow.label} 达到峰值，请求量 ${formatNumber(topTrendRow.calls)}`
@@ -1337,6 +1341,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     },
     {
       tone: 'green',
+      icon: <IconTrophy size={20} />,
       title: '最活跃 Provider',
       description: topProvider
         ? `${topProvider.name} 请求占比 ${successRate(topProvider.calls, totalCalls)}`
@@ -1344,6 +1349,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     },
     {
       tone: 'red',
+      icon: <IconAlertTriangle size={20} />,
       title: '失败请求波动',
       description: topFailure
         ? `${topFailure.name} 出现 ${formatNumber(topFailure.calls)} 次`
@@ -1351,6 +1357,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     },
     {
       tone: 'amber',
+      icon: <IconDollarSign size={20} />,
       title: '费用变化',
       description: `${currentRangeLabel} 估算费用 ${formatCost(totalCost)}`,
     },
@@ -1467,7 +1474,9 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
       <div className={styles.insightList}>
         {insightItems.map((item) => (
           <div className={`${styles.insightItem} ${styles[`insightTone${item.tone}`]}`} key={item.title}>
-            <span className={styles.insightIcon} aria-hidden="true" />
+            <span className={styles.insightIcon} aria-hidden="true">
+              {item.icon}
+            </span>
             <div>
               <strong>{item.title}</strong>
               <small>{item.description}</small>
@@ -1543,7 +1552,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
       {renderKpiCards()}
       <div className={styles.overviewMainGrid}>
         {renderOverviewTrend()}
-        {renderInsights(false)}
+        {renderInsights(true)}
       </div>
       <div className={styles.rankGrid}>
         <Card title="模型排行" className={styles.tableCard}>
@@ -1675,7 +1684,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
             <polyline points={lineCost} className={styles.lineCost} />
           </svg>
         </Card>
-        {renderInsights()}
+        {renderInsights(false)}
       </div>
 
       <div className={styles.analysisGrid}>

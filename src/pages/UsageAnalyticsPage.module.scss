@@ -500,19 +500,26 @@
 .insightList,
 .analysisSummaryList {
   display: grid;
-  gap: 12px;
+  gap: 0;
 }
 
 .insightItem {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 14px;
   align-items: center;
   min-width: 0;
-  padding: 12px;
-  border: 1px solid var(--ops-panel-border);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--insight-color, #2f6f94) 5%, transparent);
+  padding: 16px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ops-panel-border) 78%, transparent);
+
+  &:first-child {
+    padding-top: 4px;
+  }
+
+  &:last-child {
+    padding-bottom: 4px;
+    border-bottom: 0;
+  }
 
   strong,
   small {
@@ -535,12 +542,15 @@
 }
 
 .insightIcon {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
+  display: inline-grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: $radius-full;
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--insight-color, #2f6f94) 28%, transparent), transparent),
     color-mix(in srgb, var(--insight-color, #2f6f94) 10%, var(--bg-primary));
+  color: var(--insight-color, #2f6f94);
 }
 
 .insightToneblue {

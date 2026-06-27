@@ -19,8 +19,9 @@ import {
 import { useAuthStore, useConfigStore, useModelsStore } from '@/stores';
 import {
   DASHBOARD_USAGE_RANGE_OPTIONS,
+  buildDashboardRecentEventsRequest,
   buildDashboardRangeTrend,
-  buildDashboardUsageRequest,
+  buildDashboardTrendRequest,
   getDashboardUsageRangeOption,
   summarizeDashboardUsage,
   type DashboardUsageRange,
@@ -90,11 +91,14 @@ export function DashboardPage() {
 
   const [authFilesCount, setAuthFilesCount] = useState<number | null>(null);
   const [authFilesLoading, setAuthFilesLoading] = useState(false);
-  const [dashboardUsageData, setDashboardUsageData] = useState<UsageAnalyticsResponse | null>(null);
-  const [dashboardUsageLoading, setDashboardUsageLoading] = useState(false);
-  const [dashboardUsageError, setDashboardUsageError] = useState('');
+  const [dashboardTrendData, setDashboardTrendData] = useState<UsageAnalyticsResponse | null>(null);
+  const [dashboardTrendLoading, setDashboardTrendLoading] = useState(false);
+  const [dashboardTrendError, setDashboardTrendError] = useState('');
+  const [dashboardRecentData, setDashboardRecentData] = useState<UsageAnalyticsResponse | null>(null);
+  const [dashboardRecentLoading, setDashboardRecentLoading] = useState(false);
+  const [dashboardRecentError, setDashboardRecentError] = useState('');
   const [dashboardUsageRange, setDashboardUsageRange] = useState<DashboardUsageRange>('7d');
-  const [dashboardUsageRefreshToken, setDashboardUsageRefreshToken] = useState(0);
+  const [dashboardRecentRefreshToken, setDashboardRecentRefreshToken] = useState(0);
   const [usageRangeMenuOpen, setUsageRangeMenuOpen] = useState(false);
   const [routingStrategy, setRoutingStrategy] = useState('');
   const [routingStrategyRefreshToken, setRoutingStrategyRefreshToken] = useState(0);
@@ -124,8 +128,8 @@ export function DashboardPage() {
     }
   }, [connectionStatus, apiBase, resolveApiKeysForModels, fetchModelsFromStore]);
 
-  const refreshDashboardUsage = useCallback(() => {
-    setDashboardUsageRefreshToken((token) => token + 1);
+  const refreshDashboardRecentRequests = useCallback(() => {
+    setDashboardRecentRefreshToken((token) => token + 1);
   }, []);
 
   const refreshRoutingStrategy = useCallback(() => {
@@ -163,34 +167,65 @@ export function DashboardPage() {
 
   useEffect(() => {
     if (connectionStatus !== 'connected') {
-      setDashboardUsageData(null);
-      setDashboardUsageError('');
+      setDashboardTrendData(null);
+      setDashboardTrendError('');
       return;
     }
 
     let cancelled = false;
-    setDashboardUsageLoading(true);
-    setDashboardUsageError('');
+    setDashboardTrendLoading(true);
+    setDashboardTrendError('');
 
     usageAnalyticsApi
-      .query(buildDashboardUsageRequest(Date.now(), dashboardUsageRange))
+      .query(buildDashboardTrendRequest(Date.now(), dashboardUsageRange))
       .then((response) => {
-        if (!cancelled) setDashboardUsageData(response);
+        if (!cancelled) setDashboardTrendData(response);
       })
       .catch((error) => {
         if (!cancelled) {
-          setDashboardUsageData(null);
-          setDashboardUsageError(getErrorMessage(error));
+          setDashboardTrendData(null);
+          setDashboardTrendError(getErrorMessage(error));
         }
       })
       .finally(() => {
-        if (!cancelled) setDashboardUsageLoading(false);
+        if (!cancelled) setDashboardTrendLoading(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [connectionStatus, dashboardUsageRange, dashboardUsageRefreshToken]);
+  }, [connectionStatus, dashboardUsageRange]);
+
+  useEffect(() => {
+    if (connectionStatus !== 'connected') {
+      setDashboardRecentData(null);
+      setDashboardRecentError('');
+      return;
+    }
+
+    let cancelled = false;
+    setDashboardRecentLoading(true);
+    setDashboardRecentError('');
+
+    usageAnalyticsApi
+      .query(buildDashboardRecentEventsRequest(Date.now()))
+      .then((response) => {
+        if (!cancelled) setDashboardRecentData(response);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setDashboardRecentData(null);
+          setDashboardRecentError(getErrorMessage(error));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDashboardRecentLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [connectionStatus, dashboardRecentRefreshToken]);
 
   useEffect(() => {
     if (connectionStatus !== 'connected') {
@@ -353,8 +388,12 @@ export function DashboardPage() {
     },
   ];
   const dashboardUsage = useMemo(
-    () => summarizeDashboardUsage(dashboardUsageData),
-    [dashboardUsageData]
+    () => summarizeDashboardUsage(dashboardTrendData),
+    [dashboardTrendData]
+  );
+  const dashboardRecentUsage = useMemo(
+    () => summarizeDashboardUsage(dashboardRecentData),
+    [dashboardRecentData]
   );
   const usageTimeline = useMemo(
     () =>
@@ -388,7 +427,7 @@ export function DashboardPage() {
           chartPoints[0].x
         } ${CHART_BASELINE} Z`
       : '';
-  const recentEvents = dashboardUsage.events.slice(0, 5);
+  const recentEvents = dashboardRecentUsage.events.slice(0, 5);
   const handleDashboardUsageRangeChange = useCallback((nextRange: DashboardUsageRange) => {
     setDashboardUsageRange(nextRange);
     setUsageRangeMenuOpen(false);
@@ -427,10 +466,10 @@ export function DashboardPage() {
                 <button
                   type="button"
                   className={`${styles.iconButton} ${
-                    dashboardUsageLoading ? styles.loadingIconButton : ''
+                    dashboardRecentLoading ? styles.loadingIconButton : ''
                   }`}
-                  onClick={refreshDashboardUsage}
-                  disabled={dashboardUsageLoading}
+                  onClick={refreshDashboardRecentRequests}
+                  disabled={dashboardRecentLoading}
                   aria-label={t('dashboard.refresh_recent_requests', {
                     defaultValue: '刷新最近请求',
                   })}
@@ -441,7 +480,7 @@ export function DashboardPage() {
                   <IconRefreshCw size={15} />
                 </button>
               </div>
-              {dashboardUsageLoading ? (
+              {dashboardRecentLoading ? (
                 <div className={styles.emptyState}>
                   <IconInbox size={46} />
                   <strong>{t('common.loading', { defaultValue: '加载中' })}</strong>
@@ -486,11 +525,11 @@ export function DashboardPage() {
                 <div className={styles.emptyState}>
                   <IconInbox size={52} />
                   <strong>
-                    {dashboardUsageError ||
+                    {dashboardRecentError ||
                       t('dashboard.no_recent_requests', { defaultValue: '暂无请求记录' })}
                   </strong>
                   <span>
-                    {dashboardUsageError
+                    {dashboardRecentError
                       ? t('dashboard.usage_load_failed', { defaultValue: '用量数据读取失败' })
                       : t('dashboard.no_recent_requests_desc', {
                           defaultValue: '请求将在此自动显示',
@@ -560,9 +599,16 @@ export function DashboardPage() {
               </div>
               <div className={styles.trendTotal}>
                 <strong>
-                  {dashboardUsageLoading ? '...' : formatDashboardNumber(dashboardUsage.totalCalls)}
+                  {dashboardTrendLoading
+                    ? '...'
+                    : dashboardTrendError
+                      ? '-'
+                      : formatDashboardNumber(dashboardUsage.totalCalls)}
                 </strong>
-                <span>{t('dashboard.total_requests', { defaultValue: '总请求数' })}</span>
+                <span>
+                  {dashboardTrendError ||
+                    t('dashboard.total_requests', { defaultValue: '总请求数' })}
+                </span>
               </div>
               <div className={styles.chartFrame} aria-hidden="true">
                 <svg

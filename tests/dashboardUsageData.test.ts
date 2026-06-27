@@ -2,6 +2,8 @@ import { describe, expect, test } from 'bun:test';
 import {
   buildDashboardRangeTrend,
   buildDashboardDailyTrend,
+  buildDashboardRecentEventsRequest,
+  buildDashboardTrendRequest,
   buildDashboardUsageRequest,
   summarizeDashboardUsage,
 } from '../src/features/dashboard/dashboardUsage';
@@ -25,6 +27,22 @@ describe('dashboard usage data', () => {
     expect(buildDashboardUsageRequest(now, '5h').from_ms).toBe(now - 5 * 60 * 60 * 1000);
     expect(buildDashboardUsageRequest(now, '7d').from_ms).toBe(now - 7 * 24 * 60 * 60 * 1000);
     expect(buildDashboardUsageRequest(now, '30d').from_ms).toBe(now - 30 * 24 * 60 * 60 * 1000);
+  });
+
+  test('keeps dashboard recent requests independent from trend range requests', () => {
+    const now = Date.UTC(2026, 5, 27, 12, 0, 0);
+    const trendRequest = buildDashboardTrendRequest(now, '30d');
+    const recentRequest = buildDashboardRecentEventsRequest(now);
+
+    expect(trendRequest.from_ms).toBe(now - 30 * 24 * 60 * 60 * 1000);
+    expect(trendRequest.include?.summary).toBe(true);
+    expect(trendRequest.include?.timeline).toBe(true);
+    expect(trendRequest.include?.events_page).toBeUndefined();
+
+    expect(recentRequest.from_ms).toBe(now - 7 * 24 * 60 * 60 * 1000);
+    expect(recentRequest.include?.summary).toBe(false);
+    expect(recentRequest.include?.timeline).toBe(false);
+    expect(recentRequest.include?.events_page?.limit).toBe(5);
   });
 
   test('summarizes calls, events and chart scale from usage analytics response', () => {

@@ -28,9 +28,16 @@ describe('usage analytics visual redesign', () => {
     expect(page).toContain('模型排行');
     expect(page).toContain('API Key 用量');
     expect(page).toContain('认证文件用量');
+    expect(page).toContain('icon: <IconTrendingUp');
+    expect(page).toContain('icon: <IconTrophy');
+    expect(page).toContain('{item.icon}');
+    expect(page).toContain('renderInsights(true)');
+    expect(page).toContain('查看完整分析');
     expect(styles).toContain('.overviewMainGrid');
     expect(styles).toContain('.insightRail');
     expect(styles).toContain('.rankGrid');
+    expect(styles).toContain('display: inline-grid');
+    expect(styles).toContain('border-radius: $radius-full');
   });
 
   test('adds complete analysis charts and recommendation sections', () => {

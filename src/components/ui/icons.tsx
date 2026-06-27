@@ -408,6 +408,19 @@ export function IconDollarSign({ size = 20, ...props }: IconProps) {
   );
 }
 
+export function IconTrophy({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <path d="M10 14.66v1.63a2 2 0 0 1-.75 1.56L7 19.5" />
+      <path d="M14 14.66v1.63a2 2 0 0 0 .75 1.56L17 19.5" />
+      <path d="M18 4h2v3a4 4 0 0 1-4 4" />
+      <path d="M6 4H4v3a4 4 0 0 0 4 4" />
+      <path d="M8 4h8v5a4 4 0 0 1-8 0Z" />
+      <path d="M6 22h12" />
+    </svg>
+  );
+}
+
 export function IconGithub({ size = 20, ...props }: IconProps) {
   return (
     <svg {...baseSvgProps} width={size} height={size} {...props}>

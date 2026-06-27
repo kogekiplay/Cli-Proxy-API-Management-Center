@@ -79,6 +79,42 @@ export function buildDashboardUsageRequest(
   };
 }
 
+export function buildDashboardTrendRequest(
+  now = Date.now(),
+  range: DashboardUsageRange = '7d'
+): UsageAnalyticsRequest {
+  const option = getDashboardUsageRangeOption(range);
+  return {
+    from_ms: now - option.durationMs,
+    to_ms: now,
+    filters: {
+      include_failed: true,
+    },
+    include: {
+      summary: true,
+      timeline: true,
+      events_page: undefined,
+    },
+  };
+}
+
+export function buildDashboardRecentEventsRequest(now = Date.now()): UsageAnalyticsRequest {
+  return {
+    from_ms: now - DASHBOARD_USAGE_RANGE_MS,
+    to_ms: now,
+    filters: {
+      include_failed: true,
+    },
+    include: {
+      summary: false,
+      timeline: false,
+      events_page: {
+        limit: DASHBOARD_USAGE_EVENT_LIMIT,
+      },
+    },
+  };
+}
+
 export function summarizeDashboardUsage(
   response: UsageAnalyticsResponse | null | undefined
 ): DashboardUsageSummary {
