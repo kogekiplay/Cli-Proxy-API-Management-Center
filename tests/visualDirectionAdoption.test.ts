@@ -29,4 +29,13 @@ describe('Claude-style visual direction adoption', () => {
     expect(usageStyles).toContain('.metricCard::before');
     expect(usageStyles).toContain('background: var(--ops-panel-bg)');
   });
+
+  test('keeps dashboard overview labels useful and avoids duplicated routing rail cards', () => {
+    const dashboard = read('src/pages/DashboardPage.tsx');
+
+    expect(dashboard).toContain("t('footer.version'");
+    expect(dashboard).toContain("t('footer.api_version'");
+    expect(dashboard).not.toContain("defaultValue: '生产环境'");
+    expect(dashboard).not.toContain('badgeClass: routingStrategyRaw');
+  });
 });

@@ -336,6 +336,93 @@
   }
 }
 
+.recentRequestList {
+  display: grid;
+  gap: 10px;
+  align-self: stretch;
+  margin-top: 14px;
+}
+
+.recentRequestRow {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px 0;
+  border-top: 1px solid color-mix(in srgb, var(--ops-panel-strong-border) 74%, transparent);
+
+  &:first-child {
+    border-top: 0;
+  }
+}
+
+.recentRequestTime {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.35;
+}
+
+.recentRequestMain {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+
+  strong,
+  small {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  small {
+    color: var(--text-secondary);
+    font-size: 11.5px;
+    line-height: 1.35;
+  }
+}
+
+.recentStatus {
+  display: inline-flex;
+  min-width: 46px;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ops-panel-strong-border);
+  border-radius: $radius-full;
+  background: color-mix(in srgb, var(--bg-primary) 70%, transparent);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.recentStatusGood {
+  border-color: color-mix(in srgb, var(--success-color) 28%, var(--ops-panel-strong-border));
+  background: color-mix(in srgb, var(--success-color) 10%, transparent);
+  color: var(--success-color);
+}
+
+.recentStatusWarn {
+  border-color: color-mix(in srgb, var(--warning-color) 28%, var(--ops-panel-strong-border));
+  background: color-mix(in srgb, var(--warning-color) 10%, transparent);
+  color: var(--warning-color);
+}
+
+.recentStatusBad {
+  border-color: color-mix(in srgb, var(--error-color) 28%, var(--ops-panel-strong-border));
+  background: color-mix(in srgb, var(--error-color) 10%, transparent);
+  color: var(--error-color);
+}
+
 .usagePanel {
   gap: 16px;
 }
@@ -396,7 +483,15 @@
 
   span {
     position: relative;
+    height: var(--point-level, 6px);
     min-width: 0;
+    align-self: end;
+    border-radius: 999px 999px 0 0;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--primary-color) 50%, #ffffff),
+      color-mix(in srgb, var(--primary-color) 24%, transparent)
+    );
 
     &::before {
       position: absolute;

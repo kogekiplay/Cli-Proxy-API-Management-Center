@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -13,9 +13,15 @@ import {
   IconChevronLeft,
 } from '@/components/ui/icons';
 import { useAuthStore, useConfigStore, useModelsStore } from '@/stores';
+import {
+  buildDashboardUsageRequest,
+  summarizeDashboardUsage,
+} from '@/features/dashboard/dashboardUsage';
 import { authFilesApi } from '@/services/api';
+import { usageAnalyticsApi, type UsageAnalyticsResponse } from '@/services/api/usageAnalytics';
 import { useApiKeysForModels } from '@/hooks/useApiKeysForModels';
 import { formatDateValue } from '@/utils/format';
+import { getErrorMessage } from '@/utils/helpers';
 import styles from './DashboardPage.module.scss';
 
 interface QuickStat {
@@ -26,6 +32,33 @@ interface QuickStat {
   loading?: boolean;
   sublabel?: string;
 }
+
+const dashboardNumberFormatter = new Intl.NumberFormat();
+
+const formatDashboardNumber = (value: number | undefined | null) =>
+  dashboardNumberFormatter.format(value ?? 0);
+
+const formatDashboardEventTime = (value: number | undefined | null, language: string) => {
+  if (!value) return '-';
+  return new Date(value).toLocaleString(language, {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+};
+
+const formatTimelineLabel = (value: number | undefined | null, language: string) => {
+  if (!value) return '-';
+  return new Date(value).toLocaleDateString(language, {
+    month: 'numeric',
+    day: 'numeric',
+  });
+};
+
+const statusCodeOf = (row: { status_code?: number; fail_status_code?: number; failed?: boolean }) =>
+  row.status_code || row.fail_status_code || (row.failed ? 500 : 200);
 
 export function DashboardPage() {
   const { t, i18n } = useTranslation();
@@ -42,6 +75,9 @@ export function DashboardPage() {
 
   const [authFilesCount, setAuthFilesCount] = useState<number | null>(null);
   const [authFilesLoading, setAuthFilesLoading] = useState(false);
+  const [dashboardUsageData, setDashboardUsageData] = useState<UsageAnalyticsResponse | null>(null);
+  const [dashboardUsageLoading, setDashboardUsageLoading] = useState(false);
+  const [dashboardUsageError, setDashboardUsageError] = useState('');
 
   const [currentTime, setCurrentTime] = useState(() => new Date());
 
@@ -96,6 +132,37 @@ export function DashboardPage() {
       cancelled = true;
     };
   }, [connectionStatus, fetchConfig, fetchModels]);
+
+  useEffect(() => {
+    if (connectionStatus !== 'connected') {
+      setDashboardUsageData(null);
+      setDashboardUsageError('');
+      return;
+    }
+
+    let cancelled = false;
+    setDashboardUsageLoading(true);
+    setDashboardUsageError('');
+
+    usageAnalyticsApi
+      .query(buildDashboardUsageRequest())
+      .then((response) => {
+        if (!cancelled) setDashboardUsageData(response);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setDashboardUsageData(null);
+          setDashboardUsageError(getErrorMessage(error));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDashboardUsageLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [connectionStatus]);
 
   const configLoading = !config;
   const providerStats = config
@@ -184,6 +251,7 @@ export function DashboardPage() {
   const serverVersionDisplay = serverVersion
     ? `v${serverVersion.trim().replace(/^[vV]+/, '')}`
     : '-';
+  const managementCenterVersionDisplay = __APP_VERSION__ || '-';
   const providerHealthText = providerStats
     ? t('dashboard.provider_keys_detail', {
         gemini: providerStats.gemini,
@@ -218,14 +286,6 @@ export function DashboardPage() {
       badgeClass: styles.railBadgeNeutral,
       description: providerHealthText,
     },
-    {
-      title: t('dashboard.routing_strategy', { defaultValue: '路由策略' }),
-      badge: routingStrategyDisplay,
-      badgeClass: routingStrategyRaw ? styles.railBadgeNeutral : styles.railBadgeWarn,
-      description: t('dashboard.routing_strategy_desc', {
-        defaultValue: '当前请求分发策略会影响额度消耗、冷却和失败后的切换行为。',
-      }),
-    },
   ];
   const systemOverviewItems = [
     {
@@ -237,15 +297,15 @@ export function DashboardPage() {
       marker: true,
     },
     {
-      label: t('dashboard.environment', { defaultValue: '环境' }),
-      value: t('dashboard.production_environment', { defaultValue: '生产环境' }),
+      label: t('footer.version', { defaultValue: '管理中心版本' }),
+      value: managementCenterVersionDisplay,
     },
     {
-      label: t('dashboard.version', { defaultValue: '版本' }),
+      label: t('footer.api_version', { defaultValue: 'CPA 版本' }),
       value: serverVersionDisplay,
     },
     {
-      label: t('dashboard.uptime', { defaultValue: '运行时长' }),
+      label: t('dashboard.build_time', { defaultValue: '构建时间' }),
       value: serverBuildDateDisplay || '-',
     },
     {
@@ -253,6 +313,12 @@ export function DashboardPage() {
       value: Intl.DateTimeFormat().resolvedOptions().timeZone || '-',
     },
   ];
+  const dashboardUsage = useMemo(
+    () => summarizeDashboardUsage(dashboardUsageData),
+    [dashboardUsageData]
+  );
+  const usageTimeline = dashboardUsage.timeline.slice(-7);
+  const recentEvents = dashboardUsage.events.slice(0, 5);
 
   return (
     <div className={styles.dashboard}>
@@ -307,17 +373,63 @@ export function DashboardPage() {
                   <IconFileText size={16} />
                 </span>
               </div>
-              <div className={styles.emptyState}>
-                <IconInbox size={52} />
-                <strong>
-                  {t('dashboard.no_recent_requests', { defaultValue: '暂无请求记录' })}
-                </strong>
-                <span>
-                  {t('dashboard.no_recent_requests_desc', {
-                    defaultValue: '请求将在此自动显示',
+              {dashboardUsageLoading ? (
+                <div className={styles.emptyState}>
+                  <IconInbox size={46} />
+                  <strong>{t('common.loading', { defaultValue: '加载中' })}</strong>
+                  <span>
+                    {t('dashboard.loading_recent_requests', { defaultValue: '正在读取最近请求' })}
+                  </span>
+                </div>
+              ) : recentEvents.length > 0 ? (
+                <div className={styles.recentRequestList}>
+                  {recentEvents.map((row) => {
+                    const statusCode = statusCodeOf(row);
+                    return (
+                      <div className={styles.recentRequestRow} key={row.id || row.request_id}>
+                        <span className={styles.recentRequestTime}>
+                          {formatDashboardEventTime(row.timestamp_ms, i18n.language)}
+                        </span>
+                        <span className={styles.recentRequestMain}>
+                          <strong>{row.model || '-'}</strong>
+                          <small>
+                            {[row.provider || 'unknown', row.endpoint || '-'].join(' · ')}
+                          </small>
+                        </span>
+                        <span
+                          className={[
+                            styles.recentStatus,
+                            row.failed || statusCode >= 500
+                              ? styles.recentStatusBad
+                              : statusCode >= 400
+                                ? styles.recentStatusWarn
+                                : styles.recentStatusGood,
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
+                        >
+                          {statusCode}
+                        </span>
+                      </div>
+                    );
                   })}
-                </span>
-              </div>
+                </div>
+              ) : (
+                <div className={styles.emptyState}>
+                  <IconInbox size={52} />
+                  <strong>
+                    {dashboardUsageError ||
+                      t('dashboard.no_recent_requests', { defaultValue: '暂无请求记录' })}
+                  </strong>
+                  <span>
+                    {dashboardUsageError
+                      ? t('dashboard.usage_load_failed', { defaultValue: '用量数据读取失败' })
+                      : t('dashboard.no_recent_requests_desc', {
+                          defaultValue: '请求将在此自动显示',
+                        })}
+                  </span>
+                </div>
+              )}
             </Link>
 
             <Link to="/usage-analytics" className={`${styles.panelCard} ${styles.usagePanel}`}>
@@ -329,12 +441,28 @@ export function DashboardPage() {
                 </span>
               </div>
               <div className={styles.trendTotal}>
-                <strong>0</strong>
+                <strong>
+                  {dashboardUsageLoading ? '...' : formatDashboardNumber(dashboardUsage.totalCalls)}
+                </strong>
                 <span>{t('dashboard.total_requests', { defaultValue: '总请求数' })}</span>
               </div>
               <div className={styles.miniChart} aria-hidden="true">
-                {['6/20', '6/21', '6/22', '6/23', '6/24', '6/25', '6/26'].map((day) => (
-                  <span key={day} data-day={day} />
+                {(usageTimeline.length > 0
+                  ? usageTimeline
+                  : [{ bucket_ms: Date.now(), calls: 0 }]
+                ).map((point) => (
+                  <span
+                    key={point.bucket_ms}
+                    data-day={formatTimelineLabel(point.bucket_ms, i18n.language)}
+                    style={
+                      {
+                        '--point-level': `${Math.max(
+                          6,
+                          ((point.calls || 0) / dashboardUsage.timelineMaxCalls) * 76
+                        )}px`,
+                      } as CSSProperties
+                    }
+                  />
                 ))}
               </div>
             </Link>
