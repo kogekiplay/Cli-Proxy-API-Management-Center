@@ -1059,7 +1059,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
         </div>
       </div>
 
-      <Card className={styles.filterCard}>
+      <Card className={`${styles.filterCard} ${styles.operationsToolbar}`}>
         <div className={styles.filters}>
           <div className={styles.rangeGroup}>
             {(['24h', '7d', '30d'] as RangeKey[]).map((item) => (

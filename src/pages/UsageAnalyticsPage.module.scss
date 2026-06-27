@@ -5,6 +5,8 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
+  max-width: 1440px;
+  margin: 0 auto;
 }
 
 .pageHeader {
@@ -34,8 +36,10 @@
 .pageTitle {
   margin: 0;
   color: var(--text-primary);
-  font-size: 28px;
-  font-weight: 700;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 36px;
+  font-weight: 500;
+  line-height: 1.08;
 }
 
 .pageSubtitle {
@@ -45,15 +49,20 @@
 }
 
 .filterCard {
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 12px;
+  border-radius: 16px;
   box-shadow: var(--shadow);
+}
+
+.operationsToolbar {
+  background: var(--ops-panel-bg);
+  border-color: var(--ops-panel-border);
 }
 
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
 
   :global(.form-group) {
@@ -72,16 +81,16 @@
   flex: 1 1 250px;
   gap: 4px;
   padding: 4px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--bg-secondary) 72%, var(--bg-primary));
+  border: 1px solid var(--ops-panel-strong-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-tertiary) 64%, var(--bg-primary));
 }
 
 .rangeButton {
   @include button-reset;
-  min-height: 32px;
+  min-height: 36px;
   padding: 0 10px;
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 700;
@@ -90,9 +99,11 @@
 }
 
 .rangeButtonActive {
-  color: var(--primary-color);
+  color: var(--text-primary);
   background: var(--bg-primary);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary-color) 22%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--primary-color) 18%, transparent),
+    0 8px 18px color-mix(in srgb, var(--primary-color) 8%, transparent);
 }
 
 .filterSelect {
@@ -100,8 +111,9 @@
   min-width: 150px;
 
   button {
-    height: 40px;
-    border-radius: 10px;
+    height: 44px;
+    border-radius: 12px;
+    border-color: var(--ops-panel-strong-border);
     box-shadow: none;
     font-size: 13px;
     font-weight: 650;
@@ -114,10 +126,10 @@
   justify-content: center;
   gap: 7px;
   flex: 0 0 auto;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border: 1px solid var(--ops-panel-strong-border);
+  border-radius: 12px;
   background: var(--bg-primary);
   color: var(--text-secondary);
   font-size: 13px;
@@ -161,7 +173,7 @@
 .summaryGrid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 
   @media (max-width: 1280px) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -180,33 +192,41 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 10px;
   min-width: 0;
-  min-height: 118px;
-  padding: 13px;
-  border-color: color-mix(in srgb, var(--summary-accent) 24%, var(--border-color));
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--summary-accent) 8%, transparent), transparent 48%),
-    var(--bg-primary);
+  min-height: 126px;
+  padding: 15px;
+  border-color: color-mix(in srgb, var(--summary-accent) 20%, var(--ops-panel-border));
+  background: var(--ops-panel-bg);
 
-  &::after {
-    position: absolute;
-    inset: auto -24px -36px auto;
-    z-index: -1;
-    width: 92px;
-    height: 92px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--summary-accent) 14%, transparent);
-    content: '';
-  }
+}
+
+.metricCard::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--summary-accent) 8%, transparent), transparent 58%);
+  content: '';
+}
+
+.metricCard::after {
+  position: absolute;
+  inset: auto -18px -36px auto;
+  z-index: -1;
+  width: 100px;
+  height: 100px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--summary-accent) 12%, transparent);
+  content: '';
 }
 
 .summaryAccentblue {
-  --summary-accent: #2563eb;
+  --summary-accent: #2f6f94;
 }
 
 .summaryAccentgreen {
-  --summary-accent: #16a34a;
+  --summary-accent: var(--success-color);
 }
 
 .summaryAccentred {
@@ -214,15 +234,15 @@
 }
 
 .summaryAccentamber {
-  --summary-accent: #d97706;
+  --summary-accent: var(--warning-color);
 }
 
 .summaryAccentteal {
-  --summary-accent: #0f766e;
+  --summary-accent: #4f7f78;
 }
 
 .summaryAccentcyan {
-  --summary-accent: #0891b2;
+  --summary-accent: #2c8aa0;
 }
 
 .metricHeader {
@@ -239,8 +259,9 @@
   width: 30px;
   height: 30px;
   flex: 0 0 30px;
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--summary-accent) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--summary-accent) 24%, var(--ops-panel-border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--summary-accent) 12%, transparent);
   color: var(--summary-accent);
 }
 
@@ -256,7 +277,7 @@
 
 .metricCard strong {
   color: var(--text-primary);
-  font-size: 24px;
+  font-size: 26px;
   line-height: 1.05;
   overflow-wrap: anywhere;
 }
@@ -351,10 +372,10 @@
 .timelineBar {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #2563eb, #0f766e 58%, #d97706);
+  background: linear-gradient(90deg, #2f6f94, #4f7f78 58%, var(--primary-color));
   box-shadow:
-    0 0 0 1px color-mix(in srgb, #0f766e 30%, transparent),
-    0 4px 14px color-mix(in srgb, #2563eb 24%, transparent);
+    0 0 0 1px color-mix(in srgb, var(--primary-color) 22%, transparent),
+    0 4px 14px color-mix(in srgb, #2f6f94 18%, transparent);
 }
 
 .tableWrap {
@@ -369,8 +390,8 @@
 
   th,
   td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border-color);
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--ops-panel-border);
     text-align: left;
     font-size: 13px;
     vertical-align: top;
@@ -378,6 +399,7 @@
 
   th {
     color: var(--text-secondary);
+    background: color-mix(in srgb, var(--bg-secondary) 54%, transparent);
     font-weight: 700;
     white-space: nowrap;
   }
@@ -400,7 +422,7 @@
   cursor: pointer;
 
   &:hover td {
-    background: color-mix(in srgb, var(--primary-color) 6%, transparent);
+    background: color-mix(in srgb, var(--primary-color) 5%, transparent);
   }
 
   &:focus-visible {
@@ -420,8 +442,8 @@
 }
 
 .eventRowFailed td {
-  border-top-color: color-mix(in srgb, #dc2626 28%, var(--border-color));
-  border-bottom-color: color-mix(in srgb, #dc2626 28%, var(--border-color));
+  border-top-color: color-mix(in srgb, #dc2626 24%, var(--ops-panel-border));
+  border-bottom-color: color-mix(in srgb, #dc2626 24%, var(--ops-panel-border));
   background: color-mix(in srgb, #ef4444 7%, transparent);
 }
 
