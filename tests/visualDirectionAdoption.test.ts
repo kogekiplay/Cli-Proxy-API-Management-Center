@@ -44,4 +44,15 @@ describe('Claude-style visual direction adoption', () => {
     expect(dashboard).not.toContain("defaultValue: '生产环境'");
     expect(dashboard).not.toContain('badgeClass: routingStrategyRaw');
   });
+
+  test('keeps the dashboard right rail focused on connection health only', () => {
+    const dashboard = read('src/pages/DashboardPage.tsx');
+    const styles = read('src/pages/DashboardPage.module.scss');
+
+    expect(dashboard).toContain("t('dashboard.gateway_health'");
+    expect(dashboard).not.toContain('providerHealthText');
+    expect(dashboard).not.toContain("title: t('nav.ai_providers')");
+    expect(dashboard).not.toContain("t('dashboard.build_info'");
+    expect(styles).toContain('padding-top: 146px;');
+  });
 });

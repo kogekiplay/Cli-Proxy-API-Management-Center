@@ -113,8 +113,8 @@ describe('dashboard usage data', () => {
 
     expect(hourlyTrend).toHaveLength(6);
     expect(hourlyTrend.map((point) => point.calls)).toEqual([0, 2, 0, 0, 0, 3]);
-    expect(hourlyTrend.at(0)?.label).toMatch(/07|7/);
-    expect(hourlyTrend.at(-1)?.label).toMatch(/12/);
+    expect(hourlyTrend.at(0)?.label).toMatch(/^\d{2}:00$/);
+    expect(hourlyTrend.at(-1)?.label).toMatch(/^\d{2}:00$/);
 
     const monthlyTrend = buildDashboardRangeTrend(
       [{ bucket_ms: new Date(2026, 5, 1, 9, 0, 0).getTime(), calls: 9 }],
@@ -124,5 +124,11 @@ describe('dashboard usage data', () => {
 
     expect(monthlyTrend).toHaveLength(30);
     expect(monthlyTrend.some((point) => point.calls === 9)).toBe(true);
+    expect(monthlyTrend.filter((point) => point.label).length).toBeLessThanOrEqual(8);
+    expect(
+      monthlyTrend
+        .filter((point) => point.label)
+        .every((point) => /\d+\/\d+|\d+\.\d+|\d+-\d+/.test(point.label))
+    ).toBe(true);
   });
 });

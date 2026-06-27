@@ -119,6 +119,7 @@ const formatDashboardTrendLabel = (dayStartMs: number) =>
 const formatDashboardHourLabel = (hourStartMs: number) =>
   new Date(hourStartMs).toLocaleTimeString(undefined, {
     hour: '2-digit',
+    minute: '2-digit',
     hour12: false,
   });
 

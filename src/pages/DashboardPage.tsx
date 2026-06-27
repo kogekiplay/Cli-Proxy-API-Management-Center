@@ -7,7 +7,6 @@ import {
   IconFileText,
   IconSatellite,
   IconInbox,
-  IconInfo,
   IconRefreshCw,
   IconChevronDown,
   IconChevronLeft,
@@ -302,15 +301,6 @@ export function DashboardPage() {
     ? `v${serverVersion.trim().replace(/^[vV]+/, '')}`
     : '-';
   const managementCenterVersionDisplay = __APP_VERSION__ || '-';
-  const providerHealthText = providerStats
-    ? t('dashboard.provider_keys_detail', {
-        gemini: providerStats.gemini,
-        codex: providerStats.codex,
-        claude: providerStats.claude,
-        vertex: providerStats.vertex,
-        openai: providerStats.openai,
-      })
-    : t('common.loading', { defaultValue: '加载中' });
   const railItems = [
     {
       title: t('dashboard.gateway_health', { defaultValue: 'Gateway health' }),
@@ -329,12 +319,6 @@ export function DashboardPage() {
           : t('dashboard.gateway_health_unavailable', {
               defaultValue: '正在等待 Management API 连接，部分数据会延迟显示。',
             }),
-    },
-    {
-      title: t('nav.ai_providers'),
-      badge: `${totalProviderKeys}`,
-      badgeClass: styles.railBadgeNeutral,
-      description: providerHealthText,
     },
   ];
   const systemOverviewItems = [
@@ -376,6 +360,10 @@ export function DashboardPage() {
     () =>
       buildDashboardRangeTrend(dashboardUsage.timeline, currentTime.getTime(), dashboardUsageRange),
     [dashboardUsage.timeline, currentTime, dashboardUsageRange]
+  );
+  const visibleUsageTimelineLabels = useMemo(
+    () => usageTimeline.filter((point) => point.label.trim()),
+    [usageTimeline]
   );
   const selectedUsageRangeOption = getDashboardUsageRangeOption(dashboardUsageRange);
   const selectedUsageRangeLabel = t(selectedUsageRangeOption.labelKey, {
@@ -603,13 +591,8 @@ export function DashboardPage() {
                     />
                   ))}
                 </svg>
-                <div
-                  className={styles.chartLabels}
-                  style={{
-                    gridTemplateColumns: `repeat(${usageTimeline.length}, minmax(0, 1fr))`,
-                  }}
-                >
-                  {usageTimeline.map((point) => (
+                <div className={styles.chartLabels}>
+                  {visibleUsageTimelineLabels.map((point) => (
                     <span key={point.dayStartMs}>{point.label}</span>
                   ))}
                 </div>
@@ -725,20 +708,6 @@ export function DashboardPage() {
               <p>{item.description}</p>
             </article>
           ))}
-
-          <article className={styles.railPanel}>
-            <div className={styles.railPanelTop}>
-              <h2>{t('dashboard.build_info', { defaultValue: '构建信息' })}</h2>
-              <span className={styles.infoChip} aria-hidden="true">
-                <IconInfo size={15} />
-              </span>
-            </div>
-            <p>
-              {t('dashboard.build_info_desc', {
-                defaultValue: '确认线上版本和构建时间，便于排查部署后行为差异。',
-              })}
-            </p>
-          </article>
         </aside>
       </section>
     </div>

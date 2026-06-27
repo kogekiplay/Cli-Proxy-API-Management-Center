@@ -149,7 +149,7 @@
 }
 
 .rightRail {
-  padding-top: 24px;
+  padding-top: 146px;
 
   @media (max-width: 1500px) {
     padding-top: 0;
@@ -608,7 +608,9 @@
 }
 
 .chartLabels {
-  display: grid;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
   margin-top: -12px;
   color: var(--text-secondary);
   font-size: 11px;
@@ -616,9 +618,8 @@
   text-align: center;
 
   span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: clip;
+    flex: 0 0 auto;
+    min-width: max-content;
     white-space: nowrap;
   }
 }
