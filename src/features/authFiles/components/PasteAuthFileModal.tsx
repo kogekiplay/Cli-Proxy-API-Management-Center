@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -23,12 +23,16 @@ export function PasteAuthFileModal({ open, saving, onClose, onSubmit }: PasteAut
   const [text, setText] = useState('');
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!open) return;
+  const resetForm = useCallback(() => {
     setName('');
     setText('');
     setError('');
-  }, [open]);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    resetForm();
+    onClose();
+  }, [onClose, resetForm]);
 
   const submit = async () => {
     const fileName = name.trim();
@@ -53,19 +57,19 @@ export function PasteAuthFileModal({ open, saving, onClose, onSubmit }: PasteAut
 
     setError('');
     await onSubmit(fileName, rawText);
-    onClose();
+    handleClose();
   };
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title={t('auth_files.paste_title')}
       width={720}
       closeDisabled={saving}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose} disabled={saving}>
+          <Button variant="secondary" onClick={handleClose} disabled={saving}>
             {t('common.cancel')}
           </Button>
           <Button onClick={submit} loading={saving}>

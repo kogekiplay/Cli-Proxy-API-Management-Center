@@ -205,7 +205,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
       });
       return nextState;
     });
-  }, [filteredFiles, loading, setQuota]);
+  }, [config.type, filteredFiles, loading, setQuota]);
 
   const refreshQuotaForFile = useCallback(
     async (file: AuthFileItem) => {
