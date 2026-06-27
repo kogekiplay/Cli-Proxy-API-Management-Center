@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  buildDashboardDailyTrend,
   buildDashboardUsageRequest,
   summarizeDashboardUsage,
 } from '../src/features/dashboard/dashboardUsage';
@@ -71,5 +72,22 @@ describe('dashboard usage data', () => {
     expect(summary.timelineMaxCalls).toBe(6);
     expect(summary.events).toHaveLength(1);
     expect(summary.hasUsageData).toBe(true);
+  });
+
+  test('builds compact daily trend buckets for the operations dashboard chart', () => {
+    const now = new Date(2026, 5, 27, 12, 0, 0).getTime();
+    const trend = buildDashboardDailyTrend(
+      [
+        { bucket_ms: new Date(2026, 5, 21, 1, 0, 0).getTime(), calls: 4 },
+        { bucket_ms: new Date(2026, 5, 21, 22, 0, 0).getTime(), calls: 6 },
+        { bucket_ms: new Date(2026, 5, 25, 12, 0, 0).getTime(), calls: 3 },
+      ],
+      now
+    );
+
+    expect(trend).toHaveLength(7);
+    expect(trend.map((point) => point.calls)).toEqual([10, 0, 0, 0, 3, 0, 0]);
+    expect(trend.at(0)?.label).toMatch(/6\/21|21\/6/);
+    expect(trend.at(-1)?.label).toMatch(/6\/27|27\/6/);
   });
 });

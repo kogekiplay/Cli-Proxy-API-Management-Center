@@ -7,6 +7,7 @@ import type {
 
 export const DASHBOARD_USAGE_RANGE_MS = 7 * 24 * 60 * 60 * 1000;
 export const DASHBOARD_USAGE_EVENT_LIMIT = 5;
+const DASHBOARD_TREND_DAYS = 7;
 
 const EMPTY_EVENTS: UsageAnalyticsEventRow[] = [];
 const EMPTY_TIMELINE: UsageAnalyticsTimelinePoint[] = [];
@@ -17,6 +18,12 @@ export interface DashboardUsageSummary {
   timeline: UsageAnalyticsTimelinePoint[];
   timelineMaxCalls: number;
   totalCalls: number;
+}
+
+export interface DashboardTrendPoint {
+  dayStartMs: number;
+  label: string;
+  calls: number;
 }
 
 export function buildDashboardUsageRequest(now = Date.now()): UsageAnalyticsRequest {
@@ -53,4 +60,44 @@ export function summarizeDashboardUsage(
     timelineMaxCalls,
     totalCalls,
   };
+}
+
+const startOfLocalDay = (value: number) => {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+};
+
+const formatDashboardTrendLabel = (dayStartMs: number) =>
+  new Date(dayStartMs).toLocaleDateString(undefined, {
+    month: 'numeric',
+    day: 'numeric',
+  });
+
+export function buildDashboardDailyTrend(
+  timeline: UsageAnalyticsTimelinePoint[] | null | undefined,
+  now = Date.now(),
+  days = DASHBOARD_TREND_DAYS
+): DashboardTrendPoint[] {
+  const safeDays = Math.max(1, Math.floor(days));
+  const todayStart = startOfLocalDay(now);
+  const firstDayStart = todayStart - (safeDays - 1) * 24 * 60 * 60 * 1000;
+  const buckets = new Map<number, number>();
+
+  for (let index = 0; index < safeDays; index += 1) {
+    buckets.set(firstDayStart + index * 24 * 60 * 60 * 1000, 0);
+  }
+
+  for (const point of timeline ?? []) {
+    if (!Number.isFinite(point.bucket_ms)) continue;
+    const dayStartMs = startOfLocalDay(point.bucket_ms);
+    if (!buckets.has(dayStartMs)) continue;
+    buckets.set(dayStartMs, (buckets.get(dayStartMs) ?? 0) + Math.max(0, point.calls || 0));
+  }
+
+  return Array.from(buckets.entries()).map(([dayStartMs, calls]) => ({
+    dayStartMs,
+    label: formatDashboardTrendLabel(dayStartMs),
+    calls,
+  }));
 }

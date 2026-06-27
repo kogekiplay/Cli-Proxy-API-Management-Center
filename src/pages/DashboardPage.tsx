@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -11,9 +11,15 @@ import {
   IconRefreshCw,
   IconChevronDown,
   IconChevronLeft,
+  IconShield,
+  IconModelCluster,
+  IconTimer,
+  IconNetwork,
+  IconCode,
 } from '@/components/ui/icons';
 import { useAuthStore, useConfigStore, useModelsStore } from '@/stores';
 import {
+  buildDashboardDailyTrend,
   buildDashboardUsageRequest,
   summarizeDashboardUsage,
 } from '@/features/dashboard/dashboardUsage';
@@ -40,25 +46,31 @@ const formatDashboardNumber = (value: number | undefined | null) =>
 
 const formatDashboardEventTime = (value: number | undefined | null, language: string) => {
   if (!value) return '-';
-  return new Date(value).toLocaleString(language, {
+  const date = new Date(value);
+  const day = date.toLocaleDateString(language, {
     month: '2-digit',
     day: '2-digit',
+  });
+  const time = date.toLocaleTimeString(language, {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
   });
-};
-
-const formatTimelineLabel = (value: number | undefined | null, language: string) => {
-  if (!value) return '-';
-  return new Date(value).toLocaleDateString(language, {
-    month: 'numeric',
-    day: 'numeric',
-  });
+  return `${day}\n${time}`;
 };
 
 const statusCodeOf = (row: { status_code?: number; fail_status_code?: number; failed?: boolean }) =>
   row.status_code || row.fail_status_code || (row.failed ? 500 : 200);
+
+const CHART_WIDTH = 300;
+const CHART_HEIGHT = 118;
+const CHART_BASELINE = 96;
+const CHART_TOP = 12;
+const CHART_LEFT = 14;
+const CHART_RIGHT = 14;
+
+const buildChartLinePath = (points: Array<{ x: number; y: number }>) =>
+  points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
 
 export function DashboardPage() {
   const { t, i18n } = useTranslation();
@@ -295,65 +307,73 @@ export function DashboardPage() {
           ? t('dashboard.system_status_ok', { defaultValue: '运行正常' })
           : connectionText,
       marker: true,
+      icon: <IconShield size={15} />,
     },
     {
       label: t('footer.version', { defaultValue: '管理中心版本' }),
       value: managementCenterVersionDisplay,
+      icon: <IconCode size={15} />,
     },
     {
       label: t('footer.api_version', { defaultValue: 'CPA 版本' }),
       value: serverVersionDisplay,
+      icon: <IconModelCluster size={15} />,
     },
     {
       label: t('dashboard.build_time', { defaultValue: '构建时间' }),
       value: serverBuildDateDisplay || '-',
+      icon: <IconTimer size={15} />,
     },
     {
       label: t('dashboard.timezone', { defaultValue: '时区' }),
       value: Intl.DateTimeFormat().resolvedOptions().timeZone || '-',
+      icon: <IconNetwork size={15} />,
     },
   ];
   const dashboardUsage = useMemo(
     () => summarizeDashboardUsage(dashboardUsageData),
     [dashboardUsageData]
   );
-  const usageTimeline = dashboardUsage.timeline.slice(-7);
+  const usageTimeline = useMemo(
+    () => buildDashboardDailyTrend(dashboardUsage.timeline, currentTime.getTime()),
+    [dashboardUsage.timeline, currentTime]
+  );
+  const usageTimelineMaxCalls = Math.max(...usageTimeline.map((point) => point.calls), 1);
+  const chartPoints = useMemo(() => {
+    const plotWidth = CHART_WIDTH - CHART_LEFT - CHART_RIGHT;
+    const plotHeight = CHART_BASELINE - CHART_TOP;
+    const divisor = Math.max(usageTimeline.length - 1, 1);
+
+    return usageTimeline.map((point, index) => ({
+      x: CHART_LEFT + (plotWidth * index) / divisor,
+      y: CHART_BASELINE - ((point.calls || 0) / usageTimelineMaxCalls) * plotHeight,
+    }));
+  }, [usageTimeline, usageTimelineMaxCalls]);
+  const chartLinePath = buildChartLinePath(chartPoints);
+  const lastChartPoint = chartPoints[chartPoints.length - 1];
+  const chartAreaPath =
+    chartPoints.length > 0
+      ? `${chartLinePath} L ${lastChartPoint.x} ${CHART_BASELINE} L ${
+          chartPoints[0].x
+        } ${CHART_BASELINE} Z`
+      : '';
   const recentEvents = dashboardUsage.events.slice(0, 5);
 
   return (
     <div className={styles.dashboard}>
-      <section className={styles.pageMasthead}>
-        <div className={styles.mastheadCopy}>
-          <span className={styles.eyebrow}>OPERATIONS CONSOLE</span>
-          <h1>{t('dashboard.operations_title', { defaultValue: 'CLI Proxy 运行概览' })}</h1>
-          <p>
-            {t('dashboard.operations_desc', {
-              defaultValue:
-                '聚合访问密钥、AI 提供商、认证文件和模型状态，优先呈现每天排障最需要看的信息。',
-            })}
-          </p>
-        </div>
-
-        <div className={styles.timePanel}>
-          <span>{formattedDate}</span>
-          <strong>{formattedTime}</strong>
-          <div className={styles.connectionPill}>
-            <span
-              className={`${styles.statusDot} ${
-                connectionStatus === 'connected'
-                  ? styles.connected
-                  : connectionStatus === 'connecting'
-                    ? styles.connecting
-                    : styles.disconnected
-              }`}
-            />
-            <span>{connectionText}</span>
-          </div>
-        </div>
-      </section>
-
-      <section className={styles.dashboardGrid}>
+      <section className={styles.dashboardShell}>
         <main className={styles.mainColumn}>
+          <section className={styles.pageMasthead}>
+            <span className={styles.eyebrow}>OPERATIONS CONSOLE</span>
+            <h1>{t('dashboard.operations_title', { defaultValue: 'CLI Proxy 运行概览' })}</h1>
+            <p>
+              {t('dashboard.operations_desc', {
+                defaultValue:
+                  '聚合访问密钥、AI 提供商、认证文件和模型状态，优先呈现每天排障最需要看的信息。',
+              })}
+            </p>
+          </section>
+
           <div className={styles.summaryGrid}>
             {quickStats.map((stat) => (
               <Link key={stat.path} to={stat.path} className={styles.summaryCard}>
@@ -430,6 +450,10 @@ export function DashboardPage() {
                   </span>
                 </div>
               )}
+              <span className={styles.panelAction}>
+                {t('dashboard.view_all_requests', { defaultValue: '查看全部请求' })}
+                <IconChevronLeft size={15} />
+              </span>
             </Link>
 
             <Link to="/usage-analytics" className={`${styles.panelCard} ${styles.usagePanel}`}>
@@ -446,41 +470,83 @@ export function DashboardPage() {
                 </strong>
                 <span>{t('dashboard.total_requests', { defaultValue: '总请求数' })}</span>
               </div>
-              <div className={styles.miniChart} aria-hidden="true">
-                {(usageTimeline.length > 0
-                  ? usageTimeline
-                  : [{ bucket_ms: Date.now(), calls: 0 }]
-                ).map((point) => (
-                  <span
-                    key={point.bucket_ms}
-                    data-day={formatTimelineLabel(point.bucket_ms, i18n.language)}
-                    style={
-                      {
-                        '--point-level': `${Math.max(
-                          6,
-                          ((point.calls || 0) / dashboardUsage.timelineMaxCalls) * 76
-                        )}px`,
-                      } as CSSProperties
-                    }
+              <div className={styles.chartFrame} aria-hidden="true">
+                <svg
+                  className={styles.chartSvg}
+                  viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+                  preserveAspectRatio="none"
+                >
+                  <line className={styles.chartGridLine} x1="0" x2={CHART_WIDTH} y1="28" y2="28" />
+                  <line className={styles.chartGridLine} x1="0" x2={CHART_WIDTH} y1="62" y2="62" />
+                  <line
+                    className={styles.chartGridLine}
+                    x1="0"
+                    x2={CHART_WIDTH}
+                    y1={CHART_BASELINE}
+                    y2={CHART_BASELINE}
                   />
-                ))}
+                  {chartAreaPath ? <path className={styles.chartArea} d={chartAreaPath} /> : null}
+                  {chartLinePath ? <path className={styles.chartLine} d={chartLinePath} /> : null}
+                  {chartPoints.map((point, index) => (
+                    <circle
+                      className={styles.chartDot}
+                      cx={point.x}
+                      cy={point.y}
+                      key={`${usageTimeline[index]?.dayStartMs ?? index}-${point.x}`}
+                      r="3.7"
+                    />
+                  ))}
+                </svg>
+                <div className={styles.chartLabels}>
+                  {usageTimeline.map((point) => (
+                    <span key={point.dayStartMs}>{point.label}</span>
+                  ))}
+                </div>
               </div>
+              <span className={styles.panelAction}>
+                {t('dashboard.view_usage_analytics', { defaultValue: '查看用量分析' })}
+                <IconChevronLeft size={15} />
+              </span>
             </Link>
 
-            <article className={`${styles.panelCard} ${styles.routingPanel}`}>
+            <Link to="/config" className={`${styles.panelCard} ${styles.routingPanel}`}>
               <div className={styles.panelHeader}>
                 <h2>{t('dashboard.routing_strategy', { defaultValue: '路由策略' })}</h2>
                 <span className={styles.iconButton} aria-hidden="true">
                   <IconRefreshCw size={15} />
                 </span>
               </div>
-              <strong className={styles.strategyValue}>{routingStrategyDisplay}</strong>
+              <strong className={styles.strategyValue}>
+                <IconNetwork size={15} />
+                {routingStrategyDisplay}
+              </strong>
               <p>
                 {t('dashboard.routing_strategy_desc', {
                   defaultValue: '当前请求分发策略会影响额度消耗、冷却和失败后的切换行为。',
                 })}
               </p>
-            </article>
+              <ul className={styles.routeDetails}>
+                <li>
+                  {t('dashboard.routing_order_hint', {
+                    defaultValue: '按顺序将请求依次分配到可用模型。',
+                  })}
+                </li>
+                <li>
+                  {t('dashboard.routing_skip_hint', {
+                    defaultValue: '自动跳过不可用节点，保障稳定性。',
+                  })}
+                </li>
+                <li>
+                  {t('dashboard.routing_quota_hint', {
+                    defaultValue: '适用于负载均衡与高可用场景。',
+                  })}
+                </li>
+              </ul>
+              <span className={styles.panelAction}>
+                {t('dashboard.manage_routing_strategy', { defaultValue: '管理路由策略' })}
+                <IconChevronLeft size={15} />
+              </span>
+            </Link>
           </div>
 
           <section className={styles.systemOverview}>
@@ -497,7 +563,10 @@ export function DashboardPage() {
             <div className={styles.systemMetrics}>
               {systemOverviewItems.map((item) => (
                 <div className={styles.systemMetric} key={item.label}>
-                  <span>{item.label}</span>
+                  <span className={styles.systemMetricLabel}>
+                    <i aria-hidden="true">{item.icon}</i>
+                    {item.label}
+                  </span>
                   <strong>
                     {item.marker ? <i className={styles.metricDot} aria-hidden="true" /> : null}
                     {item.value}
@@ -509,6 +578,23 @@ export function DashboardPage() {
         </main>
 
         <aside className={styles.rightRail}>
+          <article className={styles.timePanel}>
+            <span>{formattedDate}</span>
+            <strong>{formattedTime}</strong>
+            <div className={styles.connectionPill}>
+              <span
+                className={`${styles.statusDot} ${
+                  connectionStatus === 'connected'
+                    ? styles.connected
+                    : connectionStatus === 'connecting'
+                      ? styles.connecting
+                      : styles.disconnected
+                }`}
+              />
+              <span>{connectionText}</span>
+            </div>
+          </article>
+
           {railItems.map((item) => (
             <article className={styles.railPanel} key={item.title}>
               <div className={styles.railPanelTop}>

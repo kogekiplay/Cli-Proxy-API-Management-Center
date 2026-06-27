@@ -11,13 +11,19 @@ describe('Claude-style visual direction adoption', () => {
 
     expect(variables).toContain('$primary-color: #c96442;');
     expect(dashboard).toContain('pageMasthead');
-    expect(dashboard).toContain('dashboardGrid');
+    expect(dashboard).toContain('dashboardShell');
     expect(dashboard).toContain('rightRail');
+    expect(dashboard).toContain('chartSvg');
+    expect(dashboard).toContain('panelAction');
+    expect(dashboard).toContain('routeDetails');
     expect(dashboardStyles).toContain('.pageMasthead');
-    expect(dashboardStyles).toContain('.dashboardGrid');
+    expect(dashboardStyles).toContain('.dashboardShell');
     expect(dashboardStyles).toContain('.rightRail');
     expect(dashboardStyles).toContain('.summaryCard');
-    expect(dashboardStyles).toContain('.miniChart');
+    expect(dashboardStyles).toContain('.chartSvg');
+    expect(dashboardStyles).toContain('.panelAction');
+    expect(dashboardStyles).toContain('.routeDetails');
+    expect(dashboardStyles).not.toContain('.dashboardGrid');
     expect(dashboardStyles).not.toContain('.backgroundOrbs');
     expect(dashboardStyles).not.toContain('.opsHero');
   });
