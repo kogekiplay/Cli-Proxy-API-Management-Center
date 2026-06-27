@@ -43,4 +43,16 @@ describe('request monitoring navigation', () => {
     expect(styles).toContain('.monitoringTableCard');
     expect(styles).toContain('.monitoringPagination');
   });
+
+  test('keeps successful status cells compact without empty error rows', () => {
+    const page = read('src/pages/UsageAnalyticsPage.tsx');
+    const styles = read('src/pages/UsageAnalyticsPage.module.scss');
+
+    expect(page).toContain('if (!row.failed && !error.summary) return null;');
+    expect(page).not.toContain('<span className={styles.mutedDash}>-</span>');
+    expect(styles).toContain('width: 56px;');
+    expect(styles).toContain('min-width: 56px;');
+    expect(styles).toContain('justify-self: center;');
+    expect(styles).toContain('align-content: center;');
+  });
 });

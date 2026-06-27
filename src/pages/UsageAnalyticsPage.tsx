@@ -649,7 +649,7 @@ function StatusBadge({ row }: { row: UsageAnalyticsEventRow }) {
 
 function ErrorSummary({ row, emptyLabel }: { row: UsageAnalyticsEventRow; emptyLabel: string }) {
   const error = resolveUsageAnalyticsErrorDisplay(row, emptyLabel);
-  if (!row.failed && !error.summary) return <span className={styles.mutedDash}>-</span>;
+  if (!row.failed && !error.summary) return null;
 
   return (
     <span className={styles.errorHint} tabIndex={0}>
