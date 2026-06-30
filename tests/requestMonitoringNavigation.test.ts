@@ -55,4 +55,37 @@ describe('request monitoring navigation', () => {
     expect(styles).toContain('justify-self: center;');
     expect(styles).toContain('align-content: center;');
   });
+
+  test('provides a working date picker without squeezing the range tabs', () => {
+    const page = read('src/pages/UsageAnalyticsPage.tsx');
+    const styles = read('src/pages/UsageAnalyticsPage.module.scss');
+
+    expect(page).toContain('IconCalendar');
+    expect(page).toContain('dateFilter');
+    expect(page).toContain('resolveAnalyticsToMs(dateFilter)');
+    expect(page).toContain('type="date"');
+    expect(page).toContain('handleDateFilterChange');
+    expect(page).toContain('aria-label="选择日期"');
+    expect(styles).toContain('minmax(250px, 0.95fr)');
+    expect(styles).toContain('.monitoringDatePicker');
+  });
+
+  test('keeps latency and TTFT as one centered monitoring table line', () => {
+    const page = read('src/pages/UsageAnalyticsPage.tsx');
+    const styles = read('src/pages/UsageAnalyticsPage.module.scss');
+
+    expect(page).not.toContain('<small>延迟 / TTFT</small>');
+    expect(styles).toContain('justify-items: center;');
+    expect(styles).toContain('align-content: center;');
+    expect(styles).toContain('white-space: nowrap;');
+  });
+
+  test('uses compact provider labels in the monitoring table only', () => {
+    const page = read('src/pages/UsageAnalyticsPage.tsx');
+
+    expect(page).toContain('const monitoringProviderLabel');
+    expect(page).toContain("if (provider === 'openai-compatible-opencode-go') return 'opencode-go';");
+    expect(page).toContain('{monitoringProviderLabel(row.provider)}');
+    expect(page).toContain('value={providerLabel(selectedEvent.provider)}');
+  });
 });

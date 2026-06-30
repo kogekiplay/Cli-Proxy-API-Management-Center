@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ChangeEvent, type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -7,6 +7,7 @@ import { Select, type SelectOption } from '@/components/ui/Select';
 import { Sheet } from '@/components/ui/Sheet';
 import {
   IconAlertTriangle,
+  IconCalendar,
   IconChevronLeft,
   IconCheckCircle2,
   IconCopy,
@@ -89,6 +90,14 @@ interface InsightItem {
   tone: 'blue' | 'green' | 'red' | 'amber' | 'purple';
 }
 
+interface HeatmapCell {
+  key: string;
+  dayLabel: string;
+  hour: number;
+  count: number;
+  intensity: number;
+}
+
 const RANGE_MS: Record<RangeKey, number> = {
   '24h': 24 * 60 * 60 * 1000,
   '7d': 7 * 24 * 60 * 60 * 1000,
@@ -144,6 +153,25 @@ const formatFullDateTime = (value: number | undefined | null) => {
   });
 };
 
+const formatDateInputValue = (value: number) => {
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const resolveAnalyticsToMs = (dateValue: string, now = Date.now()) => {
+  const fallback = now;
+  const [year, month, day] = dateValue.split('-').map(Number);
+  if (!year || !month || !day) return fallback;
+
+  const selected = new Date(year, month - 1, day, 23, 59, 59, 999);
+  if (!Number.isFinite(selected.getTime())) return fallback;
+
+  return dateValue === formatDateInputValue(now) ? now : selected.getTime();
+};
+
 const formatDuration = (value: number | undefined | null) => {
   if (value === undefined || value === null || !Number.isFinite(value) || value < 0) return '-';
   if (value < 1000) return `${Math.round(value)} ms`;
@@ -189,6 +217,12 @@ const providerLabel = (value: string | undefined | null) => {
   if (provider === 'opencode-go') return 'OpenCode';
   if (provider === 'codex') return 'Codex';
   return provider.charAt(0).toUpperCase() + provider.slice(1);
+};
+
+const monitoringProviderLabel = (value: string | undefined | null) => {
+  const provider = value?.trim() ?? '';
+  if (provider === 'openai-compatible-opencode-go') return 'opencode-go';
+  return providerLabel(provider);
 };
 
 const providerToneClass = (provider: string | undefined | null) => {
@@ -480,18 +514,31 @@ const buildFailureStats = (events: UsageAnalyticsEventRow[]): NamedStatRow[] => 
     .slice(0, 5);
 };
 
-const buildHeatmapCells = (events: UsageAnalyticsEventRow[]) => {
-  const hours = Array.from({ length: 24 }, (_, hour) => hour);
-  const max = Math.max(
-    ...hours.map(
-      (hour) => events.filter((row) => new Date(row.timestamp_ms).getHours() === hour).length
-    ),
-    1
-  );
-  return hours.map((hour) => {
-    const count = events.filter((row) => new Date(row.timestamp_ms).getHours() === hour).length;
-    return { hour, count, intensity: count / max };
+const HEATMAP_DAY_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+const HEATMAP_HOUR_LABELS = Array.from({ length: 12 }, (_, index) => index * 2);
+
+const heatmapDayIndex = (date: Date) => (date.getDay() + 6) % 7;
+
+const buildHeatmapCells = (events: UsageAnalyticsEventRow[]): HeatmapCell[] => {
+  const counts = new Map<string, number>();
+
+  events.forEach((row) => {
+    const date = new Date(row.timestamp_ms);
+    const day = heatmapDayIndex(date);
+    const hour = date.getHours();
+    const key = `${day}-${hour}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
   });
+
+  const max = Math.max(...counts.values(), 1);
+
+  return HEATMAP_DAY_LABELS.flatMap((dayLabel, day) =>
+    Array.from({ length: 24 }, (_, hour) => {
+      const key = `${day}-${hour}`;
+      const count = counts.get(key) ?? 0;
+      return { key, dayLabel, hour, count, intensity: count / max };
+    })
+  );
 };
 
 const buildFailureCopyText = (row: UsageAnalyticsEventRow, emptyLabel: string) => {
@@ -669,6 +716,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   const isMonitoringView = view === 'monitoring';
   const showNotification = useNotificationStore((state) => state.showNotification);
   const [range, setRange] = useState<RangeKey>('24h');
+  const [dateFilter, setDateFilter] = useState(() => formatDateInputValue(Date.now()));
   const [providerFilter, setProviderFilter] = useState('');
   const [modelFilter, setModelFilter] = useState('');
   const [authIndexFilter, setAuthIndexFilter] = useState('');
@@ -689,6 +737,37 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   const [monitoringPageSize, setMonitoringPageSize] = useState('20');
   const [monitoringPage, setMonitoringPage] = useState(1);
   const isCompleteAnalysisView = !isMonitoringView && analysisMode === 'complete';
+
+  useEffect(() => {
+    if (!isCompleteAnalysisView) return undefined;
+
+    const root = document.documentElement;
+    const previousTop = root.style.getPropertyValue('--main-content-padding-top');
+    const previousX = root.style.getPropertyValue('--main-content-padding-x');
+    const previousSidebarWidth = root.style.getPropertyValue('--sidebar-panel-width');
+
+    root.style.setProperty('--main-content-padding-top', '24px');
+    root.style.setProperty('--main-content-padding-x', '28px');
+    root.style.setProperty('--sidebar-panel-width', '216px');
+
+    return () => {
+      if (previousTop) {
+        root.style.setProperty('--main-content-padding-top', previousTop);
+      } else {
+        root.style.removeProperty('--main-content-padding-top');
+      }
+      if (previousX) {
+        root.style.setProperty('--main-content-padding-x', previousX);
+      } else {
+        root.style.removeProperty('--main-content-padding-x');
+      }
+      if (previousSidebarWidth) {
+        root.style.setProperty('--sidebar-panel-width', previousSidebarWidth);
+      } else {
+        root.style.removeProperty('--sidebar-panel-width');
+      }
+    };
+  }, [isCompleteAnalysisView]);
 
   const scrollToUsageAnalyticsTop = useCallback(() => {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
@@ -727,13 +806,17 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     [setRange]
   );
 
+  const handleDateFilterChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setDateFilter(event.target.value || formatDateInputValue(Date.now()));
+  }, []);
+
   const buildAnalyticsRequest = useCallback(
     (
       limit: number,
       cursor?: { beforeMs?: number; beforeID?: number },
       includeStats = true
     ): UsageAnalyticsRequest => {
-      const to = Date.now();
+      const to = resolveAnalyticsToMs(dateFilter);
       const from = to - RANGE_MS[range];
       return {
         from_ms: from,
@@ -759,7 +842,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
         },
       };
     },
-    [apiKeyHashFilter, authIndexFilter, failedOnly, modelFilter, providerFilter, range]
+    [apiKeyHashFilter, authIndexFilter, dateFilter, failedOnly, modelFilter, providerFilter, range]
   );
 
   const load = useCallback(async () => {
@@ -1609,10 +1692,10 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     </div>
   );
 
-  const renderInsights = (showCompleteAction = true) => (
+  const renderInsights = (showCompleteAction = true, visibleCount = insightItems.length) => (
     <Card title="洞察" className={styles.insightRail}>
       <div className={styles.insightList}>
-        {insightItems.map((item) => (
+        {insightItems.slice(0, visibleCount).map((item) => (
           <div
             className={`${styles.insightItem} ${styles[`insightTone${item.tone}`]}`}
             key={item.title}
@@ -1804,216 +1887,246 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
       {renderCompleteMetricCards()}
 
       <div className={styles.completeDashboardGrid}>
-        <Card
-          title="流量、Token 与费用趋势"
-          extra={
-            <Select
-              className={styles.compactSelect}
-              value={trendBucketForRange(range)}
-              onChange={handleTrendBucketChange}
-              options={[
-                { value: 'hour', label: '按小时' },
-                { value: 'day', label: '按天' },
-              ]}
-              ariaLabel="完整分析趋势粒度"
-              size="sm"
-            />
-          }
-          className={`${styles.chartPanel} ${styles.completeTrendPanel}`}
-        >
-          <div className={styles.lineLegend}>
-            <span>
-              <i className={styles.legendCalls} />
-              请求
-            </span>
-            <span>
-              <i className={styles.legendInput} />
-              Token
-            </span>
-            <span>
-              <i className={styles.legendCost} />
-              费用 USD
-            </span>
-          </div>
-          <svg className={styles.lineChart} viewBox="0 0 640 220" role="img" aria-label="趋势图">
-            <path d="M12 48H628M12 94H628M12 140H628M12 186H628" />
-            <polyline points={lineCalls} className={styles.lineCalls} />
-            <polyline points={lineTokens} className={styles.lineTokens} />
-            <polyline points={lineCost} className={styles.lineCost} />
-          </svg>
-        </Card>
-
-        <div className={styles.completeInsightColumn}>{renderInsights(false)}</div>
-
-        <Card
-          title="Provider 贡献"
-          className={`${styles.providerCard} ${styles.completeProviderPanel}`}
-        >
-          <div className={styles.donutLayout}>
-            <div className={styles.donutChart} style={{ background: donutGradient }}>
+        <div className={styles.completeLeftColumn}>
+          <Card
+            title="流量、Token 与费用趋势"
+            extra={
+              <Select
+                className={styles.compactSelect}
+                value={trendBucketForRange(range)}
+                onChange={handleTrendBucketChange}
+                options={[
+                  { value: 'hour', label: '按小时' },
+                  { value: 'day', label: '按天' },
+                ]}
+                ariaLabel="完整分析趋势粒度"
+                size="sm"
+              />
+            }
+            className={`${styles.chartPanel} ${styles.completeTrendPanel}`}
+          >
+            <div className={styles.lineLegend}>
               <span>
-                总 Token
-                <strong>{formatCompactNumber(totalTokens)}</strong>
+                <i className={styles.legendCalls} />
+                请求
+              </span>
+              <span>
+                <i className={styles.legendInput} />
+                Token
+              </span>
+              <span>
+                <i className={styles.legendCost} />
+                费用 USD
               </span>
             </div>
-            <div className={styles.donutLegend}>
-              {providerStats.map((row) => (
-                <span key={row.name}>
-                  <i style={{ background: row.color }} />
-                  {row.name}
-                  <strong>{successRate(row.value, totalTokens)}</strong>
-                </span>
+            <svg className={styles.lineChart} viewBox="0 0 640 220" role="img" aria-label="趋势图">
+              <path d="M12 48H628M12 94H628M12 140H628M12 186H628" />
+              <polyline points={lineCalls} className={styles.lineCalls} />
+              <polyline points={lineTokens} className={styles.lineTokens} />
+              <polyline points={lineCost} className={styles.lineCost} />
+            </svg>
+          </Card>
+
+          <Card
+            title="时间段热力图"
+            className={`${styles.compactRankCard} ${styles.completeHeatmapPanel}`}
+            extra={
+              <Select
+                className={styles.compactSelect}
+                value={trendBucketForRange(range)}
+                onChange={handleTrendBucketChange}
+                options={[
+                  { value: 'hour', label: '按小时' },
+                  { value: 'day', label: '按天' },
+                ]}
+                ariaLabel="热力图粒度"
+                size="sm"
+              />
+            }
+          >
+            <div className={styles.heatmapBody}>
+              <div className={styles.heatmapDayLabels} aria-hidden="true">
+                {HEATMAP_DAY_LABELS.map((day) => (
+                  <span key={day}>{day}</span>
+                ))}
+              </div>
+              <div className={styles.heatmapGrid}>
+                {heatmapCells.map((cell) => (
+                  <span
+                    key={cell.key}
+                    className={styles.heatmapCell}
+                    title={`${cell.dayLabel} ${String(cell.hour).padStart(2, '0')}:00 ${formatNumber(
+                      cell.count
+                    )} 次`}
+                    style={{ opacity: 0.18 + cell.intensity * 0.82 }}
+                  />
+                ))}
+              </div>
+              <div className={styles.heatmapHourLabels} aria-hidden="true">
+                {HEATMAP_HOUR_LABELS.map((hour) => (
+                  <span key={hour}>{String(hour).padStart(2, '0')}</span>
+                ))}
+              </div>
+            </div>
+            <div className={styles.heatmapScale} aria-hidden="true">
+              <span>低</span>
+              <i />
+              <span>高</span>
+            </div>
+          </Card>
+
+          <Card
+            title="失败原因分析"
+            className={`${styles.compactRankCard} ${styles.completeFailurePanel}`}
+          >
+            <div className={styles.failureList}>
+              {(failureStats.length > 0
+                ? failureStats
+                : [
+                    {
+                      name: '暂无失败',
+                      value: 0,
+                      calls: 0,
+                      success: 0,
+                      failure: 0,
+                      cost: 0,
+                      color: '#d7c8ba',
+                    },
+                  ]
+              ).map((row) => (
+                <div className={styles.failureBar} key={row.name}>
+                  <span>{row.name}</span>
+                  <div>
+                    <i
+                      style={{
+                        width: `${Math.max(4, (row.value / Math.max(failureCalls, 1)) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <strong>{formatNumber(row.value)}</strong>
+                </div>
               ))}
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
 
-        <Card
-          title="模型贡献排行"
-          className={`${styles.compactRankCard} ${styles.completeModelRankPanel}`}
-        >
-          <div className={styles.compactRankList}>
-            {(data?.model_stats ?? []).slice(0, 6).map((row, index) => (
-              <div className={styles.compactRankRow} key={row.model || index}>
-                <span>{index + 1}</span>
-                <strong>{row.model || '-'}</strong>
-                <div>
-                  <i
-                    style={{
-                      width: `${Math.max(4, (row.total_tokens / Math.max(totalTokens, 1)) * 100)}%`,
-                    }}
-                  />
+        <div className={styles.completeMiddleColumn}>
+          <div className={styles.completeInsightColumn}>{renderInsights(false, 4)}</div>
+
+          <Card
+            title="费用拆分"
+            className={`${styles.compactRankCard} ${styles.completeCostPanel}`}
+          >
+            <div className={styles.compactRankList}>
+              {providerStats.map((row) => (
+                <div className={styles.compactRankRow} key={row.name}>
+                  <span>
+                    <i style={{ background: row.color }} />
+                  </span>
+                  <strong>{row.name}</strong>
+                  <div>
+                    <i
+                      style={{
+                        width: `${Math.max(4, (row.cost / Math.max(totalCost, 1)) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <small>{formatCost(row.cost)}</small>
                 </div>
-                <small>{successRate(row.total_tokens, totalTokens)}</small>
-              </div>
-            ))}
-          </div>
-          <button className={styles.textAction} type="button">
-            查看全部模型
-            <span aria-hidden="true">→</span>
-          </button>
-        </Card>
+              ))}
+            </div>
+          </Card>
 
-        <Card
-          title="时间段热力图"
-          className={`${styles.compactRankCard} ${styles.completeHeatmapPanel}`}
-          extra={
-            <Select
-              className={styles.compactSelect}
-              value={trendBucketForRange(range)}
-              onChange={handleTrendBucketChange}
-              options={[
-                { value: 'hour', label: '按小时' },
-                { value: 'day', label: '按天' },
-              ]}
-              ariaLabel="热力图粒度"
-              size="sm"
+          <Card
+            title="API Key 用量排行"
+            className={`${styles.compactRankCard} ${styles.completeApiKeyPanel}`}
+          >
+            <StatTable
+              rows={(data?.api_key_stats ?? []).slice(0, 5)}
+              columns={apiKeyColumns}
+              empty={t('usage_analytics.no_data')}
             />
-          }
-        >
-          <div className={styles.heatmapGrid}>
-            {heatmapCells.map((cell) => (
-              <span
-                key={cell.hour}
-                className={styles.heatmapCell}
-                title={`${cell.hour}:00 ${formatNumber(cell.count)} 次`}
-                style={{ opacity: 0.24 + cell.intensity * 0.76 }}
-              />
-            ))}
-          </div>
-        </Card>
+            <button className={styles.textAction} type="button">
+              查看全部 API Key
+              <span aria-hidden="true">→</span>
+            </button>
+          </Card>
+        </div>
 
-        <Card title="费用拆分" className={`${styles.compactRankCard} ${styles.completeCostPanel}`}>
-          <div className={styles.compactRankList}>
-            {providerStats.map((row) => (
-              <div className={styles.compactRankRow} key={row.name}>
+        <div className={styles.completeRightColumn}>
+          <Card
+            title="Provider 贡献"
+            className={`${styles.providerCard} ${styles.completeProviderPanel}`}
+          >
+            <div className={styles.donutLayout}>
+              <div className={styles.donutChart} style={{ background: donutGradient }}>
                 <span>
-                  <i style={{ background: row.color }} />
+                  总 Token
+                  <strong>{formatCompactNumber(totalTokens)}</strong>
                 </span>
-                <strong>{row.name}</strong>
-                <div>
-                  <i
-                    style={{ width: `${Math.max(4, (row.cost / Math.max(totalCost, 1)) * 100)}%` }}
-                  />
-                </div>
-                <small>{formatCost(row.cost)}</small>
               </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card
-          title="API Key 用量排行"
-          className={`${styles.compactRankCard} ${styles.completeApiKeyPanel}`}
-        >
-          <StatTable
-            rows={(data?.api_key_stats ?? []).slice(0, 5)}
-            columns={apiKeyColumns}
-            empty={t('usage_analytics.no_data')}
-          />
-          <button className={styles.textAction} type="button">
-            查看全部 API Key
-            <span aria-hidden="true">→</span>
-          </button>
-        </Card>
-
-        <Card
-          title="失败原因分析"
-          className={`${styles.compactRankCard} ${styles.completeFailurePanel}`}
-        >
-          <div className={styles.failureList}>
-            {(failureStats.length > 0
-              ? failureStats
-              : [
-                  {
-                    name: '暂无失败',
-                    value: 0,
-                    calls: 0,
-                    success: 0,
-                    failure: 0,
-                    cost: 0,
-                    color: '#d7c8ba',
-                  },
-                ]
-            ).map((row) => (
-              <div className={styles.failureBar} key={row.name}>
-                <span>{row.name}</span>
-                <div>
-                  <i
-                    style={{
-                      width: `${Math.max(4, (row.value / Math.max(failureCalls, 1)) * 100)}%`,
-                    }}
-                  />
-                </div>
-                <strong>{formatNumber(row.value)}</strong>
+              <div className={styles.donutLegend}>
+                {providerStats.map((row) => (
+                  <span key={row.name}>
+                    <i style={{ background: row.color }} />
+                    {row.name}
+                    <strong>{successRate(row.value, totalTokens)}</strong>
+                  </span>
+                ))}
               </div>
-            ))}
-          </div>
-        </Card>
+            </div>
+          </Card>
 
-        <Card
-          title="优化建议"
-          className={`${styles.recommendationPanel} ${styles.completeRecommendationPanel}`}
-        >
-          <div className={styles.recommendationGrid}>
-            <div className={styles.recommendationItem}>
-              <strong>削峰分流</strong>
-              <small>高峰时段集中时，建议开启更细的模型或 Key 级别路由。</small>
+          <Card
+            title="模型贡献排行"
+            className={`${styles.compactRankCard} ${styles.completeModelRankPanel}`}
+          >
+            <div className={styles.compactRankList}>
+              {(data?.model_stats ?? []).slice(0, 6).map((row, index) => (
+                <div className={styles.compactRankRow} key={row.model || index}>
+                  <span>{index + 1}</span>
+                  <strong>{row.model || '-'}</strong>
+                  <div>
+                    <i
+                      style={{
+                        width: `${Math.max(4, (row.total_tokens / Math.max(totalTokens, 1)) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <small>{successRate(row.total_tokens, totalTokens)}</small>
+                </div>
+              ))}
             </div>
-            <div className={styles.recommendationItem}>
-              <strong>清理低效 Key</strong>
-              <small>失败率高的 API Key 可以先禁用观察，降低重试成本。</small>
+            <button className={styles.textAction} type="button">
+              查看全部模型
+              <span aria-hidden="true">→</span>
+            </button>
+          </Card>
+
+          <Card
+            title="优化建议"
+            className={`${styles.recommendationPanel} ${styles.completeRecommendationPanel}`}
+          >
+            <div className={styles.recommendationGrid}>
+              <div className={styles.recommendationItem}>
+                <strong>削峰分流</strong>
+                <small>高峰时段集中时，建议开启更细的模型或 Key 级别路由。</small>
+              </div>
+              <div className={styles.recommendationItem}>
+                <strong>清理低效 Key</strong>
+                <small>失败率高的 API Key 可以先禁用观察，降低重试成本。</small>
+              </div>
+              <div className={styles.recommendationItem}>
+                <strong>模型路由优化</strong>
+                <small>按模型消耗和成功率调整优先级，避免高价模型被误用。</small>
+              </div>
+              <div className={styles.recommendationItem}>
+                <strong>失败监控告警</strong>
+                <small>429 或上游超时集中时，建议配合请求监控排查。</small>
+              </div>
             </div>
-            <div className={styles.recommendationItem}>
-              <strong>模型路由优化</strong>
-              <small>按模型消耗和成功率调整优先级，避免高价模型被误用。</small>
-            </div>
-            <div className={styles.recommendationItem}>
-              <strong>失败监控告警</strong>
-              <small>429 或上游超时集中时，建议配合请求监控排查。</small>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       </div>
     </>
   );
@@ -2073,9 +2186,16 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
             </button>
           ))}
         </div>
-        <button className={styles.monitoringIconButton} type="button" aria-label="时间范围">
-          <IconTimer size={15} />
-        </button>
+        <label className={styles.monitoringDatePicker} title="选择日期">
+          <IconCalendar size={15} />
+          <input
+            type="date"
+            value={dateFilter}
+            max={formatDateInputValue(Date.now())}
+            onChange={handleDateFilterChange}
+            aria-label="选择日期"
+          />
+        </label>
         <Select
           className={styles.monitoringFilterSelect}
           value={providerFilter}
@@ -2186,7 +2306,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                       <span
                         className={`${styles.identityBadge} ${providerToneClass(row.provider)}`}
                       >
-                        {providerLabel(row.provider)}
+                        {monitoringProviderLabel(row.provider)}
                       </span>
                       <strong>{row.model || '-'}</strong>
                     </div>
@@ -2208,7 +2328,6 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                       <strong>
                         {formatDuration(row.latency_ms)} / {formatDuration(row.ttft_ms)}
                       </strong>
-                      <small>延迟 / TTFT</small>
                     </div>
                   </td>
                   <td>
@@ -2459,7 +2578,9 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   );
 
   return (
-    <div className={styles.container}>
+    <div
+      className={`${styles.container} ${isCompleteAnalysisView ? styles.completeContainer : ''}`}
+    >
       {isCompleteAnalysisView ? (
         <div className={styles.completeHeader}>
           <div className={styles.completeHeaderMain}>

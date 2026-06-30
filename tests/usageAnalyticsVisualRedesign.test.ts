@@ -75,4 +75,39 @@ describe('usage analytics visual redesign', () => {
     expect(styles).toContain('.heatmapGrid');
     expect(styles).toContain('.recommendationGrid');
   });
+
+  test('matches the reference complete analysis three-column masonry layout', () => {
+    const page = read('src/pages/UsageAnalyticsPage.tsx');
+    const styles = read('src/pages/UsageAnalyticsPage.module.scss');
+
+    expect(page).toContain('completeLeftColumn');
+    expect(page).toContain('completeMiddleColumn');
+    expect(page).toContain('completeRightColumn');
+    expect(page).toContain('completeContainer');
+    expect(page).toContain('<div className={styles.completeLeftColumn}>');
+    expect(page).toContain('<div className={styles.completeMiddleColumn}>');
+    expect(page).toContain('<div className={styles.completeRightColumn}>');
+    expect(page).toContain('renderInsights(false, 4)');
+    expect(page).toContain("root.style.setProperty('--main-content-padding-x', '28px')");
+    expect(page).toContain("root.style.setProperty('--sidebar-panel-width', '216px')");
+    expect(page).toContain('HEATMAP_DAY_LABELS');
+    expect(page).toContain('HEATMAP_HOUR_LABELS');
+    expect(page).toContain('heatmapDayLabels');
+    expect(styles).toContain('.completeLeftColumn,');
+    expect(styles).toContain('.completeMiddleColumn,');
+    expect(styles).toContain('.completeRightColumn');
+    expect(styles).toContain('.completeContainer');
+    expect(page).toContain('--main-content-padding-top');
+    expect(page).toContain("root.style.setProperty('--main-content-padding-top', '24px')");
+    expect(read('src/styles/layout.scss')).toContain(
+      'var(--main-content-padding-x, clamp(20px, 3vw, 48px))'
+    );
+    expect(styles).toContain('grid-template-columns: minmax(0, 1.34fr) minmax(300px, 0.62fr) minmax(360px, 0.95fr);');
+    expect(styles).toContain('.completeRightColumn .recommendationGrid');
+    expect(styles).toContain('grid-template-columns: 1fr;');
+    expect(styles).toContain('.completeMiddleColumn > *,');
+    expect(styles).toContain('max-width: 100%;');
+    expect(styles).toContain('.heatmapDayLabels');
+    expect(styles).toContain('grid-template-columns: repeat(24, minmax(0, 1fr));');
+  });
 });

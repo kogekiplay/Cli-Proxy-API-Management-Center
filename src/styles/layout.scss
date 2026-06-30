@@ -725,7 +725,8 @@
 .main-content {
   flex: 1 0 auto;
   min-height: 100%;
-  padding: 88px clamp(20px, 3vw, 48px) 40px;
+  padding: var(--main-content-padding-top, 88px)
+    var(--main-content-padding-x, clamp(20px, 3vw, 48px)) 40px;
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
