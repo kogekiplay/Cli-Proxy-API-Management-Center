@@ -310,16 +310,12 @@ export function DashboardPage() {
         ? t('basic_settings.routing_strategy_round_robin')
         : routingStrategyRaw;
 
-  const formattedDate = currentTime.toLocaleDateString(i18n.language, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
-  const formattedTime = currentTime.toLocaleTimeString(i18n.language, {
+  const currentTimeDisplay = currentTime.toLocaleString(i18n.language, {
+    month: '2-digit',
+    day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
   });
   const serverBuildDateDisplay = formatDateValue(serverBuildDate, i18n.language);
   const connectionText = t(
@@ -333,26 +329,6 @@ export function DashboardPage() {
     ? `v${serverVersion.trim().replace(/^[vV]+/, '')}`
     : '-';
   const managementCenterVersionDisplay = __APP_VERSION__ || '-';
-  const railItems = [
-    {
-      title: t('dashboard.gateway_health', { defaultValue: 'Gateway health' }),
-      badge: connectionText,
-      badgeClass:
-        connectionStatus === 'connected'
-          ? styles.railBadgeOk
-          : connectionStatus === 'connecting'
-            ? styles.railBadgeWarn
-            : styles.railBadgeDanger,
-      description:
-        connectionStatus === 'connected'
-          ? t('dashboard.gateway_health_desc', {
-              defaultValue: 'Management API 已连接，当前配置可以正常读取和刷新。',
-            })
-          : t('dashboard.gateway_health_unavailable', {
-              defaultValue: '正在等待 Management API 连接，部分数据会延迟显示。',
-            }),
-    },
-  ];
   const systemOverviewItems = [
     {
       label: t('dashboard.system_status', { defaultValue: '系统状态' }),
@@ -382,6 +358,11 @@ export function DashboardPage() {
       label: t('dashboard.timezone', { defaultValue: '时区' }),
       value: Intl.DateTimeFormat().resolvedOptions().timeZone || '-',
       icon: <IconNetwork size={15} />,
+    },
+    {
+      label: t('dashboard.current_time', { defaultValue: '当前时间' }),
+      value: currentTimeDisplay,
+      icon: <IconTimer size={15} />,
     },
   ];
   const dashboardUsage = useMemo(
@@ -710,35 +691,6 @@ export function DashboardPage() {
             </div>
           </section>
         </main>
-
-        <aside className={styles.rightRail}>
-          <article className={styles.timePanel}>
-            <span>{formattedDate}</span>
-            <strong>{formattedTime}</strong>
-            <div className={styles.connectionPill}>
-              <span
-                className={`${styles.statusDot} ${
-                  connectionStatus === 'connected'
-                    ? styles.connected
-                    : connectionStatus === 'connecting'
-                      ? styles.connecting
-                      : styles.disconnected
-                }`}
-              />
-              <span>{connectionText}</span>
-            </div>
-          </article>
-
-          {railItems.map((item) => (
-            <article className={styles.railPanel} key={item.title}>
-              <div className={styles.railPanelTop}>
-                <h2>{item.title}</h2>
-                <span className={`${styles.railBadge} ${item.badgeClass}`}>{item.badge}</span>
-              </div>
-              <p>{item.description}</p>
-            </article>
-          ))}
-        </aside>
       </section>
     </div>
   );
