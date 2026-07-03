@@ -8,7 +8,6 @@ import {
 } from '@/components/providers/utils';
 import type { GeminiKeyConfig, ModelAlias, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import {
-  claudeApiToResource,
   claudeToResource,
   codexToResource,
   geminiToResource,
@@ -16,7 +15,6 @@ import {
   vertexToResource,
 } from './adapters';
 import { PROVIDER_BRAND_ORDER } from './descriptors';
-import { CLAUDE_API_BASE_URL, isClaudeApiProvider } from './claudeApi';
 import type {
   ProviderBrand,
   ProviderEntryFormInput,
@@ -148,19 +146,6 @@ const buildProviderKeyConfig = (
   return next;
 };
 
-const buildClaudeApiConfig = (
-  input: ProviderEntryFormInput,
-  existing?: ProviderKeyConfig | null
-): ProviderKeyConfig =>
-  buildProviderKeyConfig(
-    'claude',
-    {
-      ...input,
-      baseUrl: CLAUDE_API_BASE_URL,
-    },
-    existing
-  ) as ProviderKeyConfig;
-
 const buildOpenAIConfig = (
   input: ProviderEntryFormInput,
   existing?: OpenAIProviderConfig | null
@@ -268,16 +253,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           resources = (config.codexApiKeys ?? []).map((c, i) => codexToResource(c, i));
           break;
         case 'claude':
-          resources = (config.claudeApiKeys ?? []).reduce<ProviderResource[]>((out, item, index) => {
-            if (!isClaudeApiProvider(item)) out.push(claudeToResource(item, index));
-            return out;
-          }, []);
-          break;
-        case 'claudeApi':
-          resources = (config.claudeApiKeys ?? []).reduce<ProviderResource[]>((out, item, index) => {
-            if (isClaudeApiProvider(item)) out.push(claudeApiToResource(item, index));
-            return out;
-          }, []);
+          resources = (config.claudeApiKeys ?? []).map((c, i) => claudeToResource(c, i));
           break;
         case 'vertex':
           resources = (config.vertexApiKeys ?? []).map((c, i) => vertexToResource(c, i));
@@ -355,10 +331,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           const next = [...(config?.claudeApiKeys ?? [])];
           next.push(buildProviderKeyConfig('claude', input) as ProviderKeyConfig);
           await persistClaudeConfigs(next);
-        } else if (brand === 'claudeApi') {
-          const next = [...(config?.claudeApiKeys ?? [])];
-          next.push(buildClaudeApiConfig(input));
-          await persistClaudeConfigs(next);
         } else if (brand === 'vertex') {
           const next = [...(config?.vertexApiKeys ?? [])];
           next.push(buildProviderKeyConfig('vertex', input) as ProviderKeyConfig);
@@ -405,11 +377,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           const existing = list[idx];
           list[idx] = buildProviderKeyConfig('claude', input, existing) as ProviderKeyConfig;
           await persistClaudeConfigs(list);
-        } else if (brand === 'claudeApi') {
-          const list = [...(config?.claudeApiKeys ?? [])];
-          const existing = list[idx];
-          list[idx] = buildClaudeApiConfig(input, existing);
-          await persistClaudeConfigs(list);
         } else if (brand === 'vertex') {
           const list = [...(config?.vertexApiKeys ?? [])];
           const existing = list[idx];
@@ -454,10 +421,6 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           await providersApi.deleteClaudeConfig(sel.apiKey, sel.baseUrl);
           const next = (config?.claudeApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('claude-api-key', next);
-        } else if (sel.brand === 'claudeApi') {
-          await providersApi.deleteClaudeConfig(sel.apiKey, sel.baseUrl);
-          const next = (config?.claudeApiKeys ?? []).filter((_, i) => i !== sel.index);
-          updateConfigValue('claude-api-key', next);
         } else if (sel.brand === 'vertex') {
           await providersApi.deleteVertexConfig(sel.apiKey, sel.baseUrl);
           const next = (config?.vertexApiKeys ?? []).filter((_, i) => i !== sel.index);
@@ -494,11 +457,11 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             : withoutDisableAllModelsRule(current.excludedModels);
           list[idx] = { ...current, excludedModels: excluded };
           await persistGeminiKeys(list);
-        } else if (brand === 'codex' || brand === 'claude' || brand === 'claudeApi' || brand === 'vertex') {
+        } else if (brand === 'codex' || brand === 'claude' || brand === 'vertex') {
           const key =
             brand === 'codex'
               ? 'codexApiKeys'
-              : brand === 'claude' || brand === 'claudeApi'
+              : brand === 'claude'
                 ? 'claudeApiKeys'
                 : 'vertexApiKeys';
           const list = [...((config?.[key] as ProviderKeyConfig[] | undefined) ?? [])];
@@ -509,7 +472,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             : withoutDisableAllModelsRule(current.excludedModels);
           list[idx] = { ...current, excludedModels: excluded };
           if (brand === 'codex') await persistCodexConfigs(list);
-          else if (brand === 'claude' || brand === 'claudeApi') await persistClaudeConfigs(list);
+          else if (brand === 'claude') await persistClaudeConfigs(list);
           else await persistVertexConfigs(list);
         } else if (brand === 'openaiCompatibility') {
           await providersApi.updateOpenAIProviderDisabled(idx, disabled);

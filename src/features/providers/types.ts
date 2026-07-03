@@ -6,7 +6,6 @@ export type ProviderBrand =
   | 'gemini'
   | 'codex'
   | 'claude'
-  | 'claudeApi'
   | 'vertex'
   | 'openaiCompatibility';
 
@@ -20,7 +19,6 @@ export type ProviderResourceSelector =
   | { brand: 'gemini'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'codex'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'claude'; apiKey: string; baseUrl?: string; index: number }
-  | { brand: 'claudeApi'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'vertex'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'openaiCompatibility'; name: string; index: number };
 

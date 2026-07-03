@@ -50,10 +50,9 @@ const resolveStatusBarData = (
   if (resource.brand === 'openaiCompatibility') {
     return getOpenAIProviderRecentStatusData(resource.raw as OpenAIProviderConfig, usageByProvider);
   }
-  const usageBrand = resource.brand === 'claudeApi' ? 'claude' : resource.brand;
   return getProviderRecentStatusData(
     usageByProvider,
-    usageBrand,
+    resource.brand,
     resource.apiKey ?? undefined,
     resource.baseUrl ?? undefined
   );
@@ -66,10 +65,9 @@ const resolveTotalStats = (
   if (resource.brand === 'openaiCompatibility') {
     return getOpenAIProviderTotalStats(resource.raw as OpenAIProviderConfig, usageByProvider);
   }
-  const usageBrand = resource.brand === 'claudeApi' ? 'claude' : resource.brand;
   return getProviderTotalStats(
     usageByProvider,
-    usageBrand,
+    resource.brand,
     resource.apiKey ?? undefined,
     resource.baseUrl ?? undefined
   );
@@ -116,7 +114,7 @@ export function ProviderResourceTable({
       if (r.brand === 'codex' && r.flags.websockets) {
         items.push(renderFlagTag('ws', t('providersPage.table.websocketsTag')));
       }
-      if ((r.brand === 'claude' || r.brand === 'claudeApi') && r.flags.cloakEnabled) {
+      if (r.brand === 'claude' && r.flags.cloakEnabled) {
         items.push(renderFlagTag('cloak', t('providersPage.table.cloakTag')));
       }
     }

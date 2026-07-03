@@ -31,7 +31,6 @@ import {
 import { useModelDiscovery } from './useModelDiscovery';
 import { ModelDiscoveryPanel } from './ModelDiscoveryPanel';
 import styles from './sharedForm.module.scss';
-import { CLAUDE_API_BASE_URL } from '../../claudeApi';
 
 export interface BaseProviderFormHandle {
   submit: () => Promise<void>;
@@ -63,7 +62,7 @@ const formatJsonObject = (value?: Record<string, unknown>): string => {
 };
 
 const isClaudeLikeBrand = (brand: ProviderBrand): boolean =>
-  brand === 'claude' || brand === 'claudeApi';
+  brand === 'claude';
 
 function buildInitialForm(
   brand: ProviderBrand,
@@ -74,7 +73,7 @@ function buildInitialForm(
     return {
       apiKey: '',
       name: '',
-      baseUrl: brand === 'claudeApi' ? CLAUDE_API_BASE_URL : '',
+      baseUrl: '',
       proxyUrl: '',
       prefix: '',
       disabled: false,
