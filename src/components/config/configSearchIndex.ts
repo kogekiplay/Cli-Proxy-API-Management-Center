@@ -155,7 +155,7 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
   },
   {
     fieldId: 'routingStrategy',
-    sectionId: 'network',
+    sectionId: 'advanced',
     labelKey: L('sections.network.routing_strategy'),
     hintKey: L('sections.network.routing_strategy_hint'),
     yamlKeys: ['routing', 'strategy'],

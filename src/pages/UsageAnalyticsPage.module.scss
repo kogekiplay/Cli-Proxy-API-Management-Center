@@ -10,10 +10,16 @@
 }
 
 .completeContainer {
+  padding-top: 80px;
+
   @media (min-width: 901px) {
     .completeHeader .headerActions {
-      padding-top: 30px;
+      padding-top: 0;
     }
+  }
+
+  @include mobile {
+    padding-top: 8px;
   }
 }
 
@@ -687,6 +693,41 @@
 .completeMiddleColumn {
   .compactRankRow {
     grid-template-columns: 24px minmax(74px, 0.8fr) minmax(88px, 1fr) auto;
+  }
+}
+
+.completeCostPanel {
+  overflow: hidden;
+
+  .compactRankRow {
+    grid-template-columns: minmax(72px, 0.72fr) minmax(84px, 1fr) 96px;
+    gap: 10px;
+    max-width: 100%;
+    overflow: hidden;
+
+    > span {
+      display: none;
+    }
+
+    > strong {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    > div {
+      width: 100%;
+      min-width: 0;
+    }
+
+    > small {
+      width: 96px;
+      overflow: hidden;
+      text-align: right;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 }
 

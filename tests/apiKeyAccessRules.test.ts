@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   canonicalApiKeyAccessRules,
   parseApiKeyAccessRules,
+  pruneApiKeyAccessRules,
   serializeApiKeyAccessRules,
 } from '../src/utils/apiKeyAccessRules';
 
@@ -67,6 +68,42 @@ describe('api key access rules', () => {
         'provider-targets': [{ provider: 'claude', 'base-url': 'https://a.example.com' }],
         'auth-files': ['claude-a.json'],
       },
+      'key-all': { access: 'all' },
+    });
+  });
+
+  test('prunes deleted provider targets and auth files before saving access rules', () => {
+    const pruned = pruneApiKeyAccessRules(
+      {
+        'key-limited': {
+          providerTargets: [
+            { provider: 'codex', baseUrl: 'https://alive.example.com/v1' },
+            { provider: 'codex', baseUrl: 'https://deleted.example.com/v1' },
+          ],
+          authFiles: ['codex-alive.json', 'codex-deleted.json'],
+        },
+        'key-deny-after-delete': {
+          providerTargets: [{ provider: 'xai', baseUrl: 'https://deleted.example.com/v1' }],
+          authFiles: ['xai-deleted.json'],
+        },
+        'key-all': {
+          access: 'all',
+          providerTargets: [{ provider: 'codex', baseUrl: 'https://deleted.example.com/v1' }],
+          authFiles: ['codex-deleted.json'],
+        },
+      },
+      {
+        providerTargets: [{ provider: ' codex ', baseUrl: ' https://alive.example.com/v1 ' }],
+        authFiles: [' codex-alive.json '],
+      }
+    );
+
+    expect(pruned).toEqual({
+      'key-limited': {
+        providerTargets: [{ provider: 'codex', baseUrl: 'https://alive.example.com/v1' }],
+        authFiles: ['codex-alive.json'],
+      },
+      'key-deny-after-delete': {},
       'key-all': { access: 'all' },
     });
   });

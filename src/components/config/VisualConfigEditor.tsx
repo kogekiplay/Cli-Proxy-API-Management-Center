@@ -55,8 +55,32 @@ import {
 import styles from './VisualConfigEditor.module.scss';
 
 type EditorMode = 'simple' | 'full';
+type RoutingStrategyValue = 'round-robin' | 'fill-first';
 
 const EDITOR_MODE_STORAGE_KEY = 'config-management:editor-mode';
+
+const routingStrategyOptions: Array<{
+  value: RoutingStrategyValue;
+  labelKey: string;
+  defaultLabel: string;
+  descriptionKey: string;
+  defaultDescription: string;
+}> = [
+  {
+    value: 'round-robin',
+    labelKey: 'basic_settings.routing_strategy_round_robin',
+    defaultLabel: 'round-robin (轮询)',
+    descriptionKey: 'config_management.routing_strategy.round_robin_desc',
+    defaultDescription: '按顺序分配请求，适合负载均衡和高可用。',
+  },
+  {
+    value: 'fill-first',
+    labelKey: 'basic_settings.routing_strategy_fill_first',
+    defaultLabel: 'fill-first (优先填充)',
+    descriptionKey: 'config_management.routing_strategy.fill_first_desc',
+    defaultDescription: '优先使用前面的凭证，适合先消耗指定账号额度。',
+  },
+];
 
 type VisualSection = {
   id: VisualSectionId;
@@ -71,6 +95,16 @@ interface VisualConfigEditorProps {
   hasPayloadValidationErrors?: boolean;
   apiKeyAccessTargets?: ApiKeyAccessAuthTarget[];
   apiKeyAccessProviderTargets?: ApiKeyAccessProviderTargetResponse[];
+  apiKeyAccessMetadataReady?: boolean;
+  routingStrategyControl?: {
+    value: RoutingStrategyValue;
+    disabled?: boolean;
+    loading?: boolean;
+    saving?: boolean;
+    error?: string;
+    blockedByUnsavedChanges?: boolean;
+    onChange: (value: RoutingStrategyValue) => void;
+  };
   disabled?: boolean;
   onChange: (values: Partial<VisualConfigValues>) => void;
 }
@@ -190,6 +224,8 @@ export function VisualConfigEditor({
   hasPayloadValidationErrors = false,
   apiKeyAccessTargets = [],
   apiKeyAccessProviderTargets,
+  apiKeyAccessMetadataReady = false,
+  routingStrategyControl,
   disabled = false,
   onChange,
 }: VisualConfigEditorProps) {
@@ -197,8 +233,6 @@ export function VisualConfigEditor({
   const pageTransitionLayer = usePageTransitionLayer();
   const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.isCurrentLayer : true;
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const routingStrategyLabelId = useId();
-  const routingStrategyHintId = `${routingStrategyLabelId}-hint`;
   const disableImageGenerationLabelId = useId();
   const disableImageGenerationHintId = `${disableImageGenerationLabelId}-hint`;
   const keepaliveInputId = useId();
@@ -607,6 +641,7 @@ export function VisualConfigEditor({
           apiKeyAccessRules={values.apiKeyAccessRules}
           apiKeyAccessTargets={apiKeyAccessTargets}
           apiKeyAccessProviderTargets={apiKeyAccessProviderTargets}
+          apiKeyAccessMetadataReady={apiKeyAccessMetadataReady}
           disabled={disabled}
           onChange={handleApiKeysTextChange}
           onApiKeyAccessChange={handleApiKeyAccessRulesChange}
@@ -662,6 +697,77 @@ export function VisualConfigEditor({
       />
     </FieldAnchor>
   );
+
+  const routingStrategyControlBlock = routingStrategyControl ? (
+    <FieldAnchor fieldId="routingStrategy">
+      <SectionSubsection
+        title={t('config_management.routing_strategy.title', {
+          defaultValue: '路由策略',
+        })}
+        description={t('config_management.routing_strategy.description', {
+          defaultValue: '控制 CPA 在多个可用凭证之间如何分发请求。',
+        })}
+      >
+        <div
+          className={styles.routingStrategyOptions}
+          role="group"
+          aria-label={t('config_management.routing_strategy.title', {
+            defaultValue: '路由策略',
+          })}
+        >
+          {routingStrategyOptions.map((option) => {
+            const active = option.value === routingStrategyControl.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                className={`${styles.routingStrategyButton} ${
+                  active ? styles.routingStrategyButtonActive : ''
+                }`}
+                onClick={() => routingStrategyControl.onChange(option.value)}
+                disabled={routingStrategyControl.disabled}
+                aria-pressed={active}
+              >
+                <strong>
+                  {t(option.labelKey, {
+                    defaultValue: option.defaultLabel,
+                  })}
+                </strong>
+                <span>
+                  {t(option.descriptionKey, {
+                    defaultValue: option.defaultDescription,
+                  })}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className={styles.routingStrategyMeta}>
+          {routingStrategyControl.saving || routingStrategyControl.loading ? (
+            <span>
+              {routingStrategyControl.saving
+                ? t('common.saving', { defaultValue: '保存中' })
+                : t('common.loading', { defaultValue: '加载中' })}
+            </span>
+          ) : routingStrategyControl.error ? (
+            <span className={styles.routingStrategyError}>{routingStrategyControl.error}</span>
+          ) : routingStrategyControl.blockedByUnsavedChanges ? (
+            <span>
+              {t('config_management.routing_strategy.unsaved_hint', {
+                defaultValue: '有未保存修改时，请先保存或放弃修改后再切换路由策略。',
+              })}
+            </span>
+          ) : (
+            <span>
+              {t('config_management.routing_strategy.current_hint', {
+                defaultValue: '当前策略会立即影响后续请求分发。',
+              })}
+            </span>
+          )}
+        </div>
+      </SectionSubsection>
+    </FieldAnchor>
+  ) : null;
 
   const navContent = (
     <div className={styles.navList}>
@@ -1133,41 +1239,6 @@ export function VisualConfigEditor({
                       error={authAutoRefreshWorkersError}
                     />
                   </FieldAnchor>
-                  <FieldAnchor fieldId="routingStrategy">
-                    <FieldShell
-                      label={t('config_management.visual.sections.network.routing_strategy')}
-                      labelId={routingStrategyLabelId}
-                      hint={t('config_management.visual.sections.network.routing_strategy_hint')}
-                      hintId={routingStrategyHintId}
-                    >
-                      <Select
-                        value={values.routingStrategy}
-                        options={[
-                          {
-                            value: 'round-robin',
-                            label: t(
-                              'config_management.visual.sections.network.strategy_round_robin'
-                            ),
-                          },
-                          {
-                            value: 'fill-first',
-                            label: t(
-                              'config_management.visual.sections.network.strategy_fill_first'
-                            ),
-                          },
-                        ]}
-                        id={`${routingStrategyLabelId}-select`}
-                        disabled={disabled}
-                        ariaLabelledBy={routingStrategyLabelId}
-                        ariaDescribedBy={routingStrategyHintId}
-                        onChange={(nextValue) =>
-                          onChange({
-                            routingStrategy: nextValue as VisualConfigValues['routingStrategy'],
-                          })
-                        }
-                      />
-                    </FieldShell>
-                  </FieldAnchor>
                   <FieldAnchor fieldId="disableImageGeneration">
                     <FieldShell
                       label={t(
@@ -1501,6 +1572,8 @@ export function VisualConfigEditor({
               description={t('config_management.visual.sections.advanced.description')}
             >
               <SectionStack>
+                {routingStrategyControlBlock}
+
                 <Collapsible
                   label={t('config_management.visual.sections.advanced.plugins_title')}
                   defaultOpen={false}

@@ -23,6 +23,10 @@ function normalizeStringList(raw: unknown, lowercase = false): string[] {
   return out;
 }
 
+function providerTargetKey(target: ApiKeyAccessProviderTarget): string {
+  return `${target.provider.trim().toLowerCase()}\u0000${target.baseUrl.trim()}`;
+}
+
 export function normalizeApiKeyAccessProviderTargets(raw: unknown): ApiKeyAccessProviderTarget[] {
   if (!Array.isArray(raw)) return [];
   const seen = new Set<string>();
@@ -35,7 +39,7 @@ export function normalizeApiKeyAccessProviderTargets(raw: unknown): ApiKeyAccess
       .toLowerCase();
     if (!provider) continue;
     const baseUrl = String(record['base-url'] ?? record.baseUrl ?? record.base_url ?? '').trim();
-    const key = `${provider}\u0000${baseUrl}`;
+    const key = providerTargetKey({ provider, baseUrl });
     if (seen.has(key)) continue;
     seen.add(key);
     out.push({ provider, baseUrl });
@@ -107,6 +111,49 @@ export function areApiKeyAccessRulesEqual(
     JSON.stringify(canonicalApiKeyAccessRules(left)) ===
     JSON.stringify(canonicalApiKeyAccessRules(right))
   );
+}
+
+export function pruneApiKeyAccessRules(
+  rules: ApiKeyAccessRules,
+  available: {
+    providerTargets: ApiKeyAccessProviderTarget[];
+    authFiles: string[];
+  }
+): ApiKeyAccessRules {
+  const normalizedRules = parseApiKeyAccessRules(rules);
+  const availableProviderTargetKeys = new Set(
+    normalizeApiKeyAccessProviderTargets(available.providerTargets).map(providerTargetKey)
+  );
+  const availableProviders = new Set(
+    normalizeApiKeyAccessProviderTargets(available.providerTargets).map((target) => target.provider)
+  );
+  const availableAuthFiles = new Set(normalizeStringList(available.authFiles, false));
+
+  const pruned: ApiKeyAccessRules = {};
+  Object.entries(normalizedRules).forEach(([key, rule]) => {
+    if (rule.access === 'all') {
+      pruned[key] = { access: 'all' };
+      return;
+    }
+
+    const nextRule: ApiKeyAccessRule = {};
+    const providers = normalizeStringList(rule.providers, true).filter((provider) =>
+      availableProviders.has(provider)
+    );
+    const providerTargets = normalizeApiKeyAccessProviderTargets(rule.providerTargets).filter(
+      (target) => availableProviderTargetKeys.has(providerTargetKey(target))
+    );
+    const authFiles = normalizeStringList(rule.authFiles, false).filter((authFile) =>
+      availableAuthFiles.has(authFile)
+    );
+
+    if (providers.length > 0) nextRule.providers = providers;
+    if (providerTargets.length > 0) nextRule.providerTargets = providerTargets;
+    if (authFiles.length > 0) nextRule.authFiles = authFiles;
+    pruned[key] = nextRule;
+  });
+
+  return pruned;
 }
 
 export function serializeApiKeyAccessRules(rules: ApiKeyAccessRules): Record<string, unknown> {

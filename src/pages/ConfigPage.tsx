@@ -10,7 +10,6 @@ import {
   IconCheck,
   IconChevronDown,
   IconChevronUp,
-  IconNetwork,
   IconRefreshCw,
   IconSearch,
 } from '@/components/ui/icons';
@@ -33,29 +32,6 @@ import styles from './ConfigPage.module.scss';
 
 type ConfigEditorTab = 'visual' | 'source';
 type RoutingStrategyValue = 'round-robin' | 'fill-first';
-
-const routingStrategyOptions: Array<{
-  value: RoutingStrategyValue;
-  labelKey: string;
-  defaultLabel: string;
-  descriptionKey: string;
-  defaultDescription: string;
-}> = [
-  {
-    value: 'round-robin',
-    labelKey: 'basic_settings.routing_strategy_round_robin',
-    defaultLabel: '轮询',
-    descriptionKey: 'config_management.routing_strategy.round_robin_desc',
-    defaultDescription: '按顺序分配请求，适合负载均衡和高可用。',
-  },
-  {
-    value: 'fill-first',
-    labelKey: 'basic_settings.routing_strategy_fill_first',
-    defaultLabel: '填满优先',
-    descriptionKey: 'config_management.routing_strategy.fill_first_desc',
-    defaultDescription: '优先使用前面的凭证，适合先消耗指定账号额度。',
-  },
-];
 
 function normalizeRoutingStrategyValue(value: unknown): RoutingStrategyValue {
   return String(value ?? '').trim() === 'fill-first' ? 'fill-first' : 'round-robin';
@@ -121,6 +97,7 @@ export function ConfigPage() {
   const [apiKeyAccessProviderTargets, setApiKeyAccessProviderTargets] = useState<
     ApiKeyAccessProviderTargetResponse[] | undefined
   >(undefined);
+  const [apiKeyAccessMetadataReady, setApiKeyAccessMetadataReady] = useState(false);
   const [routingStrategy, setRoutingStrategy] = useState<RoutingStrategyValue>('round-robin');
   const [routingStrategyLoading, setRoutingStrategyLoading] = useState(false);
   const [routingStrategySaving, setRoutingStrategySaving] = useState(false);
@@ -167,6 +144,7 @@ export function ConfigPage() {
   });
 
   const refreshApiKeyAccessMetadata = useCallback(async () => {
+    setApiKeyAccessMetadataReady(false);
     try {
       const response = await apiKeyAccessApi.get();
       setApiKeyAccessTargets(
@@ -179,9 +157,11 @@ export function ConfigPage() {
             ? response.provider_targets
             : undefined
       );
+      setApiKeyAccessMetadataReady(true);
     } catch {
       setApiKeyAccessTargets([]);
       setApiKeyAccessProviderTargets(undefined);
+      setApiKeyAccessMetadataReady(false);
     }
   }, []);
 
@@ -202,6 +182,7 @@ export function ConfigPage() {
       setError(message);
       setApiKeyAccessTargets([]);
       setApiKeyAccessProviderTargets(undefined);
+      setApiKeyAccessMetadataReady(false);
     } finally {
       setLoading(false);
     }
@@ -261,6 +242,7 @@ export function ConfigPage() {
       setMergedYaml(latestContent);
       loadVisualValuesFromYaml(latestContent);
       await refreshApiKeyAccessMetadata();
+      await refreshRoutingStrategy();
 
       // Keep the global config store in sync so sidebar / other pages reflect YAML changes immediately.
       try {
@@ -673,83 +655,6 @@ export function ConfigPage() {
         </div>
       </div>
 
-      <section className={styles.routingQuickCard}>
-        <div className={styles.routingQuickHeader}>
-          <span className={styles.routingQuickIcon} aria-hidden="true">
-            <IconNetwork size={18} />
-          </span>
-          <div className={styles.routingQuickCopy}>
-            <h2>
-              {t('config_management.routing_strategy.title', {
-                defaultValue: '路由策略',
-              })}
-            </h2>
-            <p>
-              {t('config_management.routing_strategy.description', {
-                defaultValue: '控制 CPA 在多个可用凭证之间如何分发请求。',
-              })}
-            </p>
-          </div>
-        </div>
-        <div
-          className={styles.routingQuickOptions}
-          role="group"
-          aria-label={t('config_management.routing_strategy.title', {
-            defaultValue: '路由策略',
-          })}
-        >
-          {routingStrategyOptions.map((option) => {
-            const active = option.value === routingStrategy;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                className={`${styles.routingStrategyButton} ${
-                  active ? styles.routingStrategyButtonActive : ''
-                }`}
-                onClick={() => handleRoutingStrategyChange(option.value)}
-                disabled={routingStrategyDisabled}
-                aria-pressed={active}
-              >
-                <strong>
-                  {t(option.labelKey, {
-                    defaultValue: option.defaultLabel,
-                  })}
-                </strong>
-                <span>
-                  {t(option.descriptionKey, {
-                    defaultValue: option.defaultDescription,
-                  })}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        <div className={styles.routingQuickMeta}>
-          {routingStrategySaving || routingStrategyLoading ? (
-            <span>
-              {routingStrategySaving
-                ? t('common.saving', { defaultValue: '保存中' })
-                : t('common.loading', { defaultValue: '加载中' })}
-            </span>
-          ) : routingStrategyError ? (
-            <span className={styles.routingQuickError}>{routingStrategyError}</span>
-          ) : isDirty ? (
-            <span>
-              {t('config_management.routing_strategy.unsaved_hint', {
-                defaultValue: '有未保存修改时，请先保存或放弃修改后再切换路由策略。',
-              })}
-            </span>
-          ) : (
-            <span>
-              {t('config_management.routing_strategy.current_hint', {
-                defaultValue: '当前策略会立即影响后续请求分发。',
-              })}
-            </span>
-          )}
-        </div>
-      </section>
-
       <div className={styles.workspaceShell}>
         <div className={styles.content}>
           {error && <div className="error-box">{error}</div>}
@@ -768,6 +673,16 @@ export function ConfigPage() {
                 disabled={disableControls || loading}
                 apiKeyAccessTargets={apiKeyAccessTargets}
                 apiKeyAccessProviderTargets={apiKeyAccessProviderTargets}
+                apiKeyAccessMetadataReady={apiKeyAccessMetadataReady}
+                routingStrategyControl={{
+                  value: routingStrategy,
+                  disabled: routingStrategyDisabled,
+                  loading: routingStrategyLoading,
+                  saving: routingStrategySaving,
+                  error: routingStrategyError,
+                  blockedByUnsavedChanges: isDirty,
+                  onChange: handleRoutingStrategyChange,
+                }}
                 onChange={setVisualValues}
               />
               <ModelPricesPanel disabled={disableControls} />

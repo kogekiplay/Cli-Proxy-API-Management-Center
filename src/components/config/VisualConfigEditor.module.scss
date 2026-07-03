@@ -756,6 +756,85 @@
   gap: 14px;
 }
 
+.routingStrategyOptions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.routingStrategyButton {
+  @include button-reset;
+  display: grid;
+  gap: 5px;
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  text-align: left;
+  transition:
+    border-color $transition-fast,
+    background-color $transition-fast,
+    color $transition-fast,
+    opacity $transition-fast;
+
+  strong {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 760;
+    line-height: 1.25;
+  }
+
+  span {
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--primary-color) 30%, var(--border-color));
+    background: color-mix(in srgb, var(--primary-color) 7%, var(--bg-secondary));
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.62;
+  }
+}
+
+.routingStrategyButtonActive {
+  border-color: color-mix(in srgb, var(--primary-color) 46%, var(--border-color));
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--bg-secondary));
+  color: var(--primary-color);
+
+  strong {
+    color: var(--primary-color);
+  }
+}
+
+.routingStrategyMeta {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 18px;
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  line-height: 1.4;
+
+  @include mobile {
+    justify-content: flex-start;
+  }
+}
+
+.routingStrategyError {
+  color: var(--warning-text);
+}
+
 .divider {
   height: 1px;
   background: var(--border-color);

@@ -125,7 +125,8 @@ const formatCost = (value: number | undefined | null) =>
     : new Intl.NumberFormat(undefined, {
         style: 'currency',
         currency: 'USD',
-        maximumFractionDigits: 6,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
       }).format(value);
 
 const formatMonitoringDateTime = (value: number | undefined | null) => {

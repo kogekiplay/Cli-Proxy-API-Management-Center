@@ -1,4 +1,4 @@
-import { memo, useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -31,6 +31,7 @@ import {
 import { maskApiKey } from '@/utils/format';
 import { isValidApiKeyCharset } from '@/utils/validation';
 import type { ApiKeyAccessProviderTarget } from '@/types/config';
+import { areApiKeyAccessRulesEqual, pruneApiKeyAccessRules } from '@/utils/apiKeyAccessRules';
 import {
   getApiKeyAccessAuthFileTargetsForPicker,
   getApiKeyAccessAuthTargetLabel,
@@ -256,6 +257,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   apiKeyAccessRules = {},
   apiKeyAccessTargets = [],
   apiKeyAccessProviderTargets,
+  apiKeyAccessMetadataReady = false,
   disabled,
   onChange,
   onApiKeyAccessChange,
@@ -264,6 +266,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   apiKeyAccessRules?: ApiKeyAccessRules;
   apiKeyAccessTargets?: ApiKeyAccessAuthTarget[];
   apiKeyAccessProviderTargets?: ApiKeyAccessProviderTargetResponse[];
+  apiKeyAccessMetadataReady?: boolean;
   disabled?: boolean;
   onChange: (nextValue: string) => void;
   onApiKeyAccessChange?: (nextRules: ApiKeyAccessRules) => void;
@@ -330,7 +333,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
       })
       .sort((left, right) => left.label.localeCompare(right.label));
   }, [apiKeyAccessProviderTargets, apiKeyAccessTargets, t]);
-  const authFileOptions = useMemo<AccessPickerOption[]>(() => {
+	  const authFileOptions = useMemo<AccessPickerOption[]>(() => {
     const seen = new Set<string>();
     return getApiKeyAccessAuthFileTargetsForPicker(apiKeyAccessTargets)
       .map((target) => ({
@@ -343,7 +346,28 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
         return true;
       })
       .sort((left, right) => left.label.localeCompare(right.label));
-  }, [apiKeyAccessTargets]);
+	  }, [apiKeyAccessTargets]);
+  const availableAccessTargets = useMemo(
+    () => ({
+      providerTargets: providerTargetOptions
+        .map((option) => providerTargetFromValue(option.value))
+        .filter((target): target is ApiKeyAccessProviderTarget => Boolean(target)),
+      authFiles: authFileOptions.map((option) => option.value),
+    }),
+    [authFileOptions, providerTargetOptions]
+  );
+
+  useEffect(() => {
+    if (!apiKeyAccessMetadataReady || !onApiKeyAccessChange) return;
+    const prunedRules = pruneApiKeyAccessRules(apiKeyAccessRules, availableAccessTargets);
+    if (areApiKeyAccessRulesEqual(prunedRules, apiKeyAccessRules)) return;
+    onApiKeyAccessChange(prunedRules);
+  }, [
+    apiKeyAccessMetadataReady,
+    apiKeyAccessRules,
+    availableAccessTargets,
+    onApiKeyAccessChange,
+  ]);
 
   function generateSecureApiKey(): string {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -742,6 +766,7 @@ const AccessScopePickerField = memo(function AccessScopePickerField({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(() => new Set(value));
+  const optionValueSet = useMemo(() => new Set(options.map((option) => option.value)), [options]);
 
   const filteredOptions = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -755,7 +780,7 @@ const AccessScopePickerField = memo(function AccessScopePickerField({
     filteredOptions.length > 0 && filteredOptions.every((option) => selected.has(option.value));
 
   const openPicker = () => {
-    setSelected(new Set(value));
+    setSelected(new Set(value.filter((selectedValue) => optionValueSet.has(selectedValue))));
     setSearch('');
     setOpen(true);
   };
@@ -782,7 +807,7 @@ const AccessScopePickerField = memo(function AccessScopePickerField({
   };
 
   const handleApply = () => {
-    onChange(Array.from(selected));
+    onChange(Array.from(selected).filter((selectedValue) => optionValueSet.has(selectedValue)));
     setOpen(false);
   };
 
