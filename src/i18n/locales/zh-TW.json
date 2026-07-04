@@ -1668,7 +1668,7 @@
       "openaiCompatibility": "OpenAI 相容"
     },
     "table": {
-      "key": "金鑰",
+      "key": "名稱 / 金鑰",
       "baseUrl": "服務位址",
       "prefix": "前綴",
       "models": "模型/請求標頭",
@@ -1682,7 +1682,7 @@
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "empty": "尚未新增設定,點擊右上角新增。",
-      "filterPlaceholder": "搜尋金鑰、位址、前綴…",
+      "filterPlaceholder": "搜尋名稱、金鑰、位址、前綴…",
       "description": "在 {{route}} 下管理資源",
       "providerIssue": "此提供商存在問題"
     },
@@ -1698,6 +1698,7 @@
       "title": "詳情",
       "metadataTitle": "元資料",
       "fields": {
+        "name": "名稱",
         "identifier": "識別碼",
         "baseUrl": "服務位址",
         "proxyUrl": "代理 URL",
@@ -1713,6 +1714,8 @@
       "createEyebrow": "新增",
       "editEyebrow": "編輯",
       "name": "名稱",
+      "displayName": "顯示名稱",
+      "optionalHint": "可選",
       "apiKey": "API 金鑰",
       "apiKeyCreatePlaceholder": "輸入 API 金鑰",
       "apiKeyEditPlaceholder": "留空表示不修改",

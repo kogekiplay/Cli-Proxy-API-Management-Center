@@ -148,10 +148,16 @@ export function ProviderResourceTable({
         </div>
       );
     }
+    const secondary = [
+      r.name ? (r.apiKeyPreview ?? '—') : null,
+      r.authIndex ? `auth: ${r.authIndex}` : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
     return (
       <div className={styles.primaryCell}>
-        <span className={styles.primaryName}>{r.apiKeyPreview ?? '—'}</span>
-        {r.authIndex ? <span className={styles.primarySub}>auth: {r.authIndex}</span> : null}
+        <span className={styles.primaryName}>{r.name ?? r.apiKeyPreview ?? '—'}</span>
+        {secondary ? <span className={styles.primarySub}>{secondary}</span> : null}
       </div>
     );
   };

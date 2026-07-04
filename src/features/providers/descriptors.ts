@@ -24,7 +24,7 @@ export interface ProviderDescriptor {
 export const PROVIDER_DESCRIPTORS: Record<ProviderBrand, ProviderDescriptor> = {
   gemini: {
     id: 'gemini',
-    supportsName: false,
+    supportsName: true,
     supportsApiKey: true,
     supportsDisabled: true,
     supportsBaseUrl: true,
@@ -43,7 +43,7 @@ export const PROVIDER_DESCRIPTORS: Record<ProviderBrand, ProviderDescriptor> = {
   },
   codex: {
     id: 'codex',
-    supportsName: false,
+    supportsName: true,
     supportsApiKey: true,
     supportsDisabled: true,
     supportsBaseUrl: true,
@@ -62,7 +62,7 @@ export const PROVIDER_DESCRIPTORS: Record<ProviderBrand, ProviderDescriptor> = {
   },
   claude: {
     id: 'claude',
-    supportsName: false,
+    supportsName: true,
     supportsApiKey: true,
     supportsDisabled: true,
     supportsBaseUrl: true,
@@ -81,7 +81,7 @@ export const PROVIDER_DESCRIPTORS: Record<ProviderBrand, ProviderDescriptor> = {
   },
   vertex: {
     id: 'vertex',
-    supportsName: false,
+    supportsName: true,
     supportsApiKey: true,
     supportsDisabled: true,
     supportsBaseUrl: true,

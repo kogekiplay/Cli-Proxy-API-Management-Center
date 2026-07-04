@@ -1620,7 +1620,7 @@
       "openaiCompatibility": "OpenAI-совместимый"
     },
     "table": {
-      "key": "Ключ",
+      "key": "Название / ключ",
       "baseUrl": "Base URL",
       "prefix": "Префикс",
       "models": "Модели/Заголовки",
@@ -1634,7 +1634,7 @@
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "empty": "Нет ресурсов, нажмите \"Создать\".",
-      "filterPlaceholder": "Поиск по ключам, URL, префиксам…",
+      "filterPlaceholder": "Поиск по названиям, ключам, URL, префиксам…",
       "description": "Управление ресурсами {{route}}",
       "providerIssue": "Проблема с провайдером"
     },
@@ -1650,6 +1650,7 @@
       "title": "Подробности",
       "metadataTitle": "Метаданные",
       "fields": {
+        "name": "Название",
         "identifier": "Идентификатор",
         "baseUrl": "Base URL",
         "proxyUrl": "Proxy URL",
@@ -1665,6 +1666,8 @@
       "createEyebrow": "Создать",
       "editEyebrow": "Изменить",
       "name": "Название",
+      "displayName": "Отображаемое название",
+      "optionalHint": "Необязательно",
       "apiKey": "API-ключ",
       "apiKeyCreatePlaceholder": "Введите API-ключ",
       "apiKeyEditPlaceholder": "Оставьте пустым, чтобы не менять",

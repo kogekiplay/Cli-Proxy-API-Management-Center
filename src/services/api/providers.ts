@@ -23,6 +23,7 @@ const serializeHeaders = (headers?: Record<string, string>) =>
 const RESPONSE_ONLY_FIELDS = ['auth-index'] as const;
 
 const PROVIDER_COMMON_KEY_FIELDS = [
+  'name',
   'api-key',
   'priority',
   'prefix',
@@ -42,6 +43,7 @@ const CLAUDE_KEY_FIELDS = [
   'experimental-cch-signing',
 ] as const;
 const VERTEX_KEY_FIELDS = [
+  'name',
   'api-key',
   'priority',
   'prefix',
@@ -306,6 +308,7 @@ const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
 
 const serializeProviderKey = (config: ProviderKeyConfig) => {
   const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  if (config.name?.trim()) payload.name = config.name.trim();
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
@@ -355,6 +358,7 @@ const serializeVertexModelAliases = (models?: ModelAlias[]) =>
 
 const serializeVertexKey = (config: ProviderKeyConfig) => {
   const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  if (config.name?.trim()) payload.name = config.name.trim();
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
@@ -371,6 +375,7 @@ const serializeVertexKey = (config: ProviderKeyConfig) => {
 
 const serializeGeminiKey = (config: GeminiKeyConfig) => {
   const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  if (config.name?.trim()) payload.name = config.name.trim();
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;

@@ -38,6 +38,7 @@ function providerKeyToResource(
   index: number
 ): ProviderResource {
   const apiKey = config.apiKey ?? '';
+  const displayName = (config.name ?? '').trim();
   const disabled = hasDisableAllModelsRule(config.excludedModels);
   const flags: ProviderResource['flags'] = {};
   if (brand === 'codex') {
@@ -59,8 +60,8 @@ function providerKeyToResource(
     id: buildId(brand, index, truncateForId(apiKey)),
     brand,
     originalIndex: index,
-    name: null,
-    identifier: maskApiKey(apiKey) || `#${index + 1}`,
+    name: displayName || null,
+    identifier: displayName || maskApiKey(apiKey) || `#${index + 1}`,
     apiKeyPreview: apiKey ? maskApiKey(apiKey) : null,
     apiKey: apiKey || null,
     authIndex: config.authIndex ?? null,

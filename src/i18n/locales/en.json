@@ -1678,7 +1678,7 @@
       "openaiCompatibility": "OpenAI Compatible"
     },
     "table": {
-      "key": "Key",
+      "key": "Name / Key",
       "baseUrl": "Base URL",
       "prefix": "Prefix",
       "models": "Models/Headers",
@@ -1692,7 +1692,7 @@
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "empty": "No resources yet, click \"New\" to add.",
-      "filterPlaceholder": "Search keys, URLs, prefixes…",
+      "filterPlaceholder": "Search names, keys, URLs, prefixes…",
       "description": "Manage resources under {{route}}",
       "providerIssue": "This provider has an issue"
     },
@@ -1708,6 +1708,7 @@
       "title": "Details",
       "metadataTitle": "Metadata",
       "fields": {
+        "name": "Name",
         "identifier": "Identifier",
         "baseUrl": "Base URL",
         "proxyUrl": "Proxy URL",
@@ -1723,6 +1724,8 @@
       "createEyebrow": "New",
       "editEyebrow": "Edit",
       "name": "Name",
+      "displayName": "Display name",
+      "optionalHint": "Optional",
       "apiKey": "API key",
       "apiKeyCreatePlaceholder": "Enter API key",
       "apiKeyEditPlaceholder": "Leave empty to keep unchanged",

@@ -146,7 +146,7 @@ function buildInitialForm(
     // overwrite it) and defeats the "leave empty = keep unchanged" contract; an
     // empty field is preserved on save via buildProviderKeyConfig's existing fallback.
     apiKey: '',
-    name: '',
+    name: cfg.name ?? '',
     baseUrl: cfg.baseUrl ?? '',
     proxyUrl: cfg.proxyUrl ?? '',
     prefix: cfg.prefix ?? '',
@@ -404,7 +404,7 @@ export function BaseProviderForm({
   };
 
   const validate = (): string | null => {
-    if (descriptor.supportsName && !form.name.trim()) {
+    if (brand === 'openaiCompatibility' && descriptor.supportsName && !form.name.trim()) {
       return t('providersPage.form.validation.nameRequired');
     }
     if (descriptor.supportsApiKey && mode === 'create' && !form.apiKey.trim()) {
@@ -502,7 +502,15 @@ export function BaseProviderForm({
         {descriptor.supportsName ? (
           <div className={styles.field}>
             <label className={styles.label} htmlFor={`${fid}-name`}>
-              {t('providersPage.form.name')}
+              {brand === 'openaiCompatibility'
+                ? t('providersPage.form.name')
+                : t('providersPage.form.displayName')}
+              {brand !== 'openaiCompatibility' ? (
+                <span className={styles.labelHint}>
+                  {' '}
+                  · {t('providersPage.form.optionalHint')}
+                </span>
+              ) : null}
             </label>
             <input
               id={`${fid}-name`}

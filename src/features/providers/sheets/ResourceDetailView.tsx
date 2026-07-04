@@ -16,6 +16,7 @@ export function ResourceDetailView({ resource, usageByProvider }: ResourceDetail
   const { t } = useTranslation();
 
   const primary: Array<[string, string]> = [
+    ['name', resource.name ?? t('providersPage.status.notSet')],
     ['identifier', resource.identifier],
     ['baseUrl', resource.baseUrl ?? t('providersPage.status.notSet')],
     ['proxyUrl', resource.proxyUrl ?? t('providersPage.status.notSet')],
