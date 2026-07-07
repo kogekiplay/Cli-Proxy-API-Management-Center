@@ -702,6 +702,7 @@ export function PluginsPage() {
     <div className={styles.page}>
       {/* ── Page Header ── */}
       <div className={styles.pageHeader}>
+        <p className="page-eyebrow">{t('nav_meta.plugins')}</p>
         <h1 className={styles.title}>{t('plugin_management.title')}</h1>
         <p className={styles.description}>{t('plugin_management.description')}</p>
       </div>

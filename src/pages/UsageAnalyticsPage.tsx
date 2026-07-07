@@ -2611,6 +2611,13 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
       ) : (
         <div className={styles.pageHeader}>
           <div>
+            <p className="page-eyebrow">
+              {t(
+                isMonitoringView
+                  ? 'nav_meta.request_monitoring'
+                  : 'nav_meta.usage_analytics'
+              )}
+            </p>
             <h1 className={styles.pageTitle}>
               {t(isMonitoringView ? 'request_monitoring.title' : 'usage_analytics.title')}
             </h1>

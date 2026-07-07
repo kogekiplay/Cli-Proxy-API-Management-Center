@@ -4,6 +4,13 @@
   width: 100%;
 }
 
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: $spacing-xl;
+}
+
 .cardTitle {
   display: flex;
   align-items: center;
@@ -25,10 +32,13 @@
 }
 
 .pageTitle {
-  font-size: 28px;
-  font-weight: 700;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(42px, 5.4vw, 56px);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: 0;
   color: var(--text-primary);
-  margin: 0 0 $spacing-xl 0;
+  margin: 0;
 }
 
 .content {

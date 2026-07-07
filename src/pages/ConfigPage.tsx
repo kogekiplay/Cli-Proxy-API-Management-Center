@@ -633,7 +633,9 @@ export function ConfigPage() {
     <div className={styles.container}>
       <div className={styles.pageHeader}>
         <div className={styles.pageHeaderCopy}>
+          <p className="page-eyebrow">{t('nav_meta.config_management')}</p>
           <h1 className={styles.pageTitle}>{t('config_management.title')}</h1>
+          <p className="page-subtitle">{t('config_management.description')}</p>
           <div className={styles.tabBar}>
             <button
               type="button"

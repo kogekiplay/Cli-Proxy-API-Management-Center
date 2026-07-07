@@ -10,18 +10,23 @@
 .pageHeader {
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
+  gap: 14px;
 }
 
 .pageTitle {
-  font-size: 28px;
-  font-weight: 700;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(42px, 5.4vw, 56px);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: 0;
   color: var(--text-primary);
   margin: 0;
 }
 
 .description {
-  font-size: 14px;
+  max-width: 760px;
+  font-size: 15px;
+  line-height: 1.75;
   color: var(--text-secondary);
   margin: 0;
 }

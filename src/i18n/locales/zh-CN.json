@@ -301,6 +301,7 @@
   "dashboard": {
     "title": "仪表盘",
     "subtitle": "欢迎使用 CLI Proxy API 管理中心",
+    "operations_console": "运行控制台",
     "openai_providers": "OpenAI 提供商",
     "quick_actions": "快捷操作",
     "current_config": "当前配置",
@@ -815,6 +816,7 @@
     "upgrade_required_desc": "当前服务器版本不支持 OAuth 模型别名功能，请升级到最新版本的 CPA（CLI Proxy API）后重试。"
   },
   "auth_login": {
+    "page_desc": "通过 OAuth 流程登录支持的服务，并自动保存可用于运行时的认证文件。",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "开始 Codex 登录",
     "codex_oauth_hint": "通过 OAuth 流程登录 Codex 服务，自动获取并保存认证文件。",
@@ -928,6 +930,7 @@
   },
   "logs": {
     "title": "日志查看",
+    "page_desc": "查看运行日志、错误日志和请求排查信息。",
     "runtime_unknown": "当前运行端：识别中",
     "runtime_cpa": "当前运行端：CPA",
     "runtime_home": "当前运行端：Home",
@@ -1647,6 +1650,8 @@
   "providersPage": {
     "header": {
       "title": "AI 提供商",
+      "eyebrow": "上游模型路由",
+      "subtitle": "集中管理各类 AI 服务地址、密钥、模型列表与路由状态。",
       "activeResources": "{{active}}/{{total}} 个活跃资源",
       "providerFamilies": "{{count}} 个提供商家族",
       "updatedAt": "更新于 {{time}}",

@@ -301,6 +301,7 @@
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Welcome to CLI Proxy API Management Center",
+    "operations_console": "Operations console",
     "openai_providers": "OpenAI Providers",
     "quick_actions": "Quick Actions",
     "current_config": "Current Configuration",
@@ -815,6 +816,7 @@
     "upgrade_required_desc": "The current server does not support the OAuth model aliases API. Please upgrade to the latest CLI Proxy API (CPA) version."
   },
   "auth_login": {
+    "page_desc": "Sign in to supported services through OAuth and save runtime-ready auth files automatically.",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "Start Codex Login",
     "codex_oauth_hint": "Login to Codex service through OAuth flow, automatically obtain and save authentication files.",
@@ -928,6 +930,7 @@
   },
   "logs": {
     "title": "Logs Viewer",
+    "page_desc": "Review runtime logs, error logs, and request troubleshooting details.",
     "runtime_unknown": "Current runtime: detecting",
     "runtime_cpa": "Current runtime: CPA",
     "runtime_home": "Current runtime: Home",
@@ -1647,6 +1650,8 @@
   "providersPage": {
     "header": {
       "title": "AI Providers",
+      "eyebrow": "Upstream model routing",
+      "subtitle": "Manage AI service endpoints, keys, model catalogs, and routing status in one place.",
       "activeResources": "{{active}}/{{total}} active resources",
       "providerFamilies": "{{count}} provider families",
       "updatedAt": "Updated {{time}}",

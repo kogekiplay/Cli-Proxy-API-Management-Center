@@ -15,7 +15,7 @@
 
 .pageHeader {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: $spacing-md;
   margin: 0 0 $spacing-lg 0;
@@ -27,9 +27,19 @@
   }
 }
 
+.pageHeaderCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
 .pageTitle {
-  font-size: 28px;
-  font-weight: 700;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(42px, 5.4vw, 56px);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: 0;
   color: var(--text-primary);
   margin: 0;
 }
@@ -693,10 +703,6 @@
 }
 
 @media (max-height: 820px) {
-  .pageTitle {
-    font-size: 24px;
-  }
-
   .pageHeader {
     margin-bottom: $spacing-md;
   }
@@ -745,10 +751,6 @@
 }
 
 @media (max-height: 600px) {
-  .pageTitle {
-    font-size: 20px;
-  }
-
   .pageHeader {
     margin-bottom: $spacing-sm;
   }

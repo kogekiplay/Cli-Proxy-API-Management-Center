@@ -685,6 +685,7 @@ export function AuthFilesPage() {
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
+        <p className="page-eyebrow">{t('nav_meta.auth_files')}</p>
         <h1 className={styles.pageTitle}>{t('auth_files.title')}</h1>
         <p className={styles.description}>{t('auth_files.description')}</p>
       </div>
