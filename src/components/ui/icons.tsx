@@ -92,6 +92,15 @@ export function IconFilterAll({ size = 20, ...props }: IconProps) {
   );
 }
 
+export function IconChartLine({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <path d="M3 3v16a2 2 0 0 0 2 2h16" />
+      <path d="m19 9-5 5-4-4-3 3" />
+    </svg>
+  );
+}
+
 export function IconFileText({ size = 20, ...props }: IconProps) {
   return (
     <svg {...baseSvgProps} width={size} height={size} {...props}>
@@ -108,15 +117,6 @@ export function IconShield({ size = 20, ...props }: IconProps) {
   return (
     <svg {...baseSvgProps} width={size} height={size} {...props}>
       <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
-    </svg>
-  );
-}
-
-export function IconChartLine({ size = 20, ...props }: IconProps) {
-  return (
-    <svg {...baseSvgProps} width={size} height={size} {...props}>
-      <path d="M3 3v16a2 2 0 0 0 2 2h16" />
-      <path d="m19 9-5 5-4-4-3 3" />
     </svg>
   );
 }
@@ -372,14 +372,6 @@ export function IconSatellite({ size = 20, ...props }: IconProps) {
   );
 }
 
-export function IconDiamond({ size = 20, ...props }: IconProps) {
-  return (
-    <svg {...baseSvgProps} width={size} height={size} {...props}>
-      <path d="M2.7 10.3a2.41 2.41 0 0 0 0 3.41l7.59 7.59a2.41 2.41 0 0 0 3.41 0l7.59-7.59a2.41 2.41 0 0 0 0-3.41l-7.59-7.59a2.41 2.41 0 0 0-3.41 0Z" />
-    </svg>
-  );
-}
-
 export function IconTimer({ size = 20, ...props }: IconProps) {
   return (
     <svg {...baseSvgProps} width={size} height={size} {...props}>
@@ -465,17 +457,6 @@ export function IconCode({ size = 20, ...props }: IconProps) {
     <svg {...baseSvgProps} width={size} height={size} {...props}>
       <polyline points="16 18 22 12 16 6" />
       <polyline points="8 6 2 12 8 18" />
-    </svg>
-  );
-}
-
-export function IconLayoutDashboard({ size = 20, ...props }: IconProps) {
-  return (
-    <svg {...baseSvgProps} width={size} height={size} {...props}>
-      <rect width="7" height="9" x="3" y="3" rx="1" />
-      <rect width="7" height="5" x="14" y="3" rx="1" />
-      <rect width="7" height="9" x="14" y="12" rx="1" />
-      <rect width="7" height="5" x="3" y="16" rx="1" />
     </svg>
   );
 }
