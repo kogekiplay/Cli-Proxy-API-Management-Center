@@ -100,7 +100,8 @@
   "header": {
     "check_connection": "檢查連線",
     "refresh_all": "全部重新整理",
-    "logout": "登出"
+    "logout": "登出",
+    "nav_visibility": "選單顯示"
   },
   "connection": {
     "title": "連線資訊",
