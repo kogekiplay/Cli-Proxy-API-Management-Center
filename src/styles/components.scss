@@ -197,7 +197,7 @@ select {
     var(--ops-panel-bg);
   border: 1px solid var(--ops-panel-strong-border);
   border-radius: 8px;
-  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow);
   padding: $spacing-lg;
 }
 

@@ -255,7 +255,7 @@
     background:
       linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 92%, transparent), transparent),
       color-mix(in srgb, var(--floating-surface) 92%, transparent);
-    box-shadow: 0 20px 48px rgba(0, 0, 0 / 0.14);
+    box-shadow: var(--shadow-lg);
     --glass-blur: 16px;
     backdrop-filter: var(--glass-backdrop-filter);
     -webkit-backdrop-filter: var(--glass-backdrop-filter);

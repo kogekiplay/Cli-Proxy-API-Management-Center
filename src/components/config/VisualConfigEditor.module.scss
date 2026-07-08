@@ -348,7 +348,7 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-primary);
-  box-shadow: 0 14px 32px color-mix(in srgb, var(--text-primary) 16%, transparent);
+  box-shadow: var(--shadow);
 }
 
 .searchResultItem {

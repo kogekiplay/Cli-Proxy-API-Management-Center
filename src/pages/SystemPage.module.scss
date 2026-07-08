@@ -47,7 +47,7 @@
       var(--ops-panel-bg)
     ),
     var(--ops-panel-bg);
-  box-shadow: 0 16px 42px rgba(0, 0, 0 / 0.045);
+  box-shadow: var(--shadow);
 }
 
 .systemHero {
@@ -92,7 +92,7 @@
   height: 84px;
   border-radius: 18px;
   object-fit: cover;
-  box-shadow: 0 14px 30px rgba(0, 0, 0 / 0.14);
+  box-shadow: var(--shadow-lg);
 }
 
 .infoGrid {
@@ -148,7 +148,7 @@
 
   &:hover {
     border-color: color-mix(in srgb, var(--primary-color) 34%, var(--ops-panel-strong-border));
-    box-shadow: 0 12px 28px rgba(0, 0, 0 / 0.065);
+    box-shadow: var(--shadow-lg);
     transform: translateY(-1px);
   }
 
