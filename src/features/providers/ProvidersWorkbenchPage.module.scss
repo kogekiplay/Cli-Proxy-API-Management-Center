@@ -4,7 +4,7 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   width: 100%;
   padding: 24px;
   box-sizing: border-box;
@@ -21,12 +21,6 @@
   }
 }
 
-.layoutSingle {
-  @media (min-width: 1280px) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
 .modelCatalogSlot {
   margin-top: 4px;
 }
@@ -34,6 +28,6 @@
 @media (max-width: 768px) {
   .page {
     padding: 16px;
-    gap: 16px;
+    gap: 12px;
   }
 }

@@ -2,7 +2,7 @@
 @use '../../../styles/variables' as *;
 
 .providerTable {
-  min-width: 960px;
+  min-width: 780px;
   table-layout: fixed;
 
   tbody tr:hover .actionsCell {
@@ -15,6 +15,14 @@
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+}
+
+.primarySubRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .primaryName {
@@ -49,12 +57,13 @@
 .chip {
   display: inline-flex;
   align-items: center;
-  padding: 3px 9px;
+  padding: 2px 7px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   background: var(--muted-bg);
   color: var(--muted-foreground);
-  font-size: 12px;
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .metricsCell {
@@ -116,43 +125,41 @@
 .statusCell {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   align-items: flex-start;
   min-width: 0;
-  max-width: 190px;
 }
 
-.stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  max-width: 100%;
-}
-
-.statPill {
+/* 简化的状态统计：圆点 + 数字，水平排列 */
+.statsInline {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 7px;
-  border-radius: 999px;
   font-size: 12px;
-  font-weight: 600;
-  line-height: 1.4;
-  border: 1px solid transparent;
-  white-space: nowrap;
   font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
 }
 
-.statSuccess {
-  background-color: var(--success-badge-bg);
-  color: var(--success-badge-text);
-  border-color: var(--success-badge-border);
+.statDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-.statFailure {
-  background-color: var(--failure-badge-bg);
-  color: var(--failure-badge-text);
-  border-color: var(--failure-badge-border);
+.statSuccessDot {
+  background-color: var(--success-badge-text);
+}
+
+.statFailureDot {
+  background-color: var(--failure-badge-text);
+}
+
+.statNum {
+  font-weight: 600;
+  font-size: 11px;
+  min-width: 10px;
 }
 
 .statusActive {
@@ -168,16 +175,17 @@
 }
 
 .statusBarWrap {
-  width: min(100%, 178px);
+  width: min(100%, 140px);
   min-width: 0;
 }
 
+/* Actions 列 - 缩小宽度 */
 .actionsHead,
 .actionsCell {
   position: sticky;
   right: 0;
-  width: 176px;
-  min-width: 176px;
+  width: 140px;
+  min-width: 140px;
   box-shadow: -12px 0 16px -18px rgba(15, 23, 42, 0.45);
 }
 
@@ -247,5 +255,12 @@
   &:hover:not(:disabled) {
     background: var(--destructive-10);
     color: var(--destructive-color);
+  }
+}
+
+/* 响应式：小屏隐藏低优先级列 */
+@media (max-width: 1024px) {
+  .providerTable {
+    min-width: 600px;
   }
 }

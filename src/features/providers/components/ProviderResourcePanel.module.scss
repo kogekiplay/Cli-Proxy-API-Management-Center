@@ -10,95 +10,159 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.header {
-  display: flex;
-  flex-direction: column;
   gap: 12px;
 }
 
-.headerMain {
+/* ---- 合并后的紧凑头部 ---- */
+.compactHeader {
   display: flex;
   flex-direction: column;
   gap: 12px;
 
-  @media (min-width: 768px) {
+  @media (min-width: 1024px) {
     flex-direction: row;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
   }
 }
 
-.headerToolbarRow {
+.compactHeaderLeft {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.compactTitle {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.compactActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
+
+  @media (min-width: 1024px) {
+    justify-content: flex-end;
+  }
+}
+
+.chips {
+  display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.titleArea {
-  min-width: 0;
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--muted-bg);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.chipPrimary {
+  border-color: var(--primary-30);
+  background: var(--primary-10);
+  color: var(--primary-color);
+}
+
+/* ---- 按钮 ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+}
+
+.btnOutline {
+  border-color: var(--border-color);
+  background: var(--bg-primary);
+
+  &:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+    border-color: var(--border-hover);
+  }
+}
+
+.btnPrimary {
+  background: var(--primary-color);
+  color: var(--primary-contrast);
+
+  &:hover:not(:disabled) {
+    background: var(--primary-hover);
+  }
+
+  &:active:not(:disabled) {
+    background: var(--primary-active);
+  }
+}
+
+.btnIcon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.spin {
+  display: inline-flex;
+  animation: pwc-spin 0.9s linear infinite;
+}
+
+/* ---- 统一筛选栏：搜索 + Toolbar 一行 ---- */
+.filterBar {
   display: flex;
   flex-direction: column;
-}
+  gap: 8px;
 
-.titleRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.logo {
-  width: 26px;
-  height: 26px;
-  border-radius: var(--radius-md);
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-.logoThemeDark {
-  display: none;
-
-  [data-theme='dark'] & {
-    display: block;
+  @media (min-width: 768px) {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
   }
-}
-
-.logoThemeLight {
-  [data-theme='dark'] & {
-    display: none;
-  }
-}
-
-.logoInvertOnDark {
-  [data-theme='dark'] & {
-    filter: invert(1) hue-rotate(180deg);
-  }
-}
-
-.title {
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-  letter-spacing: -0.005em;
 }
 
 .searchWrap {
   position: relative;
   min-width: 0;
-
-  @media (min-width: 768px) {
-    width: 280px;
-  }
+  flex: 1;
+  max-width: 320px;
 }
 
 .searchInput {
   width: 100%;
-  height: 38px;
+  height: 34px;
   padding: 0 12px 0 38px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
@@ -128,6 +192,7 @@
   display: inline-flex;
 }
 
+/* ---- Empty state ---- */
 .empty {
   border: 1px dashed var(--border-color);
   border-radius: var(--radius-md);
@@ -174,5 +239,14 @@
   &:disabled {
     cursor: not-allowed;
     opacity: 0.6;
+  }
+}
+
+@keyframes pwc-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
