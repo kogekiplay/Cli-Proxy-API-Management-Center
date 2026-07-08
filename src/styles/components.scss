@@ -197,7 +197,7 @@ select {
     var(--ops-panel-bg);
   border: 1px solid var(--ops-panel-strong-border);
   border-radius: 8px;
-  box-shadow: 0 16px 42px rgb(31 26 20 / 0.045);
+  box-shadow: var(--shadow);
   padding: $spacing-lg;
 }
 
@@ -591,7 +591,6 @@ select {
     font-weight: 700;
     font-size: 18px;
     color: var(--text-primary);
-    font-family: Georgia, 'Times New Roman', serif;
     letter-spacing: 0;
   }
 }
@@ -885,7 +884,6 @@ select {
     font-weight: 800;
     color: var(--text-primary);
     font-size: 18px;
-    font-family: Georgia, 'Times New Roman', serif;
     letter-spacing: 0;
   }
 }

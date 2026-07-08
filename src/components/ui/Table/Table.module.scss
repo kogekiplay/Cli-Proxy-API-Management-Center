@@ -12,7 +12,7 @@
       var(--ops-panel-bg)
     ),
     var(--ops-panel-bg);
-  box-shadow: 0 16px 42px rgb(31 26 20 / 0.035);
+  box-shadow: var(--shadow);
 }
 
 .scroll {

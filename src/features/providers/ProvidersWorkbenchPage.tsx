@@ -11,7 +11,7 @@ import {
   type ProviderRecentUsageMap,
 } from '@/components/providers/utils';
 import type { OpenAIProviderConfig } from '@/types';
-import { ProviderHeaderCard } from './components/ProviderHeaderCard';
+// ProviderHeaderCard merged into ProviderResourcePanel
 import { ProviderCategoryList } from './components/ProviderCategoryList';
 import { ProviderResourcePanel } from './components/ProviderResourcePanel';
 import type { ProviderPanelControls } from './components/ProviderResourcePanel';
@@ -352,34 +352,44 @@ export function ProvidersWorkbenchPage() {
   if (!activeGroup) {
     return (
       <div className={styles.page}>
-        <ProviderHeaderCard
-          totalActive={0}
-          totalResources={0}
-          providerFamilies={0}
-          updatedAtLabel={updatedAtLabel}
-          isFetching={workbench.isFetching}
-          onRefresh={() => void handleRefresh()}
-          onNew={() => {}}
-          isNewDisabled
-        />
+        <div className={styles.layout}>
+          <ProviderCategoryList
+            groups={groups}
+            activeBrand={firstVisibleBrand}
+            onSelect={() => {}}
+          />
+          <ProviderResourcePanel
+            group={null}
+            filter=""
+            onFilterChange={() => {}}
+            filteredResources={[]}
+            selectedId={null}
+            disableMutations
+            usageByProvider={usageByProvider}
+            toolbarControls={undefined}
+            onView={() => {}}
+            onEdit={() => {}}
+            onDelete={() => {}}
+            onToggleDisabled={undefined}
+            onCreate={() => {}}
+            headerProps={{
+              totalActive: 0,
+              totalResources: 0,
+              providerFamilies: 0,
+              updatedAtLabel,
+              isFetching: workbench.isFetching,
+              isNewDisabled: true,
+              onRefresh: () => void handleRefresh(),
+              onNew: () => {},
+            }}
+          />
+        </div>
       </div>
     );
   }
 
   return (
     <div className={styles.page}>
-      <ProviderHeaderCard
-        totalActive={totalActive}
-        totalResources={totalResources}
-        providerFamilies={providerFamilies}
-        updatedAtLabel={updatedAtLabel}
-        isFetching={workbench.isFetching}
-        isNewDisabled={disableMutations}
-        newLabel={t('providersPage.actions.new')}
-        onRefresh={() => void handleRefresh()}
-        onNew={openCreate}
-      />
-
       <div className={styles.layout}>
         <ProviderCategoryList
           groups={groups}
@@ -412,6 +422,17 @@ export function ProvidersWorkbenchPage() {
           onDelete={handleDelete}
           onToggleDisabled={handleToggleDisabled}
           onCreate={openCreate}
+          headerProps={{
+            totalActive,
+            totalResources,
+            providerFamilies,
+            updatedAtLabel,
+            isFetching: workbench.isFetching,
+            isNewDisabled: disableMutations,
+            newLabel: t('providersPage.actions.new'),
+            onRefresh: () => void handleRefresh(),
+            onNew: openCreate,
+          }}
         />
       </div>
 

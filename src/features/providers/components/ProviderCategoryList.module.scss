@@ -9,6 +9,7 @@
   align-self: start;
 }
 
+/* ===== 竖向侧栏（≥1280px）===== */
 .aside {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
@@ -16,6 +17,11 @@
   box-shadow: var(--shadow);
   padding: 12px;
   min-width: 0;
+
+  /* <1280px 隐藏竖向侧栏 */
+  @media (max-width: 1279px) {
+    display: none;
+  }
 }
 
 .eyebrow {
@@ -156,4 +162,116 @@
   background: var(--amber-10);
   border-color: var(--amber-30);
   color: var(--amber-text);
+}
+
+/* ===== 水平滚动标签栏（<1280px）===== */
+.horizontalTabs {
+  display: none;
+
+  @media (max-width: 1279px) {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 8px 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    /* 隐藏滚动条但保留滚动功能 */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition:
+    background-color $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast;
+
+  &:hover:not(.tabActive) {
+    background: color-mix(in srgb, var(--accent-bg) 50%, transparent);
+    border-color: var(--border-color);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+  }
+}
+
+.tabActive {
+  border-color: var(--primary-30);
+  background: var(--primary-10);
+  color: var(--primary-color);
+}
+
+.tabLogo {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  object-fit: contain;
+  background: var(--bg-tertiary);
+  padding: 1px;
+}
+
+.tabLabel {
+  white-space: nowrap;
+}
+
+.tabBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--muted-foreground);
+}
+
+@media (max-width: 768px) {
+  .horizontalTabs {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  .tab {
+    padding: 5px 10px;
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  .tabLogo {
+    width: 18px;
+    height: 18px;
+  }
+
+  .tabBadge {
+    min-width: 18px;
+    padding: 1px 5px;
+    font-size: 10px;
+  }
 }

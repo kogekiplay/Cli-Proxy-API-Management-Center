@@ -236,6 +236,14 @@ const headerIcons = {
       <path d="M19.07 4.93l-1.41 1.41" />
     </svg>
   ),
+  navVisibility: (
+    <svg {...headerIconProps}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M9 3v18" />
+      <path d="M3 9h6" />
+      <path d="M3 15h6" />
+    </svg>
+  ),
   logout: (
     <svg {...headerIconProps}>
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -317,6 +325,15 @@ export function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const [navVisibilityOpen, setNavVisibilityOpen] = useState(false);
+  const [hiddenNavPaths, setHiddenNavPaths] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('hiddenNavPaths');
+      return stored ? new Set(JSON.parse(stored) as string[]) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
   const [pluginResources, setPluginResources] = useState<PluginResourceEntry[]>([]);
   const [expandedPluginResourceIDs, setExpandedPluginResourceIDs] = useState<Set<string>>(
     () => new Set()
@@ -393,19 +410,48 @@ export function MainLayout() {
     };
   }, []);
 
+  const navVisibilityMenuRef = useRef<HTMLDivElement | null>(null);
+
   const closeLanguageMenu = useCallback(() => setLanguageMenuOpen(false), []);
   const closeThemeMenu = useCallback(() => setThemeMenuOpen(false), []);
+  const closeNavVisibilityMenu = useCallback(() => setNavVisibilityOpen(false), []);
   useMenuDismiss(languageMenuOpen, languageMenuRef, closeLanguageMenu);
   useMenuDismiss(themeMenuOpen, themeMenuRef, closeThemeMenu);
+  useMenuDismiss(navVisibilityOpen, navVisibilityMenuRef, closeNavVisibilityMenu);
 
   const toggleLanguageMenu = useCallback(() => {
     setLanguageMenuOpen((prev) => !prev);
     setThemeMenuOpen(false);
+    setNavVisibilityOpen(false);
   }, []);
 
   const toggleThemeMenu = useCallback(() => {
     setThemeMenuOpen((prev) => !prev);
     setLanguageMenuOpen(false);
+    setNavVisibilityOpen(false);
+  }, []);
+
+  const toggleNavVisibilityMenu = useCallback(() => {
+    setNavVisibilityOpen((prev) => !prev);
+    setLanguageMenuOpen(false);
+    setThemeMenuOpen(false);
+  }, []);
+
+  const toggleNavVisibility = useCallback((path: string) => {
+    setHiddenNavPaths((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      try {
+        localStorage.setItem('hiddenNavPaths', JSON.stringify([...next]));
+      } catch {
+        // ignore storage errors
+      }
+      return next;
+    });
   }, []);
 
   const handleThemeSelect = useCallback(
@@ -804,6 +850,53 @@ export function MainLayout() {
         </div>
 
         <div className="header-actions floating-actions">
+          <div className={`nav-visibility-menu ${navVisibilityOpen ? 'open' : ''}`} ref={navVisibilityMenuRef}>
+            <Button
+              className="header-action-button"
+              variant="ghost"
+              size="sm"
+              onClick={toggleNavVisibilityMenu}
+              title={t('header.nav_visibility', { defaultValue: '菜单显示' })}
+              aria-label={t('header.nav_visibility', { defaultValue: '菜单显示' })}
+              aria-haspopup="menu"
+              aria-expanded={navVisibilityOpen}
+            >
+              {headerIcons.navVisibility}
+            </Button>
+            {navVisibilityOpen && (
+              <div
+                className="notification entering nav-visibility-popover"
+                role="menu"
+                aria-label={t('header.nav_visibility', { defaultValue: '菜单显示' })}
+              >
+                {navGroups.map((group) => {
+                  const linkItems = flattenNavItems(group.items);
+                  return (
+                    <div key={group.id} className="nav-visibility-group">
+                      <div className="nav-visibility-group-label">{t(group.labelKey)}</div>
+                      {linkItems.map((item) => {
+                        const itemLabel = item.label ?? (item.labelKey ? t(item.labelKey) : '');
+                        const isHidden = hiddenNavPaths.has(item.path);
+                        return (
+                          <button
+                            key={item.path}
+                            type="button"
+                            className={`nav-visibility-option ${isHidden ? 'dimmed' : ''}`}
+                            onClick={() => toggleNavVisibility(item.path)}
+                            role="menuitemcheckbox"
+                            aria-checked={!isHidden}
+                          >
+                            <span className="nav-visibility-check">{!isHidden ? '✓' : ''}</span>
+                            <span>{itemLabel}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           <Button
             className="header-action-button header-action-refresh"
             variant="ghost"
@@ -955,19 +1048,26 @@ export function MainLayout() {
           </div>
 
           <div className="nav-section">
-            {navGroups.map((group, idx) => (
-              <div
-                className={`nav-group ${group.id === 'plugin-pages' ? 'nav-group-bottom' : ''}`}
-                key={group.id}
-              >
-                {showSidebarLabels ? (
-                  <div className="nav-group-label">{t(group.labelKey)}</div>
-                ) : (
-                  idx > 0 && <div className="nav-group-divider" aria-hidden="true" />
-                )}
-                {group.items.map((item) => renderNavItem(item))}
-              </div>
-            ))}
+            {navGroups.map((group, idx) => {
+              const visibleItems = group.items.filter((item) => {
+                const paths = item.kind === 'drawer' ? item.children.map((c) => c.path) : [item.path];
+                return !paths.every((p) => hiddenNavPaths.has(p));
+              });
+              if (visibleItems.length === 0) return null;
+              return (
+                <div
+                  className={`nav-group ${group.id === 'plugin-pages' ? 'nav-group-bottom' : ''}`}
+                  key={group.id}
+                >
+                  {showSidebarLabels ? (
+                    <div className="nav-group-label">{t(group.labelKey)}</div>
+                  ) : (
+                    idx > 0 && <div className="nav-group-divider" aria-hidden="true" />
+                  )}
+                  {visibleItems.map((item) => renderNavItem(item))}
+                </div>
+              );
+            })}
           </div>
         </aside>
 

@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { IconPlus, IconSearch } from '@/components/ui/icons';
+import { IconLoader2, IconPlus, IconRefreshCw, IconSearch } from '@/components/ui/icons';
 import type { ProviderRecentUsageMap } from '@/components/providers/utils';
-import { PROVIDER_LOGOS } from '../brandLogos';
 import type { ProviderGroup, ProviderResource } from '../types';
 import { ProviderResourceTable } from './ProviderResourceTable';
 import { ProviderResourceToolbar } from './ProviderResourceToolbar';
@@ -18,8 +17,20 @@ export interface ProviderPanelControls {
   onSelectedModelsChange: (next: Set<string>) => void;
 }
 
+export interface ProviderHeaderProps {
+  totalActive: number;
+  totalResources: number;
+  providerFamilies: number;
+  updatedAtLabel: string;
+  isFetching?: boolean;
+  isNewDisabled?: boolean;
+  newLabel?: string;
+  onRefresh: () => void;
+  onNew: () => void;
+}
+
 interface ProviderResourcePanelProps {
-  group: ProviderGroup;
+  group: ProviderGroup | null;
   filter: string;
   onFilterChange: (value: string) => void;
   filteredResources: ProviderResource[];
@@ -32,6 +43,7 @@ interface ProviderResourcePanelProps {
   onDelete: (resource: ProviderResource) => void;
   onToggleDisabled?: (resource: ProviderResource, disabled: boolean) => void;
   onCreate: () => void;
+  headerProps: ProviderHeaderProps;
 }
 
 export function ProviderResourcePanel({
@@ -48,67 +60,87 @@ export function ProviderResourcePanel({
   onDelete,
   onToggleDisabled,
   onCreate,
+  headerProps,
 }: ProviderResourcePanelProps) {
   const { t } = useTranslation();
-  const logo = PROVIDER_LOGOS[group.id];
-  const providerTitle = t(`providersPage.providerNames.${group.id}`);
-  const logoClassName = [
-    styles.logo,
-    logo?.darkSrc ? styles.logoThemeLight : '',
-    logo?.invertOnDark ? styles.logoInvertOnDark : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
-  const darkLogoClassName = [styles.logo, styles.logoThemeDark].filter(Boolean).join(' ');
 
   const realResources = filteredResources.filter((r) => !r.flags.isPlaceholder);
-  const titleContent = (
-    <>
-      {logo ? (
-        <>
-          <img src={logo.src} alt="" aria-hidden="true" className={logoClassName} />
-          {logo.darkSrc ? (
-            <img src={logo.darkSrc} alt="" aria-hidden="true" className={darkLogoClassName} />
-          ) : null}
-        </>
-      ) : null}
-      <h2 className={styles.title}>{providerTitle}</h2>
-    </>
-  );
 
   return (
     <section className={styles.panel}>
-      <div className={styles.header}>
-        <div className={styles.headerMain}>
-          <div className={styles.titleArea}>
-            <div className={styles.titleRow}>{titleContent}</div>
-          </div>
-          <div className={styles.searchWrap}>
-            <span className={styles.searchIcon} aria-hidden="true">
-              <IconSearch size={16} />
+      {/* 合并后的紧凑头部：标题 + 统计chips + 操作按钮 */}
+      <div className={styles.compactHeader}>
+        <div className={styles.compactHeaderLeft}>
+          <h1 className={styles.compactTitle}>{t('providersPage.header.title')}</h1>
+          <div className={styles.chips}>
+            <span className={`${styles.chip} ${styles.chipPrimary}`}>
+              {t('providersPage.header.activeResources', {
+                active: headerProps.totalActive,
+                total: headerProps.totalResources,
+              })}
             </span>
-            <input
-              type="search"
-              className={styles.searchInput}
-              value={filter}
-              onChange={(event) => onFilterChange(event.target.value)}
-              placeholder={t('providersPage.table.filterPlaceholder')}
-            />
+            <span className={styles.chip}>
+              {t('providersPage.header.providerFamilies', { count: headerProps.providerFamilies })}
+            </span>
+            <span className={styles.chip}>
+              {t('providersPage.header.updatedAt', { time: headerProps.updatedAtLabel })}
+            </span>
           </div>
         </div>
+        <div className={styles.compactActions}>
+          <button
+            type="button"
+            className={`${styles.btn} ${styles.btnOutline}`}
+            onClick={headerProps.onRefresh}
+            disabled={headerProps.isFetching}
+            aria-label={
+              headerProps.isFetching ? t('providersPage.actions.syncing') : t('providersPage.actions.refresh')
+            }
+          >
+            <span className={`${styles.btnIcon} ${headerProps.isFetching ? styles.spin : ''}`.trim()}>
+              {headerProps.isFetching ? <IconLoader2 size={16} /> : <IconRefreshCw size={16} />}
+            </span>
+            <span>
+              {headerProps.isFetching ? t('providersPage.actions.syncing') : t('providersPage.actions.refresh')}
+            </span>
+          </button>
+          <button
+            type="button"
+            className={`${styles.btn} ${styles.btnPrimary}`}
+            onClick={headerProps.onNew}
+            disabled={headerProps.isNewDisabled}
+          >
+            <IconPlus size={16} />
+            <span>{headerProps.newLabel ?? t('providersPage.actions.new')}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 统一筛选栏：搜索 + Toolbar 合并一行 */}
+      <div className={styles.filterBar}>
+        <div className={styles.searchWrap}>
+          <span className={styles.searchIcon} aria-hidden="true">
+            <IconSearch size={16} />
+          </span>
+          <input
+            type="search"
+            className={styles.searchInput}
+            value={filter}
+            onChange={(event) => onFilterChange(event.target.value)}
+            placeholder={t('providersPage.table.filterPlaceholder')}
+          />
+        </div>
         {toolbarControls ? (
-          <div className={styles.headerToolbarRow}>
-            <ProviderResourceToolbar
-              key={group.id}
-              sortBy={toolbarControls.sortBy}
-              sortDir={toolbarControls.sortDir}
-              onSortBy={toolbarControls.onSortBy}
-              onSortDir={toolbarControls.onSortDir}
-              availableModels={toolbarControls.availableModels}
-              selectedModels={toolbarControls.selectedModels}
-              onSelectedModelsChange={toolbarControls.onSelectedModelsChange}
-            />
-          </div>
+          <ProviderResourceToolbar
+            key={group?.id ?? 'none'}
+            sortBy={toolbarControls.sortBy}
+            sortDir={toolbarControls.sortDir}
+            onSortBy={toolbarControls.onSortBy}
+            onSortDir={toolbarControls.onSortDir}
+            availableModels={toolbarControls.availableModels}
+            selectedModels={toolbarControls.selectedModels}
+            onSelectedModelsChange={toolbarControls.onSelectedModelsChange}
+          />
         ) : null}
       </div>
 

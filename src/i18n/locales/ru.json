@@ -100,7 +100,8 @@
   "header": {
     "check_connection": "Проверить подключение",
     "refresh_all": "Обновить всё",
-    "logout": "Выйти"
+    "logout": "Выйти",
+    "nav_visibility": "Видимость навигации"
   },
   "connection": {
     "title": "Информация о подключении",

@@ -41,7 +41,7 @@ interface ProviderResourceTableProps {
   onToggleDisabled?: (resource: ProviderResource, disabled: boolean) => void;
 }
 
-const columnWidths = ['180px', '220px', '72px', '138px', '174px', '176px'];
+const columnWidths = ['220px', '220px', '138px', '120px', '140px'];
 
 const resolveStatusBarData = (
   resource: ProviderResource,
@@ -139,12 +139,18 @@ export function ProviderResourceTable({
   };
 
   const renderPrimary = (r: ProviderResource) => {
+    const prefixEl = r.prefix ? (
+      <span className={styles.chip}>{r.prefix}</span>
+    ) : null;
     if (r.brand === 'openaiCompatibility') {
       const extra = r.apiKeyEntryCount > 1 ? ` · +${r.apiKeyEntryCount - 1}` : '';
       return (
         <div className={styles.primaryCell}>
           <span className={styles.primaryName}>{r.name ?? r.identifier}</span>
-          <span className={styles.primarySub}>{(r.apiKeyPreview ?? '—') + extra}</span>
+          <div className={styles.primarySubRow}>
+            <span className={styles.primarySub}>{(r.apiKeyPreview ?? '—') + extra}</span>
+            {prefixEl}
+          </div>
         </div>
       );
     }
@@ -157,7 +163,10 @@ export function ProviderResourceTable({
     return (
       <div className={styles.primaryCell}>
         <span className={styles.primaryName}>{r.name ?? r.apiKeyPreview ?? '—'}</span>
-        {secondary ? <span className={styles.primarySub}>{secondary}</span> : null}
+        <div className={styles.primarySubRow}>
+          {secondary ? <span className={styles.primarySub}>{secondary}</span> : null}
+          {prefixEl}
+        </div>
       </div>
     );
   };
@@ -184,7 +193,6 @@ export function ProviderResourceTable({
         <TableRow>
           <TableHead>{t('providersPage.table.key')}</TableHead>
           <TableHead>{t('providersPage.table.baseUrl')}</TableHead>
-          <TableHead>{t('providersPage.table.prefix')}</TableHead>
           <TableHead>{t('providersPage.table.models')}</TableHead>
           <TableHead>{t('providersPage.table.status')}</TableHead>
           <TableHead alignRight className={styles.actionsHead}>
@@ -198,38 +206,29 @@ export function ProviderResourceTable({
             <TableRow key={resource.id} selected={resource.id === selectedId}>
               <TableCell>{renderPrimary(resource)}</TableCell>
               <TableCell>{renderBaseUrl(resource)}</TableCell>
-              <TableCell>
-                {resource.prefix ? (
-                  <span className={styles.chip}>{resource.prefix}</span>
-                ) : (
-                  <span className={styles.baseUrl}>{t('providersPage.status.none')}</span>
-                )}
-              </TableCell>
               <TableCell>{renderModelsSummary(resource)}</TableCell>
               <TableCell>
                 <div className={styles.statusCell}>
                   {renderStatus(resource)}
                   {usageByProvider ? (
                     <>
-                      {(() => {
-                        const stats = resolveTotalStats(resource, usageByProvider);
-                        return (
-                          <div className={styles.stats}>
-                            <span className={`${styles.statPill} ${styles.statSuccess}`}>
-                              {t('stats.success')}: {stats.success}
-                            </span>
-                            <span className={`${styles.statPill} ${styles.statFailure}`}>
-                              {t('stats.failure')}: {stats.failure}
-                            </span>
-                          </div>
-                        );
-                      })()}
                       <div className={styles.statusBarWrap}>
                         <ProviderStatusBar
                           statusData={resolveStatusBarData(resource, usageByProvider)}
                           styles={statusBarStyles}
                         />
                       </div>
+                      {(() => {
+                        const stats = resolveTotalStats(resource, usageByProvider);
+                        return (
+                          <div className={styles.statsInline}>
+                            <span className={`${styles.statDot} ${styles.statSuccessDot}`} />
+                            <span className={styles.statNum}>{stats.success}</span>
+                            <span className={`${styles.statDot} ${styles.statFailureDot}`} />
+                            <span className={styles.statNum}>{stats.failure}</span>
+                          </div>
+                        );
+                      })()}
                     </>
                   ) : null}
                 </div>
