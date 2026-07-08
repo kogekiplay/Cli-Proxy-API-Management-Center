@@ -67,8 +67,8 @@ const statusCodeOf = (row: { status_code?: number; fail_status_code?: number; fa
   row.status_code || row.fail_status_code || (row.failed ? 500 : 200);
 
 const CHART_WIDTH = 300;
-const CHART_HEIGHT = 118;
-const CHART_BASELINE = 96;
+const CHART_HEIGHT = 160;
+const CHART_BASELINE = 138;
 const CHART_TOP = 12;
 const CHART_LEFT = 14;
 const CHART_RIGHT = 14;
