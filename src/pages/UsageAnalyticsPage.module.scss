@@ -438,41 +438,14 @@
 .metricCard {
   --summary-accent: var(--primary-color);
 
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 10px;
   min-width: 0;
   min-height: 126px;
   padding: 15px;
-  border-color: color-mix(in srgb, var(--summary-accent) 20%, var(--ops-panel-border));
+  border-color: var(--ops-panel-border);
   background: var(--ops-panel-bg);
-}
-
-.metricCard::before {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--summary-accent) 8%, transparent),
-    transparent 58%
-  );
-  content: '';
-}
-
-.metricCard::after {
-  position: absolute;
-  inset: auto -18px -36px auto;
-  z-index: -1;
-  width: 100px;
-  height: 100px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--summary-accent) 12%, transparent);
-  content: '';
 }
 
 .summaryAccentblue {
@@ -513,9 +486,9 @@
   width: 30px;
   height: 30px;
   flex: 0 0 30px;
-  border: 1px solid color-mix(in srgb, var(--summary-accent) 24%, var(--ops-panel-border));
+  border: 1px solid var(--ops-panel-border);
   border-radius: 10px;
-  background: color-mix(in srgb, var(--summary-accent) 12%, transparent);
+  background: var(--bg-tertiary);
   color: var(--summary-accent);
 }
 
@@ -938,14 +911,8 @@
   height: 44px;
   place-items: center;
   border-radius: $radius-full;
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--insight-color, #2f6f94) 28%, transparent),
-      transparent
-    ),
-    color-mix(in srgb, var(--insight-color, #2f6f94) 10%, var(--bg-primary));
-  color: var(--insight-color, #2f6f94);
+  background: var(--bg-tertiary);
+  color: var(--insight-color, var(--primary-color));
 }
 
 .insightToneblue {
