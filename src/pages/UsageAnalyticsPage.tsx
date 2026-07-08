@@ -416,7 +416,7 @@ const buildLinePoints = (values: number[], width: number, height: number, pad = 
     .join(' ');
 };
 
-const providerPalette = ['#404040', '#525252', '#737373', '#171717', '#a3a3a3', '#8b8b8b'];
+const providerPalette = ['#2f6f94', '#4f7f78', '#7c8f45', '#d36b3d', '#c7a14a', '#8b6f55'];
 
 const buildProviderStats = (
   credentialStats: UsageAnalyticsCredentialStat[],
@@ -503,7 +503,7 @@ const buildFailureStats = (events: UsageAnalyticsEventRow[]): NamedStatRow[] => 
           success: 0,
           failure: 0,
           cost: 0,
-          color: name.includes('429') ? '#525252' : '#a3a3a3',
+          color: name.includes('429') ? '#d9582f' : '#c7a14a',
         } satisfies NamedStatRow);
       existing.value += 1;
       existing.calls += 1;

@@ -356,8 +356,8 @@
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    border-color: color-mix(in srgb, #404040 36%, var(--border-color));
-    color: #171717;
+    border-color: color-mix(in srgb, #c75f3a 36%, var(--border-color));
+    color: #b65432;
   }
 
   &:disabled {
@@ -449,7 +449,7 @@
 }
 
 .summaryAccentblue {
-  --summary-accent: #525252;
+  --summary-accent: #2f6f94;
 }
 
 .summaryAccentgreen {
@@ -465,7 +465,7 @@
 }
 
 .summaryAccentteal {
-  --summary-accent: #737373;
+  --summary-accent: #4f7f78;
 }
 
 .summaryAccentcyan {
@@ -745,8 +745,8 @@
   button {
     height: 34px;
     border-radius: $radius-full;
-    border-color: color-mix(in srgb, #404040 28%, var(--ops-panel-strong-border));
-    color: #171717;
+    border-color: color-mix(in srgb, #c75f3a 28%, var(--ops-panel-strong-border));
+    color: #b65432;
     font-size: 12px;
     font-weight: 800;
   }
@@ -782,11 +782,11 @@
 }
 
 .legendInput {
-  background: #525252;
+  background: #2f6f94;
 }
 
 .legendOutput {
-  background: #404040;
+  background: #d36b3d;
 }
 
 .legendCalls {
@@ -794,7 +794,7 @@
 }
 
 .legendCost {
-  background: #a3a3a3;
+  background: #c7a14a;
 }
 
 .trendBarRow {
@@ -835,13 +835,13 @@
 
 .stackedInput {
   height: 100%;
-  background: linear-gradient(90deg, #525252, #737373);
+  background: linear-gradient(90deg, #2f6f94, #4f7f78);
 }
 
 .stackedOutput {
   flex: 1 1 auto;
   height: 100%;
-  background: linear-gradient(90deg, #404040, #404040);
+  background: linear-gradient(90deg, #d36b3d, #c75f3a);
 }
 
 .insightRail {
@@ -916,7 +916,7 @@
 }
 
 .insightToneblue {
-  --insight-color: #525252;
+  --insight-color: #2f6f94;
 }
 
 .insightTonegreen {
@@ -924,11 +924,11 @@
 }
 
 .insightTonered {
-  --insight-color: #525252;
+  --insight-color: #d9582f;
 }
 
 .insightToneamber {
-  --insight-color: #a3a3a3;
+  --insight-color: #c7a14a;
 }
 
 .insightTonepurple {
@@ -945,7 +945,7 @@
   margin-top: auto;
   padding: 12px 0 0;
   border-top: 1px solid var(--ops-panel-border);
-  color: color-mix(in srgb, #404040 76%, var(--text-primary));
+  color: color-mix(in srgb, #c75f3a 76%, var(--text-primary));
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
@@ -1011,11 +1011,11 @@
 }
 
 .lineTokens {
-  stroke: #525252;
+  stroke: #2f6f94;
 }
 
 .lineCost {
-  stroke: #404040;
+  stroke: #d36b3d;
 }
 
 .donutLayout {
@@ -1122,7 +1122,7 @@
     display: block;
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, #525252, #404040);
+    background: linear-gradient(90deg, #2f6f94, #d36b3d);
   }
 
   small {
@@ -1136,7 +1136,7 @@
   grid-template-columns: minmax(90px, 1fr) minmax(120px, 1.4fr) 42px;
 
   div i {
-    background: linear-gradient(90deg, #525252, #a3a3a3);
+    background: linear-gradient(90deg, #d9582f, #c7a14a);
   }
 
   strong {
@@ -1171,7 +1171,7 @@
   aspect-ratio: 1;
   min-height: 10px;
   border-radius: 4px;
-  background: #525252;
+  background: #d9582f;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffffff 44%, transparent);
 }
 
@@ -1199,7 +1199,7 @@
     width: 118px;
     height: 8px;
     border-radius: $radius-full;
-    background: linear-gradient(90deg, color-mix(in srgb, #525252 14%, transparent), #525252);
+    background: linear-gradient(90deg, color-mix(in srgb, #d9582f 14%, transparent), #d9582f);
   }
 }
 
@@ -1273,10 +1273,10 @@
 .timelineBar {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #525252, #737373 58%, var(--primary-color));
+  background: linear-gradient(90deg, #2f6f94, #4f7f78 58%, var(--primary-color));
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--primary-color) 22%, transparent),
-    0 4px 14px color-mix(in srgb, #525252 18%, transparent);
+    0 4px 14px color-mix(in srgb, #2f6f94 18%, transparent);
 }
 
 .monitoringTableCard {
@@ -1488,9 +1488,9 @@
 }
 
 .monitoringPageButtonActive {
-  border-color: color-mix(in srgb, #404040 54%, var(--border-color));
-  background: color-mix(in srgb, #404040 8%, var(--bg-primary));
-  color: #171717;
+  border-color: color-mix(in srgb, #c75f3a 54%, var(--border-color));
+  background: color-mix(in srgb, #c75f3a 8%, var(--bg-primary));
+  color: #b65432;
 }
 
 .monitoringNextIcon {
@@ -1608,7 +1608,7 @@
 }
 
 .identityBadgeDefault {
-  --identity-color: #171717;
+  --identity-color: #3b9eff;
 }
 
 .identityText {
