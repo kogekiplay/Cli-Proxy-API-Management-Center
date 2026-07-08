@@ -275,6 +275,7 @@
   "dashboard": {
     "title": "儀表板",
     "subtitle": "歡迎使用 CLI Proxy API 管理中心",
+    "operations_console": "運行控制台",
     "openai_providers": "OpenAI 供應商",
     "quick_actions": "快速操作",
     "current_config": "目前設定",
@@ -782,6 +783,7 @@
     "upgrade_required_desc": "目前伺服器版本不支援 OAuth 模型別名功能，請升級到最新版本的 CPA（CLI Proxy API）後重試。"
   },
   "auth_login": {
+    "page_desc": "透過 OAuth 流程登入支援的服務，並自動保存可用於執行時的驗證檔案。",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "開始 Codex 登入",
     "codex_oauth_hint": "透過 OAuth 流程登入 Codex 服務，自動取得並儲存驗證檔案。",
@@ -921,6 +923,7 @@
   },
   "logs": {
     "title": "記錄檢視",
+    "page_desc": "查看運行日誌、錯誤日誌和請求排查資訊。",
     "runtime_unknown": "目前執行端：識別中",
     "runtime_cpa": "目前執行端：CPA",
     "runtime_home": "目前執行端：Home",
@@ -1637,6 +1640,8 @@
   "providersPage": {
     "header": {
       "title": "AI 提供商",
+      "eyebrow": "上游模型路由",
+      "subtitle": "集中管理各類 AI 服務地址、金鑰、模型列表與路由狀態。",
       "activeResources": "{{active}}/{{total}} 個活躍資源",
       "providerFamilies": "{{count}} 個提供商家族",
       "updatedAt": "更新於 {{time}}",
@@ -1754,6 +1759,11 @@
       "modelEntry": "模型 #{{index}}",
       "modelImage": "允許圖片端點",
       "modelImageHint": "允許該模型用於 /v1/images/generations 和 /v1/images/edits",
+      "showAllEntries": "顯示全部（{{count}}）",
+      "showFewerEntries": "收起",
+      "proxyBadge": "代理",
+      "modelBadgeImage": "圖片",
+      "modelBadgeThinking": "Thinking",
       "thinkingConfig": "Thinking 設定(JSON)",
       "thinkingConfigHint": "可設定 levels、min、max、zero_allowed、dynamic_allowed",
       "cloakCacheUserId": "快取 user_id",

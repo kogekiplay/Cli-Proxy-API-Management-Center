@@ -578,7 +578,15 @@ export function OAuthPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('nav.oauth', { defaultValue: 'OAuth' })}</h1>
+      <div className={styles.pageHeader}>
+        <p className="page-eyebrow">{t('nav_meta.oauth', { defaultValue: 'OAuth 授权登录' })}</p>
+        <h1 className={styles.pageTitle}>{t('nav.oauth', { defaultValue: 'OAuth' })}</h1>
+        <p className="page-subtitle">
+          {t('auth_login.page_desc', {
+            defaultValue: '通过 OAuth 流程登录支持的服务，并自动保存可用于运行时的认证文件。',
+          })}
+        </p>
+      </div>
 
       <div className={styles.content}>
         {providerCards.map((provider) => {

@@ -690,6 +690,7 @@ export function PluginStorePage() {
     <div className={styles.page}>
       {/* ── Page Header ── */}
       <div className={styles.pageHeader}>
+        <p className="page-eyebrow">{t('nav_meta.plugin_store')}</p>
         <h1 className={styles.title}>{t('plugin_store.title')}</h1>
         <p className={styles.description}>{t('plugin_store.description')}</p>
       </div>

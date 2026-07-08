@@ -37,7 +37,15 @@ export function ProviderHeaderCard({
     <section className={styles.card}>
       <div className={styles.row}>
         <div className={styles.titleArea}>
+          <p className={styles.eyebrow}>
+            {t('providersPage.header.eyebrow', { defaultValue: '上游模型路由' })}
+          </p>
           <h1 className={styles.title}>{title ?? t('providersPage.header.title')}</h1>
+          <p className={styles.subtitle}>
+            {t('providersPage.header.subtitle', {
+              defaultValue: '集中管理各类 AI 服务地址、密钥、模型列表与路由状态。',
+            })}
+          </p>
         </div>
         <div className={styles.actions}>
           <button

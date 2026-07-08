@@ -274,6 +274,7 @@
   "dashboard": {
     "title": "Панель управления",
     "subtitle": "Добро пожаловать в Центр управления CLI Proxy API",
+    "operations_console": "Операционная консоль",
     "openai_providers": "Поставщики OpenAI",
     "quick_actions": "Быстрые действия",
     "current_config": "Текущая конфигурация",
@@ -770,6 +771,7 @@
     "upgrade_required_desc": "Текущая версия сервера не поддерживает API псевдонимов моделей OAuth. Обновите CLI Proxy API (CPA) до последней версии."
   },
   "auth_login": {
+    "page_desc": "Войдите в поддерживаемые сервисы через OAuth и автоматически сохраните файлы авторизации для выполнения.",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "Начать вход Codex",
     "codex_oauth_hint": "Выполните вход в сервис Codex через OAuth и автоматически получите/сохраните файлы авторизации.",
@@ -883,6 +885,7 @@
   },
   "logs": {
     "title": "Просмотр журналов",
+    "page_desc": "Просматривайте журналы выполнения, ошибки и сведения для диагностики запросов.",
     "runtime_unknown": "Текущий режим: определяется",
     "runtime_cpa": "Текущий режим: CPA",
     "runtime_home": "Текущий режим: Home",
@@ -1589,6 +1592,8 @@
   "providersPage": {
     "header": {
       "title": "AI Провайдеры",
+      "eyebrow": "Маршрутизация моделей",
+      "subtitle": "Управляйте адресами AI-сервисов, ключами, списками моделей и состоянием маршрутизации.",
       "activeResources": "{{active}}/{{total}} активных",
       "providerFamilies": "{{count}} семейств",
       "updatedAt": "Обновлено {{time}}",
@@ -1706,6 +1711,11 @@
       "modelEntry": "Модель #{{index}}",
       "modelImage": "Разрешить image endpoints",
       "modelImageHint": "Разрешить модель для /v1/images/generations и /v1/images/edits",
+      "showAllEntries": "Показать все ({{count}})",
+      "showFewerEntries": "Показать меньше",
+      "proxyBadge": "Прокси",
+      "modelBadgeImage": "Image",
+      "modelBadgeThinking": "Thinking",
       "thinkingConfig": "Thinking config (JSON)",
       "thinkingConfigHint": "Поддерживает levels, min, max, zero_allowed, dynamic_allowed",
       "cloakCacheUserId": "Кэшировать user_id",

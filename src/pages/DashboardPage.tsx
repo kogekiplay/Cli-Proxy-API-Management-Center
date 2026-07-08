@@ -415,7 +415,9 @@ export function DashboardPage() {
     <div className={styles.dashboard}>
       <section className={styles.dashboardShell}>
         <section className={styles.pageMasthead}>
-          <span className={styles.eyebrow}>OPERATIONS CONSOLE</span>
+          <span className={styles.eyebrow}>
+            {t('dashboard.operations_console', { defaultValue: '运行控制台' })}
+          </span>
           <h1>{t('dashboard.operations_title', { defaultValue: 'CLI Proxy 运行概览' })}</h1>
           <p>
             {t('dashboard.operations_desc', {

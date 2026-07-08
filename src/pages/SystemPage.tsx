@@ -327,6 +327,7 @@ export function SystemPage() {
   return (
     <div className={styles.container}>
       <header className={styles.pageHeader}>
+        <p className="page-eyebrow">{t('nav_meta.system_info')}</p>
         <h1>{t('system_info.title')}</h1>
         <p>
           {t('system_info.page_desc', {

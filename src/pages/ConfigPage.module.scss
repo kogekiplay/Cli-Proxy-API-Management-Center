@@ -22,14 +22,17 @@
 .pageHeaderCopy {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
   min-width: 0;
-  width: min(100%, 360px);
+  width: min(100%, 760px);
 }
 
 .pageTitle {
-  font-size: 28px;
-  font-weight: 700;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(42px, 5.4vw, 56px);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: 0;
   color: var(--text-primary);
   margin: 0;
 }

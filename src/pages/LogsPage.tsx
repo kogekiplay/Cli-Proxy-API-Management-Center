@@ -692,7 +692,15 @@ export function LogsPage() {
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
+        <div className={styles.pageHeaderCopy}>
+          <p className="page-eyebrow">{t('nav_meta.logs')}</p>
+          <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
+          <p className="page-subtitle">
+            {t('logs.page_desc', {
+              defaultValue: '查看运行日志、错误日志和请求排查信息。',
+            })}
+          </p>
+        </div>
         <div className={styles.runtimeNotice}>{t(`logs.runtime_${serverRuntimeKind}`)}</div>
       </div>
 
