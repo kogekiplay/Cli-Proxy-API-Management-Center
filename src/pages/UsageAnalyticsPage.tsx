@@ -2260,11 +2260,15 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
               <th>{t('usage_analytics.request')}</th>
               <th>提供商 / 模型</th>
               <th>认证 / API Key</th>
-              <th>{t('usage_analytics.status_code')}</th>
-              <th>{t('usage_analytics.latency_ttft')}</th>
+              <th className={styles.monitoringCenterColumn}>
+                {t('usage_analytics.status_code')}
+              </th>
+              <th className={styles.monitoringCenterColumn}>
+                {t('usage_analytics.latency_ttft')}
+              </th>
               <th>Token 用量</th>
               <th>费用 (USD)</th>
-              <th>操作</th>
+              <th className={styles.monitoringCenterColumn}>操作</th>
             </tr>
           </thead>
           <tbody>
@@ -2318,13 +2322,13 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                       <small>{apiKeyDisplay.value || '-'}</small>
                     </div>
                   </td>
-                  <td>
+                  <td className={styles.monitoringCenterColumn}>
                     <div className={styles.monitoringStatusCell}>
                       <StatusBadge row={row} />
                       <ErrorSummary row={row} emptyLabel={t('usage_analytics.no_error_summary')} />
                     </div>
                   </td>
-                  <td>
+                  <td className={styles.monitoringCenterColumn}>
                     <div className={styles.monitoringLatencyCell}>
                       <strong>
                         {formatDuration(row.latency_ms)} / {formatDuration(row.ttft_ms)}
@@ -2346,7 +2350,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                       </strong>
                     </div>
                   </td>
-                  <td>
+                  <td className={styles.monitoringCenterColumn}>
                     <button
                       className={styles.monitoringActionButton}
                       type="button"
