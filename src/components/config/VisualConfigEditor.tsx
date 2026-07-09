@@ -1687,6 +1687,171 @@ export function VisualConfigEditor({
                 </Collapsible>
 
                 <Collapsible
+                  label={t('config_management.visual.sections.codex_continuation.title')}
+                  hint={t('config_management.visual.sections.codex_continuation.description')}
+                  defaultOpen={false}
+                >
+                  <SectionStack>
+                    <SectionGrid>
+                      <FieldAnchor fieldId="codexContinuationEnabled">
+                        <ToggleRow
+                          title={t('config_management.visual.sections.codex_continuation.enabled')}
+                          description={t(
+                            'config_management.visual.sections.codex_continuation.enabled_desc'
+                          )}
+                          checked={values.codexContinuationEnabled}
+                          disabled={disabled}
+                          onChange={(codexContinuationEnabled) =>
+                            onChange({ codexContinuationEnabled })
+                          }
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="codexContinuationForceIncludeEncrypted">
+                        <ToggleRow
+                          title={t(
+                            'config_management.visual.sections.codex_continuation.force_include_encrypted'
+                          )}
+                          description={t(
+                            'config_management.visual.sections.codex_continuation.force_include_encrypted_desc'
+                          )}
+                          checked={values.codexContinuationForceIncludeEncrypted}
+                          disabled={disabled}
+                          onChange={(codexContinuationForceIncludeEncrypted) =>
+                            onChange({ codexContinuationForceIncludeEncrypted })
+                          }
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="codexContinuationForwardMarker">
+                        <ToggleRow
+                          title={t(
+                            'config_management.visual.sections.codex_continuation.forward_marker'
+                          )}
+                          description={t(
+                            'config_management.visual.sections.codex_continuation.forward_marker_desc'
+                          )}
+                          checked={values.codexContinuationForwardMarker}
+                          disabled={disabled}
+                          onChange={(codexContinuationForwardMarker) =>
+                            onChange({ codexContinuationForwardMarker })
+                          }
+                        />
+                      </FieldAnchor>
+                    </SectionGrid>
+                    <SectionGrid>
+                      <FieldAnchor fieldId="codexContinuationMaxContinue">
+                        <Input
+                          type="number"
+                          min="0"
+                          label={t(
+                            'config_management.visual.sections.codex_continuation.max_continue'
+                          )}
+                          hint={t(
+                            'config_management.visual.sections.codex_continuation.max_continue_hint'
+                          )}
+                          value={values.codexContinuationMaxContinue}
+                          error={getValidationMessage(
+                            t,
+                            validationErrors?.codexContinuationMaxContinue
+                          )}
+                          onChange={(e) =>
+                            onChange({ codexContinuationMaxContinue: e.target.value })
+                          }
+                          disabled={disabled}
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="codexContinuationMinN">
+                        <Input
+                          type="number"
+                          min="0"
+                          label={t('config_management.visual.sections.codex_continuation.min_n')}
+                          hint={t(
+                            'config_management.visual.sections.codex_continuation.min_n_hint'
+                          )}
+                          value={values.codexContinuationMinN}
+                          error={getValidationMessage(t, validationErrors?.codexContinuationMinN)}
+                          onChange={(e) => onChange({ codexContinuationMinN: e.target.value })}
+                          disabled={disabled}
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="codexContinuationMaxN">
+                        <Input
+                          type="number"
+                          min="0"
+                          label={t('config_management.visual.sections.codex_continuation.max_n')}
+                          hint={t(
+                            'config_management.visual.sections.codex_continuation.max_n_hint'
+                          )}
+                          value={values.codexContinuationMaxN}
+                          error={getValidationMessage(t, validationErrors?.codexContinuationMaxN)}
+                          onChange={(e) => onChange({ codexContinuationMaxN: e.target.value })}
+                          disabled={disabled}
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="codexContinuationTruncationStep">
+                        <Input
+                          type="number"
+                          min="0"
+                          label={t(
+                            'config_management.visual.sections.codex_continuation.truncation_step'
+                          )}
+                          hint={t(
+                            'config_management.visual.sections.codex_continuation.truncation_step_hint'
+                          )}
+                          value={values.codexContinuationTruncationStep}
+                          error={getValidationMessage(
+                            t,
+                            validationErrors?.codexContinuationTruncationStep
+                          )}
+                          onChange={(e) =>
+                            onChange({ codexContinuationTruncationStep: e.target.value })
+                          }
+                          disabled={disabled}
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="codexContinuationMaxTotalOutputTokens">
+                        <Input
+                          type="number"
+                          min="0"
+                          label={t(
+                            'config_management.visual.sections.codex_continuation.max_total_output_tokens'
+                          )}
+                          hint={t(
+                            'config_management.visual.sections.codex_continuation.max_total_output_tokens_hint'
+                          )}
+                          value={values.codexContinuationMaxTotalOutputTokens}
+                          error={getValidationMessage(
+                            t,
+                            validationErrors?.codexContinuationMaxTotalOutputTokens
+                          )}
+                          onChange={(e) =>
+                            onChange({ codexContinuationMaxTotalOutputTokens: e.target.value })
+                          }
+                          disabled={disabled}
+                        />
+                      </FieldAnchor>
+                    </SectionGrid>
+                    <SectionGrid>
+                      <FieldAnchor fieldId="codexContinuationMarkerText">
+                        <Input
+                          label={t(
+                            'config_management.visual.sections.codex_continuation.marker_text'
+                          )}
+                          hint={t(
+                            'config_management.visual.sections.codex_continuation.marker_text_hint'
+                          )}
+                          placeholder="Continue thinking..."
+                          value={values.codexContinuationMarkerText}
+                          onChange={(e) =>
+                            onChange({ codexContinuationMarkerText: e.target.value })
+                          }
+                          disabled={disabled}
+                        />
+                      </FieldAnchor>
+                    </SectionGrid>
+                  </SectionStack>
+                </Collapsible>
+
+                <Collapsible
                   label={t('config_management.visual.sections.headers.title')}
                   hint={t('config_management.visual.sections.headers.description')}
                   defaultOpen={false}

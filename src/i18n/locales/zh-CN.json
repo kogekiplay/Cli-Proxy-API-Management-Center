@@ -968,6 +968,28 @@
           "plugins_title": "插件",
           "signature_title": "Antigravity 签名"
         },
+        "codex_continuation": {
+          "title": "Codex 续写折叠",
+          "description": "自动折叠 Codex Responses 流式截断续写；默认开启，只有命中严格条件时触发。",
+          "enabled": "启用续写折叠",
+          "enabled_desc": "对 Codex Responses 流式请求自动识别 518*n-2 reasoning token 截断并隐藏续写。",
+          "max_continue": "最大续写轮次",
+          "max_continue_hint": "默认 3；设置为 0 或留空时后端使用默认值。",
+          "min_n": "最小截断阶数",
+          "min_n_hint": "默认 1；仅当 reasoning token 命中该阶数及以上时续写。",
+          "max_n": "最大截断阶数",
+          "max_n_hint": "默认 6；设置为 0 时后端使用默认值。",
+          "truncation_step": "截断步长",
+          "truncation_step_hint": "默认 518，对应 518*n-2 的 reasoning token 边界。",
+          "marker_text": "续写标记文本",
+          "marker_text_hint": "写入隐藏 commentary 输入的提示文本；留空时后端使用默认值。",
+          "forward_marker": "向客户端转发标记",
+          "forward_marker_desc": "默认关闭；开启后会把续写标记也转发给下游客户端。",
+          "force_include_encrypted": "强制 include encrypted_content",
+          "force_include_encrypted_desc": "默认开启；续写依赖 encrypted_content，关闭后后端不会自动补 include。",
+          "max_total_output_tokens": "最大总输出 Token",
+          "max_total_output_tokens_hint": "默认 0 表示不限；达到上限后停止隐藏续写。"
+        },
         "server": {
           "title": "服务器配置",
           "description": "基础服务器设置",
