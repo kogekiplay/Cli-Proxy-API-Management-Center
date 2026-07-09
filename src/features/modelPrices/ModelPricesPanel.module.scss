@@ -36,6 +36,26 @@
   min-width: 190px;
 }
 
+.sourceMeta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.sourceLink {
+  color: var(--primary-color);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 .numberCell {
   width: 120px;
 }

@@ -14,6 +14,7 @@ type DraftPrice = {
   output_per_1m: string;
   cache_read_per_1m: string;
   cache_creation_per_1m: string;
+  source: string;
 };
 
 const emptyDraft = (): DraftPrice => ({
@@ -22,6 +23,7 @@ const emptyDraft = (): DraftPrice => ({
   output_per_1m: '',
   cache_read_per_1m: '',
   cache_creation_per_1m: '',
+  source: 'manual',
 });
 
 const priceToDraft = (price: ModelPrice): DraftPrice => ({
@@ -30,6 +32,7 @@ const priceToDraft = (price: ModelPrice): DraftPrice => ({
   output_per_1m: String(price.output_per_1m ?? 0),
   cache_read_per_1m: String(price.cache_read_per_1m ?? 0),
   cache_creation_per_1m: String(price.cache_creation_per_1m ?? 0),
+  source: price.source?.trim() || 'manual',
 });
 
 const parseDraft = (draft: DraftPrice): ModelPrice | null => {
@@ -143,6 +146,21 @@ export function ModelPricesPanel({ disabled = false }: { disabled?: boolean }) {
     }
   };
 
+  const renderSource = (source: string) => {
+    const normalized = source.trim();
+    if (/^https?:\/\//i.test(normalized)) {
+      return (
+        <a className={styles.sourceLink} href={normalized} target="_blank" rel="noreferrer">
+          {t('model_prices.source_official')}
+        </a>
+      );
+    }
+    if (normalized === 'manual') {
+      return <span>{t('model_prices.source_custom')}</span>;
+    }
+    return <span>{t('model_prices.source_builtin')}</span>;
+  };
+
   const renderDraftRow = (draft: DraftPrice, key: string, isNew = false) => (
     <tr key={key}>
       <td className={styles.modelCell}>
@@ -157,6 +175,12 @@ export function ModelPricesPanel({ disabled = false }: { disabled?: boolean }) {
           disabled={disabled || loading || !isNew || savingModel === key}
           placeholder="gpt-5*"
         />
+        {!isNew && (
+          <div className={styles.sourceMeta}>
+            <span>{t('model_prices.source')}:</span>
+            {renderSource(draft.source)}
+          </div>
+        )}
       </td>
       {(['input_per_1m', 'output_per_1m', 'cache_read_per_1m', 'cache_creation_per_1m'] as const).map(
         (field) => (
