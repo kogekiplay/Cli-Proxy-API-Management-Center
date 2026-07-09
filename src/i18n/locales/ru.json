@@ -922,6 +922,28 @@
           "plugins_title": "Плагины",
           "signature_title": "Подпись Antigravity"
         },
+        "codex_continuation": {
+          "title": "Codex continuation folding",
+          "description": "Автоматически сворачивает обрезанные Codex Responses stream. Включено по умолчанию и срабатывает только при строгом совпадении условий.",
+          "enabled": "Включить continuation folding",
+          "enabled_desc": "Определяет обрезку 518*n-2 reasoning tokens в Codex Responses stream и скрывает continuation rounds.",
+          "max_continue": "Макс. continuation rounds",
+          "max_continue_hint": "По умолчанию 3; 0 или пустое значение использует backend default.",
+          "min_n": "Мин. truncation tier",
+          "min_n_hint": "По умолчанию 1; continuation запускается с этого tier и выше.",
+          "max_n": "Макс. truncation tier",
+          "max_n_hint": "По умолчанию 6; 0 использует backend default.",
+          "truncation_step": "Truncation step",
+          "truncation_step_hint": "По умолчанию 518, соответствует границе 518*n-2 reasoning tokens.",
+          "marker_text": "Continuation marker text",
+          "marker_text_hint": "Скрытый commentary prompt для continuation; пустое значение использует backend default.",
+          "forward_marker": "Передавать marker клиенту",
+          "forward_marker_desc": "По умолчанию выключено. Если включено, marker будет отправлен downstream.",
+          "force_include_encrypted": "Force include encrypted_content",
+          "force_include_encrypted_desc": "По умолчанию включено. Continuation требует encrypted_content; отключение запрещает автодобавление include.",
+          "max_total_output_tokens": "Макс. total output tokens",
+          "max_total_output_tokens_hint": "По умолчанию 0 означает без лимита. Hidden continuation остановится при достижении лимита."
+        },
         "server": {
           "title": "Настройки сервера",
           "description": "Базовые параметры сервера",

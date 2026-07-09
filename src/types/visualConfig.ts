@@ -18,6 +18,11 @@ export type VisualConfigFieldPath =
   | 'maxRetryCredentials'
   | 'maxRetryInterval'
   | 'authAutoRefreshWorkers'
+  | 'codexContinuationMaxContinue'
+  | 'codexContinuationMinN'
+  | 'codexContinuationMaxN'
+  | 'codexContinuationTruncationStep'
+  | 'codexContinuationMaxTotalOutputTokens'
   | 'streaming.keepaliveSeconds'
   | 'streaming.bootstrapRetries'
   | 'streaming.nonstreamKeepaliveInterval';
@@ -137,6 +142,15 @@ export type VisualConfigValues = {
   codexHeaderUserAgent: string;
   codexHeaderBetaFeatures: string;
   codexIdentityConfuse: boolean;
+  codexContinuationEnabled: boolean;
+  codexContinuationMaxContinue: string;
+  codexContinuationMinN: string;
+  codexContinuationMaxN: string;
+  codexContinuationTruncationStep: string;
+  codexContinuationMarkerText: string;
+  codexContinuationForwardMarker: boolean;
+  codexContinuationForceIncludeEncrypted: boolean;
+  codexContinuationMaxTotalOutputTokens: string;
   payloadDefaultRules: PayloadRule[];
   payloadDefaultRawRules: PayloadRule[];
   payloadOverrideRules: PayloadRule[];
@@ -203,6 +217,15 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   codexHeaderUserAgent: '',
   codexHeaderBetaFeatures: '',
   codexIdentityConfuse: false,
+  codexContinuationEnabled: true,
+  codexContinuationMaxContinue: '3',
+  codexContinuationMinN: '1',
+  codexContinuationMaxN: '6',
+  codexContinuationTruncationStep: '518',
+  codexContinuationMarkerText: 'Continue thinking...',
+  codexContinuationForwardMarker: false,
+  codexContinuationForceIncludeEncrypted: true,
+  codexContinuationMaxTotalOutputTokens: '0',
   payloadDefaultRules: [],
   payloadDefaultRawRules: [],
   payloadOverrideRules: [],

@@ -175,6 +175,45 @@ function setDisableImageGenerationInDoc(
   if (docHas(doc, path)) doc.setIn(path, false);
 }
 
+function setBooleanIfManagedInDoc(
+  doc: YamlDocument,
+  path: YamlPath,
+  value: boolean,
+  dirtyFields: Set<string>,
+  dirtyKey: keyof VisualConfigValues,
+  defaultValue: boolean
+): void {
+  if (docHas(doc, path) || dirtyFields.has(dirtyKey) || value !== defaultValue) {
+    doc.setIn(path, value);
+  }
+}
+
+function setIntIfManagedInDoc(
+  doc: YamlDocument,
+  path: YamlPath,
+  value: string,
+  dirtyFields: Set<string>,
+  dirtyKey: keyof VisualConfigValues,
+  defaultValue: string
+): void {
+  if (docHas(doc, path) || dirtyFields.has(dirtyKey) || value.trim() !== defaultValue) {
+    setIntFromStringInDoc(doc, path, value);
+  }
+}
+
+function setStringIfManagedInDoc(
+  doc: YamlDocument,
+  path: YamlPath,
+  value: string,
+  dirtyFields: Set<string>,
+  dirtyKey: keyof VisualConfigValues,
+  defaultValue: string
+): void {
+  if (docHas(doc, path) || dirtyFields.has(dirtyKey) || value.trim() !== defaultValue) {
+    setStringInDoc(doc, path, value);
+  }
+}
+
 function setApiKeyAccessRulesInDoc(doc: YamlDocument, rules: ApiKeyAccessRules): void {
   const serialized = serializeApiKeyAccessRules(rules);
   if (Object.keys(serialized).length === 0) {
@@ -226,6 +265,15 @@ export function getVisualConfigValidationErrors(
     maxRetryCredentials: getNonNegativeIntegerError(values.maxRetryCredentials),
     maxRetryInterval: getNonNegativeIntegerError(values.maxRetryInterval),
     authAutoRefreshWorkers: getNonNegativeIntegerError(values.authAutoRefreshWorkers),
+    codexContinuationMaxContinue: getNonNegativeIntegerError(values.codexContinuationMaxContinue),
+    codexContinuationMinN: getNonNegativeIntegerError(values.codexContinuationMinN),
+    codexContinuationMaxN: getNonNegativeIntegerError(values.codexContinuationMaxN),
+    codexContinuationTruncationStep: getNonNegativeIntegerError(
+      values.codexContinuationTruncationStep
+    ),
+    codexContinuationMaxTotalOutputTokens: getNonNegativeIntegerError(
+      values.codexContinuationMaxTotalOutputTokens
+    ),
     'streaming.keepaliveSeconds': getNonNegativeIntegerError(values.streaming.keepaliveSeconds),
     'streaming.bootstrapRetries': getNonNegativeIntegerError(values.streaming.bootstrapRetries),
     'streaming.nonstreamKeepaliveInterval': getNonNegativeIntegerError(
@@ -901,6 +949,15 @@ function getNextDirtyFields(
       'codexHeaderUserAgent',
       'codexHeaderBetaFeatures',
       'codexIdentityConfuse',
+      'codexContinuationEnabled',
+      'codexContinuationMaxContinue',
+      'codexContinuationMinN',
+      'codexContinuationMaxN',
+      'codexContinuationTruncationStep',
+      'codexContinuationMarkerText',
+      'codexContinuationForwardMarker',
+      'codexContinuationForceIncludeEncrypted',
+      'codexContinuationMaxTotalOutputTokens',
       'host',
       'port',
       'tlsEnable',
@@ -1090,6 +1147,7 @@ export function useVisualConfig() {
       const streaming = asRecord(parsed.streaming);
       const plugins = asRecord(parsed.plugins);
       const codex = asRecord(parsed.codex);
+      const codexContinuation = asRecord(codex?.continuation);
       const claudeHeaderDefaults = asRecord(parsed['claude-header-defaults']);
       const codexHeaderDefaults = asRecord(parsed['codex-header-defaults']);
 
@@ -1180,6 +1238,34 @@ export function useVisualConfig() {
             ? codexHeaderDefaults['beta-features']
             : '',
         codexIdentityConfuse: Boolean(codex?.['identity-confuse']),
+        codexContinuationEnabled:
+          typeof codexContinuation?.enabled === 'boolean' ? codexContinuation.enabled : true,
+        codexContinuationMaxContinue: String(
+          codexContinuation?.['max-continue'] ?? DEFAULT_VISUAL_VALUES.codexContinuationMaxContinue
+        ),
+        codexContinuationMinN: String(
+          codexContinuation?.['min-n'] ?? DEFAULT_VISUAL_VALUES.codexContinuationMinN
+        ),
+        codexContinuationMaxN: String(
+          codexContinuation?.['max-n'] ?? DEFAULT_VISUAL_VALUES.codexContinuationMaxN
+        ),
+        codexContinuationTruncationStep: String(
+          codexContinuation?.['truncation-step'] ??
+            DEFAULT_VISUAL_VALUES.codexContinuationTruncationStep
+        ),
+        codexContinuationMarkerText:
+          typeof codexContinuation?.['marker-text'] === 'string'
+            ? codexContinuation['marker-text']
+            : DEFAULT_VISUAL_VALUES.codexContinuationMarkerText,
+        codexContinuationForwardMarker: Boolean(codexContinuation?.['forward-marker']),
+        codexContinuationForceIncludeEncrypted:
+          typeof codexContinuation?.['force-include-encrypted'] === 'boolean'
+            ? codexContinuation['force-include-encrypted']
+            : true,
+        codexContinuationMaxTotalOutputTokens: String(
+          codexContinuation?.['max-total-output-tokens'] ??
+            DEFAULT_VISUAL_VALUES.codexContinuationMaxTotalOutputTokens
+        ),
 
         quotaSwitchProject: Boolean(quotaExceeded?.['switch-project'] ?? true),
         quotaSwitchPreviewModel: Boolean(quotaExceeded?.['switch-preview-model'] ?? true),
@@ -1432,7 +1518,7 @@ export function useVisualConfig() {
         }
 
         if (
-          docHas(doc, ['codex']) ||
+          docHas(doc, ['codex', 'identity-confuse']) ||
           values.codexIdentityConfuse ||
           shouldWriteManagedField(
             doc,
@@ -1443,6 +1529,120 @@ export function useVisualConfig() {
         ) {
           ensureMapInDoc(doc, ['codex']);
           setBooleanInDoc(doc, ['codex', 'identity-confuse'], values.codexIdentityConfuse);
+          deleteIfMapEmpty(doc, ['codex']);
+        }
+
+        const codexContinuationFields = [
+          'codexContinuationEnabled',
+          'codexContinuationMaxContinue',
+          'codexContinuationMinN',
+          'codexContinuationMaxN',
+          'codexContinuationTruncationStep',
+          'codexContinuationMarkerText',
+          'codexContinuationForwardMarker',
+          'codexContinuationForceIncludeEncrypted',
+          'codexContinuationMaxTotalOutputTokens',
+        ] as Array<keyof VisualConfigValues>;
+        const hasCodexContinuationDirtyField = codexContinuationFields.some((field) =>
+          dirtyFields.has(field)
+        );
+        const hasCustomCodexContinuationValue =
+          values.codexContinuationEnabled !== DEFAULT_VISUAL_VALUES.codexContinuationEnabled ||
+          values.codexContinuationMaxContinue.trim() !==
+            DEFAULT_VISUAL_VALUES.codexContinuationMaxContinue ||
+          values.codexContinuationMinN.trim() !== DEFAULT_VISUAL_VALUES.codexContinuationMinN ||
+          values.codexContinuationMaxN.trim() !== DEFAULT_VISUAL_VALUES.codexContinuationMaxN ||
+          values.codexContinuationTruncationStep.trim() !==
+            DEFAULT_VISUAL_VALUES.codexContinuationTruncationStep ||
+          values.codexContinuationMarkerText.trim() !==
+            DEFAULT_VISUAL_VALUES.codexContinuationMarkerText ||
+          values.codexContinuationForwardMarker !==
+            DEFAULT_VISUAL_VALUES.codexContinuationForwardMarker ||
+          values.codexContinuationForceIncludeEncrypted !==
+            DEFAULT_VISUAL_VALUES.codexContinuationForceIncludeEncrypted ||
+          values.codexContinuationMaxTotalOutputTokens.trim() !==
+            DEFAULT_VISUAL_VALUES.codexContinuationMaxTotalOutputTokens;
+
+        if (
+          docHas(doc, ['codex', 'continuation']) ||
+          hasCodexContinuationDirtyField ||
+          hasCustomCodexContinuationValue
+        ) {
+          ensureMapInDoc(doc, ['codex']);
+          ensureMapInDoc(doc, ['codex', 'continuation']);
+          setBooleanIfManagedInDoc(
+            doc,
+            ['codex', 'continuation', 'enabled'],
+            values.codexContinuationEnabled,
+            dirtyFields,
+            'codexContinuationEnabled',
+            DEFAULT_VISUAL_VALUES.codexContinuationEnabled
+          );
+          setIntIfManagedInDoc(
+            doc,
+            ['codex', 'continuation', 'max-continue'],
+            values.codexContinuationMaxContinue,
+            dirtyFields,
+            'codexContinuationMaxContinue',
+            DEFAULT_VISUAL_VALUES.codexContinuationMaxContinue
+          );
+          setIntIfManagedInDoc(
+            doc,
+            ['codex', 'continuation', 'min-n'],
+            values.codexContinuationMinN,
+            dirtyFields,
+            'codexContinuationMinN',
+            DEFAULT_VISUAL_VALUES.codexContinuationMinN
+          );
+          setIntIfManagedInDoc(
+            doc,
+            ['codex', 'continuation', 'max-n'],
+            values.codexContinuationMaxN,
+            dirtyFields,
+            'codexContinuationMaxN',
+            DEFAULT_VISUAL_VALUES.codexContinuationMaxN
+          );
+          setIntIfManagedInDoc(
+            doc,
+            ['codex', 'continuation', 'truncation-step'],
+            values.codexContinuationTruncationStep,
+            dirtyFields,
+            'codexContinuationTruncationStep',
+            DEFAULT_VISUAL_VALUES.codexContinuationTruncationStep
+          );
+          setStringIfManagedInDoc(
+            doc,
+            ['codex', 'continuation', 'marker-text'],
+            values.codexContinuationMarkerText,
+            dirtyFields,
+            'codexContinuationMarkerText',
+            DEFAULT_VISUAL_VALUES.codexContinuationMarkerText
+          );
+          setBooleanIfManagedInDoc(
+            doc,
+            ['codex', 'continuation', 'forward-marker'],
+            values.codexContinuationForwardMarker,
+            dirtyFields,
+            'codexContinuationForwardMarker',
+            DEFAULT_VISUAL_VALUES.codexContinuationForwardMarker
+          );
+          setBooleanIfManagedInDoc(
+            doc,
+            ['codex', 'continuation', 'force-include-encrypted'],
+            values.codexContinuationForceIncludeEncrypted,
+            dirtyFields,
+            'codexContinuationForceIncludeEncrypted',
+            DEFAULT_VISUAL_VALUES.codexContinuationForceIncludeEncrypted
+          );
+          setIntIfManagedInDoc(
+            doc,
+            ['codex', 'continuation', 'max-total-output-tokens'],
+            values.codexContinuationMaxTotalOutputTokens,
+            dirtyFields,
+            'codexContinuationMaxTotalOutputTokens',
+            DEFAULT_VISUAL_VALUES.codexContinuationMaxTotalOutputTokens
+          );
+          deleteIfMapEmpty(doc, ['codex', 'continuation']);
           deleteIfMapEmpty(doc, ['codex']);
         }
 
