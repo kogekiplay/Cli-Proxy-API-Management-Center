@@ -52,6 +52,7 @@ export function ProviderResourcePanel({
   const { t } = useTranslation();
   const logo = PROVIDER_LOGOS[group.id];
   const providerTitle = t(`providersPage.providerNames.${group.id}`);
+
   const logoClassName = [
     styles.logo,
     logo?.darkSrc ? styles.logoThemeLight : '',
@@ -61,7 +62,6 @@ export function ProviderResourcePanel({
     .join(' ');
   const darkLogoClassName = [styles.logo, styles.logoThemeDark].filter(Boolean).join(' ');
 
-  const realResources = filteredResources.filter((r) => !r.flags.isPlaceholder);
   const titleContent = (
     <>
       {logo ? (
@@ -112,7 +112,7 @@ export function ProviderResourcePanel({
         ) : null}
       </div>
 
-      {realResources.length === 0 ? (
+      {filteredResources.length === 0 ? (
         <div className={styles.empty}>
           <div>{t('providersPage.table.empty')}</div>
           <div className={styles.emptyAction}>

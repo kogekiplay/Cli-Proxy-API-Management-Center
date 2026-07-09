@@ -29,10 +29,6 @@ import { ApiKeyEntriesEditor } from './ApiKeyEntriesEditor';
 import { ModelEntriesEditor } from './ModelEntriesEditor';
 import styles from './sharedForm.module.scss';
 
-export interface BaseProviderFormHandle {
-  submit: () => Promise<void>;
-}
-
 interface BaseProviderFormProps {
   brand: ProviderBrand;
   resource: ProviderResource | null;

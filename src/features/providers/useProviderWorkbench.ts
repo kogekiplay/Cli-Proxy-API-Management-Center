@@ -207,7 +207,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
     setErrorMessage(null);
     try {
       const [configResult, vertexResult, openaiResult] = await Promise.allSettled([
-        fetchConfig(undefined, true),
+        fetchConfig(true),
         providersApi.getVertexConfigs(),
         providersApi.getOpenAIProviders(),
       ]);
