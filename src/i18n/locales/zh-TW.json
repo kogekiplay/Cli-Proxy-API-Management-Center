@@ -961,28 +961,6 @@
           "plugins_title": "外掛",
           "signature_title": "Antigravity 簽章"
         },
-        "codex_continuation": {
-          "title": "Codex 續寫折疊",
-          "description": "自動折疊 Codex Responses 串流截斷續寫；預設開啟，只有命中嚴格條件時觸發。",
-          "enabled": "啟用續寫折疊",
-          "enabled_desc": "對 Codex Responses 串流請求自動識別 518*n-2 reasoning token 截斷並隱藏續寫。",
-          "max_continue": "最大續寫輪次",
-          "max_continue_hint": "預設 3；設為 0 或留空時後端使用預設值。",
-          "min_n": "最小截斷階數",
-          "min_n_hint": "預設 1；僅當 reasoning token 命中該階數及以上時續寫。",
-          "max_n": "最大截斷階數",
-          "max_n_hint": "預設 6；設為 0 時後端使用預設值。",
-          "truncation_step": "截斷步長",
-          "truncation_step_hint": "預設 518，對應 518*n-2 的 reasoning token 邊界。",
-          "marker_text": "續寫標記文字",
-          "marker_text_hint": "寫入隱藏 commentary 輸入的提示文字；留空時後端使用預設值。",
-          "forward_marker": "向客戶端轉發標記",
-          "forward_marker_desc": "預設關閉；開啟後會把續寫標記也轉發給下游客戶端。",
-          "force_include_encrypted": "強制 include encrypted_content",
-          "force_include_encrypted_desc": "預設開啟；續寫依賴 encrypted_content，關閉後後端不會自動補 include。",
-          "max_total_output_tokens": "最大總輸出 Token",
-          "max_total_output_tokens_hint": "預設 0 表示不限；達到上限後停止隱藏續寫。"
-        },
         "server": {
           "title": "伺服器設定",
           "description": "基本伺服器設定",

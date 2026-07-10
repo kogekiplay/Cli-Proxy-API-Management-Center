@@ -972,28 +972,6 @@
           "plugins_title": "Plugins",
           "signature_title": "Antigravity Signature"
         },
-        "codex_continuation": {
-          "title": "Codex Continuation Folding",
-          "description": "Automatically folds truncated Codex Responses streams. Enabled by default and only runs when strict conditions match.",
-          "enabled": "Enable Continuation Folding",
-          "enabled_desc": "Detect 518*n-2 reasoning-token truncation on Codex Responses streams and hide continuation rounds.",
-          "max_continue": "Max Continuation Rounds",
-          "max_continue_hint": "Default 3; use 0 or leave empty for the backend default.",
-          "min_n": "Minimum Truncation Tier",
-          "min_n_hint": "Default 1; continuation only runs at this tier or above.",
-          "max_n": "Maximum Truncation Tier",
-          "max_n_hint": "Default 6; use 0 for the backend default.",
-          "truncation_step": "Truncation Step",
-          "truncation_step_hint": "Default 518, matching the 518*n-2 reasoning-token boundary.",
-          "marker_text": "Continuation Marker Text",
-          "marker_text_hint": "Hidden commentary prompt appended for continuation; empty uses the backend default.",
-          "forward_marker": "Forward Marker to Client",
-          "forward_marker_desc": "Off by default. When enabled, the continuation marker is also sent downstream.",
-          "force_include_encrypted": "Force include encrypted_content",
-          "force_include_encrypted_desc": "On by default. Continuation needs encrypted_content; disabling prevents automatic include injection.",
-          "max_total_output_tokens": "Max Total Output Tokens",
-          "max_total_output_tokens_hint": "Default 0 means unlimited. Hidden continuation stops when the cap is reached."
-        },
         "server": {
           "title": "Server Configuration",
           "description": "Basic server settings",
