@@ -178,7 +178,9 @@ Add this test to `tests/requestMonitoringNavigation.test.ts`:
 ```ts
 test('splits provider, model, status, and error into independent columns', () => {
   const page = read('src/pages/UsageAnalyticsPage.tsx');
-  const zhCN = read('src/i18n/locales/zh-CN.json');
+  const zhCN = JSON.parse(read('src/i18n/locales/zh-CN.json')) as {
+    usage_analytics: Record<string, string>;
+  };
 
   expect(page).toContain("<th>{t('usage_analytics.provider')}</th>");
   expect(page).toContain("<th>{t('usage_analytics.model')}</th>");
@@ -187,8 +189,8 @@ test('splits provider, model, status, and error into independent columns', () =>
   expect(page).toContain('className={styles.monitoringModelCell}');
   expect(page).toContain('className={styles.monitoringErrorCell}');
   expect(page).toContain('title={row.model || undefined}');
-  expect(zhCN).toContain('"provider": "提供商"');
-  expect(zhCN).toContain('"error_message": "错误信息"');
+  expect(zhCN.usage_analytics.provider).toBe('提供商');
+  expect(zhCN.usage_analytics.error_message).toBe('错误信息');
 });
 ```
 
@@ -305,7 +307,8 @@ expect(styles).toContain('min-width: 1440px;');
 expect(styles).toContain('padding: 13px 12px;');
 expect(styles).toContain('.monitoringModelCell');
 expect(styles).toContain('.monitoringErrorCell');
-expect(styles).toContain('max-width: 100%;');
+expect(styles).toContain('.monitoringProviderCell {\n  align-items: center;');
+expect(styles).toContain('.monitoringErrorCell {\n  min-height: 24px;');
 ```
 
 - [ ] **Step 2: Run the navigation test and verify RED**
@@ -466,4 +469,4 @@ git diff --check origin/main...HEAD
 git status --short
 ```
 
-Expected: no whitespace errors; only the pre-existing untracked `.codegraph/`, `design-qa.md`, and `docs/` paths remain.
+Expected: no whitespace errors and no tracked or untracked implementation changes remain in the isolated worktree. The main checkout's pre-existing `.codegraph/`, `design-qa.md`, and `docs/` paths remain untouched.
