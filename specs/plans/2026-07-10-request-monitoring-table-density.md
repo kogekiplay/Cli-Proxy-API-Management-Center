@@ -19,6 +19,80 @@
 
 ---
 
+### Task 0: Repair The Dashboard Visual Baseline
+
+**Files:**
+- Modify: `tests/visualDirectionAdoption.test.ts`
+
+**Interfaces:**
+- Consumes: the current full-width `DashboardPage` structure introduced by commit `674817a`.
+- Produces: visual-direction assertions that protect the current `mainColumn` and `systemOverview` layout without restoring the removed `rightRail`, time card, or Gateway Health card.
+
+- [ ] **Step 1: Reproduce the stale assertions**
+
+Run:
+
+```bash
+bun test tests/visualDirectionAdoption.test.ts
+```
+
+Expected: 2 failures because the test still requires `rightRail` and `dashboard.gateway_health`, both intentionally removed from production code.
+
+- [ ] **Step 2: Replace old right-rail expectations with current layout expectations**
+
+In the first test, replace the `rightRail` source and style assertions with:
+
+```ts
+expect(dashboard).toContain('mainColumn');
+expect(dashboard).toContain('systemOverview');
+expect(dashboardStyles).toContain('.mainColumn');
+expect(dashboardStyles).toContain('.systemOverview');
+expect(dashboard).not.toContain('className={styles.rightRail}');
+expect(dashboardStyles).not.toContain('.rightRail');
+```
+
+Rename the final test to `keeps the dashboard full width with status and time in system overview` and replace its removed Gateway Health expectations with:
+
+```ts
+expect(dashboard).toContain("t('dashboard.system_status'");
+expect(dashboard).toContain("t('dashboard.current_time'");
+expect(dashboard).toContain('className={styles.systemOverview}');
+expect(dashboard).not.toContain("t('dashboard.gateway_health'");
+expect(dashboard).not.toContain('className={styles.rightRail}');
+expect(styles).not.toContain('.rightRail');
+```
+
+Keep the existing masthead ordering, `grid-column: 1 / -1`, and removed `padding-top: 146px` assertions.
+
+- [ ] **Step 3: Verify the focused test passes**
+
+Run:
+
+```bash
+bun test tests/visualDirectionAdoption.test.ts
+```
+
+Expected: 4 tests pass, 0 fail.
+
+- [ ] **Step 4: Verify the full baseline passes**
+
+Run:
+
+```bash
+bun test
+```
+
+Expected: 64 tests pass, 0 fail.
+
+- [ ] **Step 5: Commit the baseline repair**
+
+```bash
+git add tests/visualDirectionAdoption.test.ts
+git commit -m "test: align dashboard visual assertions"
+```
+
+---
+
 ### Task 1: Lock The Twelve-Column Contract
 
 **Files:**
