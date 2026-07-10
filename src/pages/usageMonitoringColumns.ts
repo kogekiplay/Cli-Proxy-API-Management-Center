@@ -1,4 +1,4 @@
-export const MONITORING_COLUMN_WIDTHS = [8, 12, 14, 7, 14, 8, 11, 14, 7, 5] as const;
+export const MONITORING_COLUMN_WIDTHS = [8, 11, 7, 7, 6, 12, 6, 8, 11, 13, 7, 4] as const;
 
 export const formatReasoningEffort = (value?: string | null) => {
   const normalized = value?.trim().toLowerCase() ?? '';
