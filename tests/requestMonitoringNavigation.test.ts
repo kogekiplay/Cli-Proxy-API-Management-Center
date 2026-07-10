@@ -50,10 +50,31 @@ describe('request monitoring navigation', () => {
 
     expect(page).toContain('if (!row.failed && !error.summary) return null;');
     expect(page).not.toContain('<span className={styles.mutedDash}>-</span>');
+    expect(page).toContain('<StatusBadge row={row} />');
+    expect(page).toContain(
+      '<ErrorSummary row={row} emptyLabel={t(\'usage_analytics.no_error_summary\')} />'
+    );
     expect(styles).toContain('width: 56px;');
     expect(styles).toContain('min-width: 56px;');
     expect(styles).toContain('justify-self: center;');
     expect(styles).toContain('align-content: center;');
+  });
+
+  test('splits provider, model, status, and error into independent columns', () => {
+    const page = read('src/pages/UsageAnalyticsPage.tsx');
+    const zhCN = JSON.parse(read('src/i18n/locales/zh-CN.json')) as {
+      usage_analytics: Record<string, string>;
+    };
+
+    expect(page).toContain("<th>{t('usage_analytics.provider')}</th>");
+    expect(page).toContain("<th>{t('usage_analytics.model')}</th>");
+    expect(page).toContain("<th>{t('usage_analytics.error_message')}</th>");
+    expect(page).not.toContain('<th>提供商 / 模型</th>');
+    expect(page).toContain('className={styles.monitoringModelCell}');
+    expect(page).toContain('className={styles.monitoringErrorCell}');
+    expect(page).toContain('title={row.model || undefined}');
+    expect(zhCN.usage_analytics.provider).toBe('提供商');
+    expect(zhCN.usage_analytics.error_message).toBe('错误信息');
   });
 
   test('provides a working date picker without squeezing the range tabs', () => {

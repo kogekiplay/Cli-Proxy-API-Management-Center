@@ -171,6 +171,7 @@
     "latency": "Задержка",
     "ttft": "TTFT",
     "error_summary": "Сводка ошибки",
+    "error_message": "Сообщение об ошибке",
     "request_detail": "Детали запроса",
     "endpoint": "Endpoint",
     "api_key_hash": "API Key hash",

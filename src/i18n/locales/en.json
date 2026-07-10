@@ -172,6 +172,7 @@
     "latency": "Latency",
     "ttft": "TTFT",
     "error_summary": "Error summary",
+    "error_message": "Error message",
     "request_detail": "Request detail",
     "endpoint": "Endpoint",
     "api_key_hash": "API Key hash",

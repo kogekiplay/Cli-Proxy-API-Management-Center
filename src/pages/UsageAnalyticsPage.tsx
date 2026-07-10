@@ -2266,12 +2266,14 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
             <tr>
               <th>{t('usage_analytics.time')}</th>
               <th>{t('usage_analytics.request')}</th>
-              <th>提供商 / 模型</th>
+              <th>{t('usage_analytics.provider')}</th>
+              <th>{t('usage_analytics.model')}</th>
               <th className={styles.monitoringCenterColumn}>
                 {t('usage_analytics.reasoning_effort')}
               </th>
               <th>认证 / API Key</th>
               <th className={styles.monitoringCenterColumn}>{t('usage_analytics.status_code')}</th>
+              <th>{t('usage_analytics.error_message')}</th>
               <th className={styles.monitoringCenterColumn}>{t('usage_analytics.latency_ttft')}</th>
               <th>Token 用量</th>
               <th>费用 (USD)</th>
@@ -2320,6 +2322,10 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                       >
                         {monitoringProviderLabel(row.provider)}
                       </span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className={styles.monitoringModelCell} title={row.model || undefined}>
                       <strong>{row.model || '-'}</strong>
                     </div>
                   </td>
@@ -2337,6 +2343,10 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                   <td className={styles.monitoringCenterColumn}>
                     <div className={styles.monitoringStatusCell}>
                       <StatusBadge row={row} />
+                    </div>
+                  </td>
+                  <td>
+                    <div className={styles.monitoringErrorCell}>
                       <ErrorSummary row={row} emptyLabel={t('usage_analytics.no_error_summary')} />
                     </div>
                   </td>
