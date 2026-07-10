@@ -74,6 +74,7 @@ export interface UsageAnalyticsEventRow {
   timestamp_ms: number;
   provider: string;
   model: string;
+  upstream_model?: string;
   endpoint: string;
   auth_index: string;
   auth_file_name: string;

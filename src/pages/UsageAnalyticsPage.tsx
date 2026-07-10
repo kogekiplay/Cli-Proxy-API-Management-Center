@@ -22,6 +22,7 @@ import {
   IconTrophy,
 } from '@/components/ui/icons';
 import { displayOpenCodeGoAccountName } from '@/features/opencodeGo/helpers';
+import { UsageStatusBadge } from '@/features/usageAnalytics/UsageStatusBadge';
 import {
   buildUsageAPIKeyOptions,
   buildUsageAuthIndexOptions,
@@ -56,7 +57,11 @@ import { getErrorMessage } from '@/utils/helpers';
 import { resolveAuthProvider } from '@/utils/quota/validators';
 import { hashAPIKeyForUsage } from '@/utils/usageApiKeyHash';
 import styles from './UsageAnalyticsPage.module.scss';
-import { formatReasoningEffort, MONITORING_COLUMN_WIDTHS } from './usageMonitoringColumns';
+import {
+  formatReasoningEffort,
+  monitoringProviderLabel,
+  MONITORING_COLUMN_WIDTHS,
+} from './usageMonitoringColumns';
 
 type RangeKey = '24h' | '7d' | '30d';
 type UsageAnalyticsView = 'analytics' | 'monitoring';
@@ -201,13 +206,6 @@ const compactHash = (value: string | undefined | null, length = 12) => {
 const statusCodeOf = (row: UsageAnalyticsEventRow) =>
   row.status_code || row.fail_status_code || (row.failed ? 500 : 200);
 
-const statusToneOf = (row: UsageAnalyticsEventRow) => {
-  const code = statusCodeOf(row);
-  if (row.failed || code >= 500) return 'bad';
-  if (code >= 400) return 'warn';
-  return 'good';
-};
-
 const csvEscape = (value: unknown) => {
   const text = value === undefined || value === null ? '' : String(value);
   return `"${text.replace(/"/g, '""')}"`;
@@ -219,12 +217,6 @@ const providerLabel = (value: string | undefined | null) => {
   if (provider === 'opencode-go') return 'OpenCode';
   if (provider === 'codex') return 'Codex';
   return provider.charAt(0).toUpperCase() + provider.slice(1);
-};
-
-const monitoringProviderLabel = (value: string | undefined | null) => {
-  const provider = value?.trim() ?? '';
-  if (provider === 'openai-compatible-opencode-go') return 'opencode-go';
-  return providerLabel(provider);
 };
 
 const providerToneClass = (provider: string | undefined | null) => {
@@ -675,41 +667,6 @@ function DetailItem({ label, value }: { label: string; value: ReactNode }) {
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
-  );
-}
-
-function StatusBadge({ row }: { row: UsageAnalyticsEventRow }) {
-  const tone = statusToneOf(row);
-  return (
-    <span
-      className={[
-        styles.statusBadge,
-        tone === 'good' ? styles.statusSuccess : '',
-        tone === 'warn' ? styles.statusWarn : '',
-        tone === 'bad' ? styles.statusFailed : '',
-      ]
-        .filter(Boolean)
-        .join(' ')}
-    >
-      {statusCodeOf(row)}
-    </span>
-  );
-}
-
-function ErrorSummary({ row, emptyLabel }: { row: UsageAnalyticsEventRow; emptyLabel: string }) {
-  const error = resolveUsageAnalyticsErrorDisplay(row, emptyLabel);
-  if (!row.failed && !error.summary) return null;
-
-  return (
-    <span className={styles.errorHint} tabIndex={0}>
-      <span>{error.summary || emptyLabel}</span>
-      {(error.title || error.detail) && (
-        <span className={styles.errorTooltip} role="tooltip">
-          {error.title ? <strong>{error.title}</strong> : null}
-          {error.detail ? <small>{error.detail}</small> : null}
-        </span>
-      )}
-    </span>
   );
 }
 
@@ -2273,7 +2230,6 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
               </th>
               <th>认证 / API Key</th>
               <th className={styles.monitoringCenterColumn}>{t('usage_analytics.status_code')}</th>
-              <th>{t('usage_analytics.error_message')}</th>
               <th className={styles.monitoringCenterColumn}>{t('usage_analytics.latency_ttft')}</th>
               <th>Token 用量</th>
               <th>费用 (USD)</th>
@@ -2318,6 +2274,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                   <td>
                     <div className={styles.monitoringProviderCell}>
                       <span
+                        title={row.provider}
                         className={`${styles.identityBadge} ${providerToneClass(row.provider)}`}
                       >
                         {monitoringProviderLabel(row.provider)}
@@ -2325,7 +2282,14 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                     </div>
                   </td>
                   <td>
-                    <div className={styles.monitoringModelCell} title={row.model || undefined}>
+                    <div
+                      className={styles.monitoringModelCell}
+                      title={
+                        row.upstream_model && row.upstream_model !== row.model
+                          ? `${row.model} · 上游 ${row.upstream_model}`
+                          : row.model || undefined
+                      }
+                    >
                       <strong>{row.model || '-'}</strong>
                     </div>
                   </td>
@@ -2342,12 +2306,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                   </td>
                   <td className={styles.monitoringCenterColumn}>
                     <div className={styles.monitoringStatusCell}>
-                      <StatusBadge row={row} />
-                    </div>
-                  </td>
-                  <td>
-                    <div className={styles.monitoringErrorCell}>
-                      <ErrorSummary row={row} emptyLabel={t('usage_analytics.no_error_summary')} />
+                      <UsageStatusBadge row={row} />
                     </div>
                   </td>
                   <td className={styles.monitoringCenterColumn}>
@@ -2471,7 +2430,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
       open={selectedEvent !== null}
       onClose={() => setSelectedEvent(null)}
       size="lg"
-      eyebrow={selectedEvent ? <StatusBadge row={selectedEvent} /> : undefined}
+      eyebrow={selectedEvent ? <UsageStatusBadge row={selectedEvent} /> : undefined}
       title={t('usage_analytics.request_detail')}
       description={selectedEvent?.request_id || selectedEvent?.model || undefined}
       footer={
@@ -2500,7 +2459,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
             />
             <DetailItem
               label={t('usage_analytics.status_code')}
-              value={<StatusBadge row={selectedEvent} />}
+              value={<UsageStatusBadge row={selectedEvent} />}
             />
             <DetailItem
               label={t('usage_analytics.latency')}
@@ -2519,6 +2478,9 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
               value={providerLabel(selectedEvent.provider)}
             />
             <DetailItem label={t('usage_analytics.model')} value={selectedEvent.model || '-'} />
+            {selectedEvent.upstream_model && selectedEvent.upstream_model !== selectedEvent.model ? (
+              <DetailItem label="上游模型" value={selectedEvent.upstream_model} />
+            ) : null}
             <DetailItem
               label={t('usage_analytics.reasoning_effort')}
               value={formatReasoningEffort(selectedEvent.reasoning_effort)}

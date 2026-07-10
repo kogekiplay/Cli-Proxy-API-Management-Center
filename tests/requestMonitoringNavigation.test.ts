@@ -42,31 +42,42 @@ describe('request monitoring navigation', () => {
     expect(styles).toContain('.monitoringSearch');
     expect(styles).toContain('.monitoringTableCard');
     expect(styles).toContain('.monitoringPagination');
-    expect(styles).toContain('min-width: 1440px;');
+    expect(styles).toContain('min-width: 1320px;');
     expect(styles).toContain('padding: 13px 12px;');
     expect(styles).toContain('.monitoringModelCell');
-    expect(styles).toContain('.monitoringErrorCell');
     expect(styles).toContain('.monitoringProviderCell {\n  align-items: center;');
-    expect(styles).toContain('.monitoringErrorCell {\n  min-height: 24px;');
   });
 
-  test('keeps successful status cells compact without empty error rows', () => {
+  test('uses the status tooltip without rendering an error column', () => {
     const page = read('src/pages/UsageAnalyticsPage.tsx');
     const styles = read('src/pages/UsageAnalyticsPage.module.scss');
+    const statusBadge = read('src/features/usageAnalytics/UsageStatusBadge.tsx');
+    const statusBadgeStyles = read('src/features/usageAnalytics/UsageStatusBadge.module.scss');
 
-    expect(page).toContain('if (!row.failed && !error.summary) return null;');
-    expect(page).not.toContain('<span className={styles.mutedDash}>-</span>');
-    expect(page).toContain('<StatusBadge row={row} />');
-    expect(page).toContain(
-      '<ErrorSummary row={row} emptyLabel={t(\'usage_analytics.no_error_summary\')} />'
-    );
-    expect(styles).toContain('width: 56px;');
-    expect(styles).toContain('min-width: 56px;');
-    expect(styles).toContain('justify-self: center;');
+    expect(page).toContain("import { UsageStatusBadge } from '@/features/usageAnalytics/UsageStatusBadge';");
+    expect(page).toContain('<UsageStatusBadge row={row} />');
+    expect(page).not.toContain('<th>{t(\'usage_analytics.error_message\')}</th>');
+    expect(page).not.toContain('monitoringErrorCell');
+    expect(styles).not.toContain('.monitoringErrorCell');
+    expect(statusBadge).toContain('const hasError = row.failed && Boolean(error.summary || error.title || error.detail);');
+    expect(statusBadge).toContain('tabIndex={hasError ? 0 : undefined}');
+    expect(statusBadge).toContain('aria-describedby={hasError ? tooltipId : undefined}');
+    expect(statusBadge).toContain('onPointerEnter={open}');
+    expect(statusBadge).toContain('onPointerLeave={close}');
+    expect(statusBadge).toContain('onFocus={open}');
+    expect(statusBadge).toContain('onBlur={close}');
+    expect(statusBadge).toContain('role="tooltip"');
+    expect(statusBadge).toContain('createPortal(');
+    expect(statusBadge).toContain("window.addEventListener('scroll', updatePosition, true);");
+    expect(statusBadgeStyles).toContain('position: fixed;');
+    expect(statusBadgeStyles).toContain('max-width: min(360px, calc(100vw - 24px));');
+    expect(statusBadgeStyles).toContain('max-height: 240px;');
+    expect(statusBadgeStyles).toContain('width: 56px;');
+    expect(statusBadgeStyles).toContain('min-width: 56px;');
     expect(styles).toContain('align-content: center;');
   });
 
-  test('splits provider, model, status, and error into independent columns', () => {
+  test('keeps provider, model, and status as independent compact columns', () => {
     const page = read('src/pages/UsageAnalyticsPage.tsx');
     const locales = ['en', 'ru', 'zh-CN', 'zh-TW'].map((locale) => [
       locale,
@@ -78,16 +89,12 @@ describe('request monitoring navigation', () => {
 
     expect(page).toContain("<th>{t('usage_analytics.provider')}</th>");
     expect(page).toContain("<th>{t('usage_analytics.model')}</th>");
-    expect(page).toContain("<th>{t('usage_analytics.error_message')}</th>");
+    expect(page).not.toContain("<th>{t('usage_analytics.error_message')}</th>");
     expect(page).not.toContain('<th>提供商 / 模型</th>');
     expect(page).toContain('className={styles.monitoringModelCell}');
-    expect(page).toContain('className={styles.monitoringErrorCell}');
-    expect(page).toContain('title={row.model || undefined}');
-    for (const [, locale] of locales) {
-      expect(locale.usage_analytics.error_message).toBeTruthy();
-    }
+    expect(page).toContain('row.upstream_model && row.upstream_model !== row.model');
+    expect(page).toContain('`${row.model} · 上游 ${row.upstream_model}`');
     expect(zhCN.usage_analytics.provider).toBe('提供商');
-    expect(zhCN.usage_analytics.error_message).toBe('错误信息');
   });
 
   test('contains long monitoring headers and cost values within their columns', () => {
@@ -133,12 +140,18 @@ describe('request monitoring navigation', () => {
   test('uses compact provider labels in the monitoring table only', () => {
     const page = read('src/pages/UsageAnalyticsPage.tsx');
 
-    expect(page).toContain('const monitoringProviderLabel');
-    expect(page).toContain(
-      "if (provider === 'openai-compatible-opencode-go') return 'opencode-go';"
-    );
+    expect(page).toContain('monitoringProviderLabel,');
+    expect(page).toContain("from './usageMonitoringColumns';");
     expect(page).toContain('{monitoringProviderLabel(row.provider)}');
+    expect(page).toContain('title={row.provider}');
     expect(page).toContain('value={providerLabel(selectedEvent.provider)}');
+  });
+
+  test('shows the upstream model in the detail drawer only when it differs from the alias', () => {
+    const page = read('src/pages/UsageAnalyticsPage.tsx');
+
+    expect(page).toContain('selectedEvent.upstream_model !== selectedEvent.model');
+    expect(page).toContain('label="上游模型"');
   });
 
   test('aligns status badges with a stable reasoning effort column', () => {

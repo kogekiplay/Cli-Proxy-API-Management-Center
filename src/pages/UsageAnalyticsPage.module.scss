@@ -1327,7 +1327,7 @@
 
 .monitoringTable {
   width: 100%;
-  min-width: 1440px;
+  min-width: 1320px;
   table-layout: fixed;
   border-collapse: collapse;
 
@@ -1389,7 +1389,6 @@
 .monitoringModelCell,
 .monitoringCredentialCell,
 .monitoringStatusCell,
-.monitoringErrorCell,
 .monitoringLatencyCell,
 .monitoringUsageCell,
 .monitoringCostCell {
@@ -1468,15 +1467,6 @@
   align-items: center;
   align-content: center;
   justify-items: center;
-}
-
-.monitoringErrorCell {
-  min-height: 24px;
-  align-content: center;
-
-  .errorHint {
-    max-width: 100%;
-  }
 }
 
 .reasoningEffortBadge {
@@ -1715,40 +1705,6 @@
   }
 }
 
-.statusBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  justify-self: center;
-  width: 56px;
-  min-width: 56px;
-  height: 24px;
-  padding: 0 10px;
-  border-radius: $radius-full;
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 1;
-  box-shadow: 0 1px 4px color-mix(in srgb, var(--text-primary) 5%, transparent);
-}
-
-.statusSuccess {
-  border: 1px solid color-mix(in srgb, #15803d 28%, var(--border-color));
-  background: color-mix(in srgb, #16a34a 10%, transparent);
-  color: #15803d;
-}
-
-.statusWarn {
-  border: 1px solid color-mix(in srgb, #d97706 30%, var(--border-color));
-  background: color-mix(in srgb, #f59e0b 12%, transparent);
-  color: #b45309;
-}
-
-.statusFailed {
-  border: 1px solid color-mix(in srgb, #dc2626 30%, var(--border-color));
-  background: color-mix(in srgb, #ef4444 10%, transparent);
-  color: #b91c1c;
-}
-
 .cardMeta {
   color: var(--text-tertiary);
   font-size: 12px;
@@ -1804,70 +1760,6 @@
 
 .mutedDash {
   color: var(--text-tertiary);
-}
-
-.errorHint {
-  position: relative;
-  display: inline-block;
-  max-width: 210px;
-  min-width: 0;
-  color: #b91c1c;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.35;
-  outline: none;
-
-  > span:first-child {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
-.errorTooltip {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 8px);
-  left: 0;
-  display: none;
-  width: min(360px, 78vw);
-  max-height: 240px;
-  overflow: auto;
-  padding: 10px 12px;
-  border: 1px solid color-mix(in srgb, #dc2626 24%, var(--border-color));
-  border-radius: $radius-md;
-  background: var(--bg-primary);
-  box-shadow: var(--shadow-lg);
-  color: var(--text-primary);
-  white-space: normal;
-
-  strong,
-  small {
-    display: block;
-    line-height: 1.45;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  strong {
-    margin-bottom: 6px;
-    color: #b91c1c;
-    font-size: 12px;
-  }
-
-  small {
-    color: var(--text-secondary);
-    font-size: 11px;
-    font-family:
-      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
-  }
-}
-
-.errorHint:hover .errorTooltip,
-.errorHint:focus .errorTooltip,
-.errorHint:focus-within .errorTooltip {
-  display: block;
 }
 
 .latencyCell {
