@@ -12,13 +12,15 @@ describe('Claude-style visual direction adoption', () => {
     expect(variables).toContain('$primary-color: #c96442;');
     expect(dashboard).toContain('pageMasthead');
     expect(dashboard).toContain('dashboardShell');
-    expect(dashboard).toContain('rightRail');
+    expect(dashboard).toContain('mainColumn');
+    expect(dashboard).toContain('systemOverview');
     expect(dashboard).toContain('chartSvg');
     expect(dashboard).toContain('panelAction');
     expect(dashboard).toContain('routeDetails');
     expect(dashboardStyles).toContain('.pageMasthead');
     expect(dashboardStyles).toContain('.dashboardShell');
-    expect(dashboardStyles).toContain('.rightRail');
+    expect(dashboardStyles).toContain('.mainColumn');
+    expect(dashboardStyles).toContain('.systemOverview');
     expect(dashboardStyles).toContain('.summaryCard');
     expect(dashboardStyles).toContain('.chartSvg');
     expect(dashboardStyles).toContain('.panelAction');
@@ -26,6 +28,8 @@ describe('Claude-style visual direction adoption', () => {
     expect(dashboardStyles).not.toContain('.dashboardGrid');
     expect(dashboardStyles).not.toContain('.backgroundOrbs');
     expect(dashboardStyles).not.toContain('.opsHero');
+    expect(dashboard).not.toContain('className={styles.rightRail}');
+    expect(dashboardStyles).not.toContain('.rightRail');
   });
 
   test('keeps usage pages in a dense operations toolbar style', () => {
@@ -45,14 +49,19 @@ describe('Claude-style visual direction adoption', () => {
     expect(dashboard).not.toContain('badgeClass: routingStrategyRaw');
   });
 
-  test('keeps the dashboard right rail focused on connection health only', () => {
+  test('keeps the dashboard full width with status and time in system overview', () => {
     const dashboard = read('src/pages/DashboardPage.tsx');
     const styles = read('src/pages/DashboardPage.module.scss');
 
-    expect(dashboard).toContain("t('dashboard.gateway_health'");
+    expect(dashboard).toContain("t('dashboard.system_status'");
+    expect(dashboard).toContain("t('dashboard.current_time'");
+    expect(dashboard).toContain('className={styles.systemOverview}');
+    expect(dashboard).not.toContain("t('dashboard.gateway_health'");
     expect(dashboard).not.toContain('providerHealthText');
     expect(dashboard).not.toContain("title: t('nav.ai_providers')");
     expect(dashboard).not.toContain("t('dashboard.build_info'");
+    expect(dashboard).not.toContain('className={styles.rightRail}');
+    expect(styles).not.toContain('.rightRail');
     expect(dashboard.indexOf('className={styles.pageMasthead}')).toBeLessThan(
       dashboard.indexOf('className={styles.mainColumn}')
     );
