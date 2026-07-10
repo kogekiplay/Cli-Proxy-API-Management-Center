@@ -205,7 +205,10 @@
     "copy_error_detail": "Копировать ошибку",
     "copy_success": "Детали ошибки скопированы",
     "copy_failed": "Не удалось скопировать детали ошибки",
-    "api_key_badge": "API Key"
+    "api_key_badge": "API Key",
+    "request_failed": "Сбой запроса",
+    "upstream": "Вышестоящий сервис",
+    "upstream_model": "Вышестоящая модель"
   },
   "request_monitoring": {
     "title": "Мониторинг запросов",

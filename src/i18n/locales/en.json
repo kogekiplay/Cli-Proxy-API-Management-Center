@@ -206,7 +206,10 @@
     "copy_error_detail": "Copy error detail",
     "copy_success": "Error detail copied",
     "copy_failed": "Failed to copy error detail",
-    "api_key_badge": "API Key"
+    "api_key_badge": "API Key",
+    "request_failed": "Request failed",
+    "upstream": "Upstream",
+    "upstream_model": "Upstream model"
   },
   "request_monitoring": {
     "title": "Request Monitoring",

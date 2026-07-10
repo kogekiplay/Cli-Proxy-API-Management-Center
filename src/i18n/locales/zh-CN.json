@@ -206,7 +206,10 @@
     "copy_error_detail": "复制错误详情",
     "copy_success": "错误详情已复制",
     "copy_failed": "复制错误详情失败",
-    "api_key_badge": "API Key"
+    "api_key_badge": "API Key",
+    "request_failed": "请求失败",
+    "upstream": "上游",
+    "upstream_model": "上游模型"
   },
   "request_monitoring": {
     "title": "请求监控",

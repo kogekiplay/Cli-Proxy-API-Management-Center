@@ -70,13 +70,20 @@ describe('request monitoring navigation', () => {
     expect(statusBadge).toContain('onBlur={() => setFocused(false)}');
     expect(statusBadge).toContain('isUsageStatusBadgeActivationKey(event.key)');
     expect(statusBadge).toContain('event.stopPropagation()');
+    expect(statusBadge).toContain('event.preventDefault()');
+    expect(statusBadge).toContain('getUsageStatusTooltipScrollTop');
+    expect(statusBadge).toContain('tooltipRef.current?.scrollTo({ top: nextScrollTop });');
     expect(statusBadge).toContain('role="tooltip"');
     expect(statusBadge).toContain('createPortal(');
+    expect(statusBadge).toContain('<span id={tooltipId} className={styles.accessibleDescription}>');
+    expect(statusBadge).toContain('{hasError ? (');
+    expect(statusBadge).not.toContain('ref={tooltipRef}\n              id={tooltipId}');
     expect(statusBadge).toContain("window.addEventListener('scroll', updatePosition, true);");
     expect(statusBadgeStyles).toContain('position: fixed;');
     expect(statusBadgeStyles).toContain('z-index: 2001;');
     expect(statusBadgeStyles).toContain('max-width: min(360px, calc(100vw - 24px));');
-    expect(statusBadgeStyles).toContain('max-height: 240px;');
+    expect(statusBadgeStyles).toContain('max-height: min(240px, calc(100vh - 24px));');
+    expect(statusBadgeStyles).toContain('.accessibleDescription');
     expect(statusBadgeStyles).toContain('width: 56px;');
     expect(statusBadgeStyles).toContain('min-width: 56px;');
     expect(styles).toContain('align-content: center;');
@@ -98,7 +105,8 @@ describe('request monitoring navigation', () => {
     expect(page).not.toContain('<th>提供商 / 模型</th>');
     expect(page).toContain('className={styles.monitoringModelCell}');
     expect(page).toContain('row.upstream_model && row.upstream_model !== row.model');
-    expect(page).toContain('`${row.model} · 上游 ${row.upstream_model}`');
+    expect(page).toContain("t('usage_analytics.upstream')");
+    expect(page).not.toContain('`${row.model} · 上游 ${row.upstream_model}`');
     expect(zhCN.usage_analytics.provider).toBe('提供商');
   });
 
@@ -156,7 +164,26 @@ describe('request monitoring navigation', () => {
     const page = read('src/pages/UsageAnalyticsPage.tsx');
 
     expect(page).toContain('selectedEvent.upstream_model !== selectedEvent.model');
-    expect(page).toContain('label="上游模型"');
+    expect(page).toContain("label={t('usage_analytics.upstream_model')}");
+  });
+
+  test('localizes usage status error and upstream labels in every shipped locale', () => {
+    const statusBadge = read('src/features/usageAnalytics/UsageStatusBadge.tsx');
+    const page = read('src/pages/UsageAnalyticsPage.tsx');
+
+    expect(statusBadge).toContain("t('usage_analytics.request_failed')");
+    expect(page).toContain("t('usage_analytics.upstream')");
+    expect(page).toContain("t('usage_analytics.upstream_model')");
+
+    for (const locale of ['zh-CN', 'zh-TW', 'en', 'ru']) {
+      const messages = JSON.parse(read(`src/i18n/locales/${locale}.json`)) as {
+        usage_analytics: Record<string, string>;
+      };
+
+      expect(messages.usage_analytics.request_failed).toBeTruthy();
+      expect(messages.usage_analytics.upstream).toBeTruthy();
+      expect(messages.usage_analytics.upstream_model).toBeTruthy();
+    }
   });
 
   test('aligns status badges with a stable reasoning effort column', () => {

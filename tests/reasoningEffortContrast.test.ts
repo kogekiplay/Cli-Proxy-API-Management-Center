@@ -38,7 +38,7 @@ const contrastRatio = (foreground: string, background: string) => {
   );
 };
 
-const badgeRule = (tone: keyof typeof darkBadgeColors) => {
+const badgeRule = (tone: keyof typeof darkBadgeColors | 'max') => {
   const className = `reasoningEffortBadge${tone[0].toUpperCase()}${tone.slice(1)}`;
   const match = styles.match(
     new RegExp(

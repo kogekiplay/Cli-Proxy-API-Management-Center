@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": []
+  },
+  "include": [
+    "src",
+    "tests/bun-test-shims.d.ts",
+    "tests/usageStatusBadge.test.ts",
+    "tests/requestMonitoringNavigation.test.ts",
+    "tests/reasoningEffortContrast.test.ts"
+  ]
+}

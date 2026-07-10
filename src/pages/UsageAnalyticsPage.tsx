@@ -2298,7 +2298,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                       className={styles.monitoringModelCell}
                       title={
                         row.upstream_model && row.upstream_model !== row.model
-                          ? `${row.model} · 上游 ${row.upstream_model}`
+                          ? `${row.model} · ${t('usage_analytics.upstream')} ${row.upstream_model}`
                           : row.model || undefined
                       }
                     >
@@ -2493,7 +2493,10 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
             />
             <DetailItem label={t('usage_analytics.model')} value={selectedEvent.model || '-'} />
             {selectedEvent.upstream_model && selectedEvent.upstream_model !== selectedEvent.model ? (
-              <DetailItem label="上游模型" value={selectedEvent.upstream_model} />
+              <DetailItem
+                label={t('usage_analytics.upstream_model')}
+                value={selectedEvent.upstream_model}
+              />
             ) : null}
             <DetailItem
               label={t('usage_analytics.reasoning_effort')}

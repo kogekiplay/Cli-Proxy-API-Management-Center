@@ -1,5 +1,6 @@
 const VIEWPORT_PADDING = 12;
 const TOOLTIP_GAP = 8;
+const TOOLTIP_SCROLL_STEP = 40;
 
 export interface UsageStatusTooltipAnchor {
   top: number;
@@ -45,6 +46,29 @@ export const getUsageStatusTooltipPosition = (
     top: clamp(preferredTop, VIEWPORT_PADDING, maxTop),
     left: clamp(anchor.left + anchor.width / 2 - tooltip.width / 2, VIEWPORT_PADDING, maxLeft),
   };
+};
+
+export const getUsageStatusTooltipScrollTop = ({
+  key,
+  scrollTop,
+  scrollHeight,
+  clientHeight,
+}: {
+  key: string;
+  scrollTop: number;
+  scrollHeight: number;
+  clientHeight: number;
+}) => {
+  const maxScrollTop = Math.max(0, scrollHeight - clientHeight);
+  const currentScrollTop = clamp(scrollTop, 0, maxScrollTop);
+
+  if (key === 'ArrowDown') return Math.min(maxScrollTop, currentScrollTop + TOOLTIP_SCROLL_STEP);
+  if (key === 'ArrowUp') return Math.max(0, currentScrollTop - TOOLTIP_SCROLL_STEP);
+  if (key === ' ' || key === 'PageDown') return Math.min(maxScrollTop, currentScrollTop + clientHeight);
+  if (key === 'PageUp') return Math.max(0, currentScrollTop - clientHeight);
+  if (key === 'Home') return 0;
+  if (key === 'End') return maxScrollTop;
+  return null;
 };
 
 export const isUsageStatusBadgeActivationKey = (key: string) => key === 'Enter' || key === ' ';
