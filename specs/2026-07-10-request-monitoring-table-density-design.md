@@ -21,7 +21,7 @@ The table will use twelve stable columns in this order:
 11. Cost
 12. Action
 
-The existing fixed-layout table remains in place so rows stay aligned while data changes. The twelve percentage widths, in column order, will be `[7, 11, 7, 7, 6, 14, 5, 8, 11, 13, 7, 4]`. They total 100 percent. The minimum table width will be reduced from 1580px to 1440px, and cell padding will change from `15px 18px` to `13px 12px`.
+The existing fixed-layout table remains in place so rows stay aligned while data changes. The twelve percentage widths, in column order, will be `[8, 11, 7, 7, 6, 12, 6, 8, 11, 13, 7, 4]`. They total 100 percent and leave enough content width for the fixed-size status badge after cell padding. The minimum table width will be reduced from 1580px to 1440px, and cell padding will change from `15px 18px` to `13px 12px`.
 
 Provider and model receive separate compact widths. Provider keeps the existing colored identity badge and compact monitoring label. Model is rendered as one ellipsized text line, with the full value available through the row detail view and a native title tooltip.
 
