@@ -166,8 +166,15 @@ describe('request monitoring navigation', () => {
     expect(page).toContain('MONITORING_COLUMN_WIDTHS');
     expect(page).toContain('<colgroup>');
     expect(page).toContain('formatReasoningEffort(row.reasoning_effort)');
+    expect(page).toContain('reasoningEffortTone(row.reasoning_effort)');
+    expect(page).toContain('reasoningEffortBadge');
     expect(page).toContain("t('usage_analytics.reasoning_effort')");
     expect(styles).toContain('.reasoningEffortBadge');
+    expect(styles).toContain('.reasoningEffortBadgeLow');
+    expect(styles).toContain('.reasoningEffortBadgeMedium');
+    expect(styles).toContain('.reasoningEffortBadgeHigh');
+    expect(styles).toContain('.reasoningEffortBadgeXhigh');
+    expect(styles).toContain('.reasoningEffortBadgeMax');
     expect(styles).not.toContain('max-width: 180px;');
     expect(styles).toContain('width: 100%;');
   });

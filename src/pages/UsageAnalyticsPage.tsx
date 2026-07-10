@@ -61,6 +61,8 @@ import {
   formatReasoningEffort,
   monitoringProviderLabel,
   MONITORING_COLUMN_WIDTHS,
+  reasoningEffortTone,
+  type ReasoningEffortTone,
 } from './usageMonitoringColumns';
 
 type RangeKey = '24h' | '7d' | '30d';
@@ -223,6 +225,15 @@ const providerToneClass = (provider: string | undefined | null) => {
   if (provider === 'codex') return styles.identityBadgeCodex;
   if (provider === 'opencode-go') return styles.identityBadgeOpenCode;
   return styles.identityBadgeDefault;
+};
+
+const reasoningEffortBadgeToneClass = (tone: ReasoningEffortTone) => {
+  if (tone === 'low') return styles.reasoningEffortBadgeLow;
+  if (tone === 'medium') return styles.reasoningEffortBadgeMedium;
+  if (tone === 'high') return styles.reasoningEffortBadgeHigh;
+  if (tone === 'xhigh') return styles.reasoningEffortBadgeXhigh;
+  if (tone === 'max') return styles.reasoningEffortBadgeMax;
+  return styles.reasoningEffortBadgeNone;
 };
 
 const authIndexOf = (file: AuthFileItem) =>
@@ -2239,6 +2250,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
           <tbody>
             {monitoringRows.map((row) => {
               const apiKeyDisplay = resolveEventAPIKeyDisplay(row);
+              const reasoningTone = reasoningEffortTone(row.reasoning_effort);
               return (
                 <tr
                   key={eventRowKey(row)}
@@ -2294,7 +2306,9 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                     </div>
                   </td>
                   <td className={styles.monitoringCenterColumn}>
-                    <span className={styles.reasoningEffortBadge}>
+                    <span
+                      className={`${styles.reasoningEffortBadge} ${reasoningEffortBadgeToneClass(reasoningTone)}`}
+                    >
                       {formatReasoningEffort(row.reasoning_effort)}
                     </span>
                   </td>

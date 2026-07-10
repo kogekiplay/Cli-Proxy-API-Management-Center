@@ -4,6 +4,7 @@ import {
   formatReasoningEffort,
   MONITORING_COLUMN_WIDTHS,
   monitoringProviderLabel,
+  reasoningEffortTone,
 } from '../src/pages/usageMonitoringColumns';
 
 describe('request monitoring columns', () => {
@@ -20,8 +21,21 @@ describe('request monitoring columns', () => {
   });
 
   test('formats actual upstream reasoning effort', () => {
-    expect(formatReasoningEffort(' Ultra ')).toBe('ultra');
+    expect(formatReasoningEffort(' Ultra ')).toBe('max');
+    expect(formatReasoningEffort('ultra')).toBe('max');
     expect(formatReasoningEffort('')).toBe('-');
     expect(formatReasoningEffort(undefined)).toBe('-');
+  });
+
+  test('maps reasoning effort levels to stable monitoring tones', () => {
+    expect(reasoningEffortTone('')).toBe('none');
+    expect(reasoningEffortTone('minimal')).toBe('low');
+    expect(reasoningEffortTone('low')).toBe('low');
+    expect(reasoningEffortTone('medium')).toBe('medium');
+    expect(reasoningEffortTone('high')).toBe('high');
+    expect(reasoningEffortTone('xhigh')).toBe('xhigh');
+    expect(reasoningEffortTone('max')).toBe('max');
+    expect(reasoningEffortTone('ultra')).toBe('max');
+    expect(reasoningEffortTone('experimental')).toBe('none');
   });
 });

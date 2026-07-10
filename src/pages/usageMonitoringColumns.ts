@@ -1,5 +1,7 @@
 export const MONITORING_COLUMN_WIDTHS = [8, 12, 8, 10, 6, 10, 6, 12, 15, 9, 4] as const;
 
+export type ReasoningEffortTone = 'none' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+
 export const monitoringProviderLabel = (value?: string | null) => {
   const provider = value?.trim() ?? '';
   const prefix = 'openai-compatible-';
@@ -11,5 +13,15 @@ export const monitoringProviderLabel = (value?: string | null) => {
 
 export const formatReasoningEffort = (value?: string | null) => {
   const normalized = value?.trim().toLowerCase() ?? '';
-  return normalized || '-';
+  return normalized === 'ultra' ? 'max' : normalized || '-';
+};
+
+export const reasoningEffortTone = (value?: string | null): ReasoningEffortTone => {
+  const normalized = value?.trim().toLowerCase() ?? '';
+  if (normalized === 'minimal' || normalized === 'low') return 'low';
+  if (normalized === 'medium') return 'medium';
+  if (normalized === 'high') return 'high';
+  if (normalized === 'xhigh') return 'xhigh';
+  if (normalized === 'max' || normalized === 'ultra') return 'max';
+  return 'none';
 };

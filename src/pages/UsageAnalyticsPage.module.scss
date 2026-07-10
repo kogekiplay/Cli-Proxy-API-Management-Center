@@ -1484,6 +1484,43 @@
   line-height: 1;
 }
 
+.reasoningEffortBadgeNone {
+  border-color: color-mix(in srgb, var(--text-tertiary) 42%, var(--ops-panel-border));
+  background: color-mix(in srgb, var(--text-tertiary) 12%, var(--bg-secondary));
+  color: var(--text-secondary);
+}
+
+.reasoningEffortBadgeLow {
+  border-color: color-mix(in srgb, #16a34a 48%, var(--ops-panel-border));
+  background: color-mix(in srgb, #22c55e 18%, var(--bg-secondary));
+  color: color-mix(in srgb, #15803d 78%, var(--text-primary));
+}
+
+.reasoningEffortBadgeMedium {
+  border-color: color-mix(in srgb, #2563eb 48%, var(--ops-panel-border));
+  background: color-mix(in srgb, #3b82f6 18%, var(--bg-secondary));
+  color: color-mix(in srgb, #1d4ed8 78%, var(--text-primary));
+}
+
+.reasoningEffortBadgeHigh {
+  border-color: color-mix(in srgb, #ea580c 52%, var(--ops-panel-border));
+  background: color-mix(in srgb, #f97316 18%, var(--bg-secondary));
+  color: color-mix(in srgb, #c2410c 78%, var(--text-primary));
+}
+
+.reasoningEffortBadgeXhigh {
+  border-color: color-mix(in srgb, #dc2626 52%, var(--ops-panel-border));
+  background: color-mix(in srgb, #ef4444 18%, var(--bg-secondary));
+  color: color-mix(in srgb, #b91c1c 78%, var(--text-primary));
+}
+
+.reasoningEffortBadgeMax {
+  border-color: color-mix(in srgb, #c026d3 62%, #f472b6 38%);
+  background: linear-gradient(135deg, #7e22ce, #db2777);
+  color: #fff;
+  text-shadow: 0 1px 1px color-mix(in srgb, #4a044e 64%, transparent);
+}
+
 .monitoringCostCell {
   min-width: 0;
 
