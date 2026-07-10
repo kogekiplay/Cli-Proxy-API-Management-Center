@@ -16,6 +16,8 @@
 - alias 用于筛选、聚合和价格查询，详情仍可查看上游模型。
 - 表格固定为 11 列，列宽为 `8 / 12 / 8 / 10 / 6 / 10 / 6 / 12 / 15 / 9 / 4`，最小宽度为 `1320px`。
 - 成功状态不显示空错误浮层；失败状态支持鼠标悬停和键盘聚焦。
+- OpenAI-compatible 思考强度兼容 `reasoning_effort`、`reasoning.effort` 和 Claude 风格 `thinking`；翻译空值不覆盖入口非空值。
+- 思考强度胶囊使用层级色谱，`ultra` 归并显示为 `max`，`max` 使用紫粉渐变。
 
 ---
 
@@ -430,7 +432,161 @@ git commit -m "feat: compact monitoring model and status columns"
 
 ---
 
-### Task 5: Integration Review, Release, And Deployment
+### Task 5: Capture OpenAI-Compatible Reasoning Effort Reliably
+
+**Files:**
+- Modify: `/Users/kogeki/dev/CLIProxyAPI/internal/thinking/apply.go`
+- Modify: `/Users/kogeki/dev/CLIProxyAPI/internal/thinking/reasoning_effort_test.go`
+- Modify: `/Users/kogeki/dev/CLIProxyAPI/internal/runtime/executor/helps/usage_helpers.go`
+- Modify: `/Users/kogeki/dev/CLIProxyAPI/internal/runtime/executor/helps/usage_helpers_test.go`
+- Modify: `/Users/kogeki/dev/CLIProxyAPI/sdk/api/handlers/handlers.go`
+- Modify: `/Users/kogeki/dev/CLIProxyAPI/sdk/api/handlers/handlers_metadata_test.go`
+
+**Interfaces:**
+- Consumes: raw OpenAI request body, original requested model, translated provider payload.
+- Produces: non-empty canonical `usage.Record.ReasoningEffort` for both OpenAI endpoints when the client supplied a supported thinking setting.
+
+- [ ] **Step 1: Write failing extractor tests for client payload variants**
+
+Add table cases for both `openai` and `openai-response`:
+
+```go
+{
+    name:     "claude style budget",
+    body:     []byte(`{"thinking":{"type":"enabled","budget_tokens":24576}}`),
+    want:     "high",
+},
+{
+    name:     "adaptive output effort",
+    body:     []byte(`{"thinking":{"type":"adaptive"},"output_config":{"effort":"max"}}`),
+    want:     "max",
+},
+```
+
+Keep existing `reasoning_effort`, `reasoning.effort`, and valid model suffix cases. Add a handler metadata case proving `model(max)` overrides a lower body field.
+
+- [ ] **Step 2: Run focused tests and confirm RED**
+
+```bash
+go test ./internal/thinking ./sdk/api/handlers -run 'ReasoningEffort|ReasoningMetadata' -count=1
+```
+
+Expected: Claude-style `thinking` cases fail because OpenAI extraction ignores them.
+
+- [ ] **Step 3: Add Claude-style fallback for OpenAI entry formats**
+
+After the native OpenAI/Responses field extraction returns no config, use `extractClaudeConfig(body)` as a compatibility fallback for `openai` and `openai-response`. Native fields and a valid model suffix retain priority.
+
+- [ ] **Step 4: Preserve the entry effort when translated payload extraction is empty**
+
+Write a failing `UsageReporter` test:
+
+```go
+reporter := NewUsageReporter(coreusage.WithReasoningEffort(context.Background(), "high"), "openai-compatible-test", "model", nil)
+reporter.SetTranslatedReasoningEffort([]byte(`{"model":"upstream"}`), "openai")
+if reporter.reasoning != "high" {
+    t.Fatalf("reasoning = %q", reporter.reasoning)
+}
+```
+
+Then change the setter to assign only a non-empty extracted value while continuing to update service tier independently.
+
+- [ ] **Step 5: Use the original requested model for suffix extraction**
+
+In non-streaming, count, plugin, and streaming request metadata setup, pass `originalRequestedModel` to `setReasoningEffortMetadata` instead of the normalized routed model. Add or extend handler tests so `alias(max)` remains `max` after routing normalization.
+
+- [ ] **Step 6: Run backend reasoning and full tests**
+
+```bash
+go test ./internal/thinking ./internal/runtime/executor/helps ./sdk/api/handlers -count=1
+go test ./...
+```
+
+Expected: PASS with pristine output.
+
+- [ ] **Step 7: Commit reasoning capture**
+
+```bash
+git add internal/thinking/apply.go internal/thinking/reasoning_effort_test.go internal/runtime/executor/helps/usage_helpers.go internal/runtime/executor/helps/usage_helpers_test.go sdk/api/handlers/handlers.go sdk/api/handlers/handlers_metadata_test.go
+git commit -m "fix: preserve openai-compatible reasoning effort"
+```
+
+---
+
+### Task 6: Color Reasoning Effort Badges By Level
+
+**Files:**
+- Modify: `/Users/kogeki/dev/Cli-Proxy-API-Management-Center/src/pages/usageMonitoringColumns.ts`
+- Modify: `/Users/kogeki/dev/Cli-Proxy-API-Management-Center/src/pages/UsageAnalyticsPage.tsx`
+- Modify: `/Users/kogeki/dev/Cli-Proxy-API-Management-Center/src/pages/UsageAnalyticsPage.module.scss`
+- Test: `/Users/kogeki/dev/Cli-Proxy-API-Management-Center/tests/usageMonitoringColumns.test.ts`
+- Test: `/Users/kogeki/dev/Cli-Proxy-API-Management-Center/tests/requestMonitoringNavigation.test.ts`
+
+**Interfaces:**
+- Consumes: `UsageAnalyticsEventRow.reasoning_effort`.
+- Produces: normalized display label and stable visual tone for the monitoring badge.
+
+- [ ] **Step 1: Write failing normalization and tone tests**
+
+Add cases:
+
+```ts
+expect(formatReasoningEffort('ultra')).toBe('max');
+expect(reasoningEffortTone('')).toBe('none');
+expect(reasoningEffortTone('low')).toBe('low');
+expect(reasoningEffortTone('medium')).toBe('medium');
+expect(reasoningEffortTone('high')).toBe('high');
+expect(reasoningEffortTone('xhigh')).toBe('xhigh');
+expect(reasoningEffortTone('max')).toBe('max');
+expect(reasoningEffortTone('ultra')).toBe('max');
+```
+
+- [ ] **Step 2: Run focused tests and confirm RED**
+
+```bash
+bun test tests/usageMonitoringColumns.test.ts tests/requestMonitoringNavigation.test.ts
+```
+
+Expected: FAIL because `ultra` is still displayed directly and no tone helper exists.
+
+- [ ] **Step 3: Implement stable level normalization**
+
+Export a `ReasoningEffortTone` union and `reasoningEffortTone(value)` from `usageMonitoringColumns.ts`. Treat `minimal` and `low` as the green low tone, unknown non-empty levels as neutral, and map `ultra` to `max` before display and tone selection.
+
+- [ ] **Step 4: Apply the tone class only to monitoring badges**
+
+Build the badge class from the tone helper and keep the current dimensions stable. Add SCSS classes:
+
+- neutral gray for none/unknown;
+- green for low;
+- blue for medium;
+- orange for high;
+- red for xhigh;
+- purple-to-pink gradient with white text for max.
+
+Use `color-mix` variants so borders/backgrounds remain legible in light and dark themes. Do not change dashboard, quota, or model selector controls.
+
+- [ ] **Step 5: Run frontend verification**
+
+```bash
+bun test
+bun run type-check
+bun run lint
+bun run build
+```
+
+Expected: all tests pass and the single-file production build completes.
+
+- [ ] **Step 6: Commit badge colors**
+
+```bash
+git add src/pages/usageMonitoringColumns.ts src/pages/UsageAnalyticsPage.tsx src/pages/UsageAnalyticsPage.module.scss tests/usageMonitoringColumns.test.ts tests/requestMonitoringNavigation.test.ts
+git commit -m "style: color monitoring reasoning levels"
+```
+
+---
+
+### Task 7: Integration Review, Release, And Deployment
 
 **Files:**
 - Verify: `/Users/kogeki/dev/CLIProxyAPI`
