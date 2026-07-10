@@ -443,7 +443,7 @@ bun run lint
 bun run build
 ```
 
-Expected: every command exits 0 and `dist/management.html` is generated.
+Expected: every command exits 0 and Vite generates the single-file artifact `dist/index.html`. The release workflow later renames this file to `management.html`.
 
 - [ ] **Step 3: Inspect the production page in a desktop browser**
 
