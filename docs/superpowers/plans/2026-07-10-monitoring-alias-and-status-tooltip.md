@@ -34,7 +34,7 @@
 
 - [ ] **Step 1: Write failing plugin and migration tests**
 
-Add a plugin assertion that the event returned by Analytics preserves both names:
+Add a plugin assertion that the persisted event preserves both names:
 
 ```go
 plugin.HandleUsage(ctx, coreusage.Record{
@@ -43,9 +43,12 @@ plugin.HandleUsage(ctx, coreusage.Record{
     Alias:    "glm-5.2",
 })
 
-row := result.Events.Items[0]
-if row.Model != "glm-5.2" || row.UpstreamModel != "@cf/zai-org/glm-5.2" {
-    t.Fatalf("model names = %#v", row)
+var model, modelAlias string
+if err := store.db.QueryRow(`SELECT model, model_alias FROM usage_events LIMIT 1`).Scan(&model, &modelAlias); err != nil {
+    t.Fatal(err)
+}
+if model != "@cf/zai-org/glm-5.2" || modelAlias != "glm-5.2" {
+    t.Fatalf("model names = %q / %q", model, modelAlias)
 }
 ```
 
@@ -59,7 +62,7 @@ Run:
 go test ./internal/usageledger -run 'TestPluginStoresModelAlias|TestOpenSQLiteAddsModelAliasColumn' -count=1
 ```
 
-Expected: FAIL because `Event.ModelAlias`, `AnalyticsEventRow.UpstreamModel`, and the SQLite column do not exist.
+Expected: FAIL because `Event.ModelAlias` and the SQLite column do not exist.
 
 - [ ] **Step 3: Add the event field and SQLite migration**
 
