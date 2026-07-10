@@ -56,6 +56,7 @@ import { getErrorMessage } from '@/utils/helpers';
 import { resolveAuthProvider } from '@/utils/quota/validators';
 import { hashAPIKeyForUsage } from '@/utils/usageApiKeyHash';
 import styles from './UsageAnalyticsPage.module.scss';
+import { formatReasoningEffort, MONITORING_COLUMN_WIDTHS } from './usageMonitoringColumns';
 
 type RangeKey = '24h' | '7d' | '30d';
 type UsageAnalyticsView = 'analytics' | 'monitoring';
@@ -1260,6 +1261,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
         'timestamp',
         'provider',
         'model',
+        'reasoning_effort',
         'endpoint',
         'credential',
         'api_key_hash',
@@ -1282,6 +1284,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
           new Date(row.timestamp_ms).toISOString(),
           row.provider,
           row.model,
+          formatReasoningEffort(row.reasoning_effort),
           row.endpoint,
           credentialText(row),
           row.api_key_hash || row.credential_key_hash,
@@ -2254,18 +2257,22 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     <Card className={styles.monitoringTableCard}>
       <div className={styles.monitoringTableWrap}>
         <table className={styles.monitoringTable}>
+          <colgroup>
+            {MONITORING_COLUMN_WIDTHS.map((width, index) => (
+              <col key={`${index}-${width}`} style={{ width: `${width}%` }} />
+            ))}
+          </colgroup>
           <thead>
             <tr>
               <th>{t('usage_analytics.time')}</th>
               <th>{t('usage_analytics.request')}</th>
               <th>提供商 / 模型</th>
+              <th className={styles.monitoringCenterColumn}>
+                {t('usage_analytics.reasoning_effort')}
+              </th>
               <th>认证 / API Key</th>
-              <th className={styles.monitoringCenterColumn}>
-                {t('usage_analytics.status_code')}
-              </th>
-              <th className={styles.monitoringCenterColumn}>
-                {t('usage_analytics.latency_ttft')}
-              </th>
+              <th className={styles.monitoringCenterColumn}>{t('usage_analytics.status_code')}</th>
+              <th className={styles.monitoringCenterColumn}>{t('usage_analytics.latency_ttft')}</th>
               <th>Token 用量</th>
               <th>费用 (USD)</th>
               <th className={styles.monitoringCenterColumn}>操作</th>
@@ -2315,6 +2322,11 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                       </span>
                       <strong>{row.model || '-'}</strong>
                     </div>
+                  </td>
+                  <td className={styles.monitoringCenterColumn}>
+                    <span className={styles.reasoningEffortBadge}>
+                      {formatReasoningEffort(row.reasoning_effort)}
+                    </span>
                   </td>
                   <td>
                     <div className={styles.monitoringCredentialCell}>
@@ -2498,6 +2510,10 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
             />
             <DetailItem label={t('usage_analytics.model')} value={selectedEvent.model || '-'} />
             <DetailItem
+              label={t('usage_analytics.reasoning_effort')}
+              value={formatReasoningEffort(selectedEvent.reasoning_effort)}
+            />
+            <DetailItem
               label={t('usage_analytics.endpoint')}
               value={selectedEvent.endpoint || '-'}
             />
@@ -2616,11 +2632,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
         <div className={styles.pageHeader}>
           <div>
             <p className="page-eyebrow">
-              {t(
-                isMonitoringView
-                  ? 'nav_meta.request_monitoring'
-                  : 'nav_meta.usage_analytics'
-              )}
+              {t(isMonitoringView ? 'nav_meta.request_monitoring' : 'nav_meta.usage_analytics')}
             </p>
             <h1 className={styles.pageTitle}>
               {t(isMonitoringView ? 'request_monitoring.title' : 'usage_analytics.title')}

@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 
-import { formatReasoningEffort, MONITORING_COLUMN_WIDTHS } from './usageMonitoringColumns';
+import {
+  formatReasoningEffort,
+  MONITORING_COLUMN_WIDTHS,
+} from '../src/pages/usageMonitoringColumns';
 
 describe('request monitoring columns', () => {
   test('defines ten columns totaling 100 percent', () => {

@@ -176,6 +176,7 @@
     "api_key_hash": "API Key hash",
     "auth_type": "Тип auth",
     "service_tier": "Service tier",
+    "reasoning_effort": "Уровень рассуждения",
     "input_tokens": "Input tokens",
     "output_tokens": "Output tokens",
     "reasoning_tokens": "Reasoning tokens",

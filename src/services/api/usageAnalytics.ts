@@ -83,6 +83,7 @@ export interface UsageAnalyticsEventRow {
   account_ref: string;
   auth_type?: string;
   service_tier: string;
+  reasoning_effort?: string;
   status_code?: number;
   latency_ms?: number | null;
   ttft_ms?: number | null;

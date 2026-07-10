@@ -177,6 +177,7 @@
     "api_key_hash": "API Key hash",
     "auth_type": "驗證類型",
     "service_tier": "服務層級",
+    "reasoning_effort": "思考強度",
     "input_tokens": "輸入 Token",
     "output_tokens": "輸出 Token",
     "reasoning_tokens": "推理 Token",

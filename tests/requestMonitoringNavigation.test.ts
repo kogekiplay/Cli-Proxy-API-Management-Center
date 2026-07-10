@@ -84,8 +84,23 @@ describe('request monitoring navigation', () => {
     const page = read('src/pages/UsageAnalyticsPage.tsx');
 
     expect(page).toContain('const monitoringProviderLabel');
-    expect(page).toContain("if (provider === 'openai-compatible-opencode-go') return 'opencode-go';");
+    expect(page).toContain(
+      "if (provider === 'openai-compatible-opencode-go') return 'opencode-go';"
+    );
     expect(page).toContain('{monitoringProviderLabel(row.provider)}');
     expect(page).toContain('value={providerLabel(selectedEvent.provider)}');
+  });
+
+  test('aligns status badges with a stable reasoning effort column', () => {
+    const page = read('src/pages/UsageAnalyticsPage.tsx');
+    const styles = read('src/pages/UsageAnalyticsPage.module.scss');
+
+    expect(page).toContain('MONITORING_COLUMN_WIDTHS');
+    expect(page).toContain('<colgroup>');
+    expect(page).toContain('formatReasoningEffort(row.reasoning_effort)');
+    expect(page).toContain("t('usage_analytics.reasoning_effort')");
+    expect(styles).toContain('.reasoningEffortBadge');
+    expect(styles).not.toContain('max-width: 180px;');
+    expect(styles).toContain('width: 100%;');
   });
 });
