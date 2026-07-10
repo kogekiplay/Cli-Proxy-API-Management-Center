@@ -1340,11 +1340,13 @@
   }
 
   th {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     color: var(--text-secondary);
     background: color-mix(in srgb, var(--bg-secondary) 48%, transparent);
     font-size: 12px;
     font-weight: 800;
-    white-space: nowrap;
   }
 
   td {
@@ -1496,6 +1498,9 @@
   min-width: 0;
 
   strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
 }

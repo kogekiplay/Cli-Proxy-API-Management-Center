@@ -68,9 +68,13 @@ describe('request monitoring navigation', () => {
 
   test('splits provider, model, status, and error into independent columns', () => {
     const page = read('src/pages/UsageAnalyticsPage.tsx');
-    const zhCN = JSON.parse(read('src/i18n/locales/zh-CN.json')) as {
-      usage_analytics: Record<string, string>;
-    };
+    const locales = ['en', 'ru', 'zh-CN', 'zh-TW'].map((locale) => [
+      locale,
+      JSON.parse(read(`src/i18n/locales/${locale}.json`)) as {
+        usage_analytics: Record<string, string>;
+      },
+    ] as const);
+    const zhCN = locales.find(([locale]) => locale === 'zh-CN')![1];
 
     expect(page).toContain("<th>{t('usage_analytics.provider')}</th>");
     expect(page).toContain("<th>{t('usage_analytics.model')}</th>");
@@ -79,8 +83,27 @@ describe('request monitoring navigation', () => {
     expect(page).toContain('className={styles.monitoringModelCell}');
     expect(page).toContain('className={styles.monitoringErrorCell}');
     expect(page).toContain('title={row.model || undefined}');
+    for (const [, locale] of locales) {
+      expect(locale.usage_analytics.error_message).toBeTruthy();
+    }
     expect(zhCN.usage_analytics.provider).toBe('提供商');
     expect(zhCN.usage_analytics.error_message).toBe('错误信息');
+  });
+
+  test('contains long monitoring headers and cost values within their columns', () => {
+    const styles = read('src/pages/UsageAnalyticsPage.module.scss');
+
+    expect(styles).toContain(`  th {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;`);
+    expect(styles).toContain(`.monitoringCostCell {
+  min-width: 0;
+
+  strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;`);
   });
 
   test('provides a working date picker without squeezing the range tabs', () => {
