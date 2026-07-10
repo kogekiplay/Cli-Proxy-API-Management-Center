@@ -2289,7 +2289,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                         title={row.provider}
                         className={`${styles.identityBadge} ${providerToneClass(row.provider)}`}
                       >
-                        {monitoringProviderLabel(row.provider)}
+                        {monitoringProviderLabel(row.provider, row.auth_type)}
                       </span>
                     </div>
                   </td>
@@ -2444,7 +2444,6 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
       open={selectedEvent !== null}
       onClose={() => setSelectedEvent(null)}
       size="lg"
-      eyebrow={selectedEvent ? <UsageStatusBadge row={selectedEvent} /> : undefined}
       title={t('usage_analytics.request_detail')}
       description={selectedEvent?.request_id || selectedEvent?.model || undefined}
       footer={
@@ -2489,7 +2488,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
             />
             <DetailItem
               label={t('usage_analytics.provider')}
-              value={selectedEvent.provider || '-'}
+              value={monitoringProviderLabel(selectedEvent.provider, selectedEvent.auth_type)}
             />
             <DetailItem label={t('usage_analytics.model')} value={selectedEvent.model || '-'} />
             {selectedEvent.upstream_model && selectedEvent.upstream_model !== selectedEvent.model ? (

@@ -17,6 +17,10 @@ describe('request monitoring columns', () => {
   test('uses compact provider labels for monitoring rows', () => {
     expect(monitoringProviderLabel('openai-compatible-cf worker')).toBe('cf worker');
     expect(monitoringProviderLabel('openai-compatible-opencode-go')).toBe('opencode-go');
+    expect(monitoringProviderLabel('codex', 'oauth')).toBe('Codex OAuth');
+    expect(monitoringProviderLabel('codex', 'apikey')).toBe('Codex API Key');
+    expect(monitoringProviderLabel('codex', 'api_key')).toBe('Codex API Key');
+    expect(monitoringProviderLabel('codex', 'api-key')).toBe('Codex API Key');
     expect(monitoringProviderLabel('codex')).toBe('Codex');
   });
 

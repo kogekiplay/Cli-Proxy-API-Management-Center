@@ -150,14 +150,25 @@ describe('request monitoring navigation', () => {
     expect(styles).toContain('white-space: nowrap;');
   });
 
-  test('uses compact provider labels in the monitoring table only', () => {
+  test('uses compact provider labels throughout request monitoring', () => {
     const page = read('src/pages/UsageAnalyticsPage.tsx');
 
     expect(page).toContain('monitoringProviderLabel,');
     expect(page).toContain("from './usageMonitoringColumns';");
-    expect(page).toContain('{monitoringProviderLabel(row.provider)}');
+    expect(page).toContain('{monitoringProviderLabel(row.provider, row.auth_type)}');
     expect(page).toContain('title={row.provider}');
-    expect(page).toContain("value={selectedEvent.provider || '-'}");
+    expect(page).toContain(
+      'value={monitoringProviderLabel(selectedEvent.provider, selectedEvent.auth_type)}'
+    );
+  });
+
+  test('shows the selected request status only once in the detail sheet', () => {
+    const page = read('src/pages/UsageAnalyticsPage.tsx');
+
+    expect(page.match(/<UsageStatusBadge row=\{selectedEvent\}/g)?.length ?? 0).toBe(1);
+    expect(page).not.toContain(
+      'eyebrow={selectedEvent ? <UsageStatusBadge row={selectedEvent} /> : undefined}'
+    );
   });
 
   test('shows the upstream model in the detail drawer only when it differs from the alias', () => {
