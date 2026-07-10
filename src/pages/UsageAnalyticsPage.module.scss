@@ -1521,6 +1521,30 @@
   text-shadow: 0 1px 1px color-mix(in srgb, #4a044e 64%, transparent);
 }
 
+:global([data-theme='dark']) .reasoningEffortBadgeLow {
+  border-color: #22c55e;
+  background: #052e16;
+  color: #86efac;
+}
+
+:global([data-theme='dark']) .reasoningEffortBadgeMedium {
+  border-color: #3b82f6;
+  background: #172554;
+  color: #93c5fd;
+}
+
+:global([data-theme='dark']) .reasoningEffortBadgeHigh {
+  border-color: #f97316;
+  background: #431407;
+  color: #fdba74;
+}
+
+:global([data-theme='dark']) .reasoningEffortBadgeXhigh {
+  border-color: #ef4444;
+  background: #450a0a;
+  color: #fca5a5;
+}
+
 .monitoringCostCell {
   min-width: 0;
 
