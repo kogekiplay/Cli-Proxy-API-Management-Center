@@ -9,7 +9,7 @@ import {
 
 describe('request monitoring columns', () => {
   test('defines eleven compact columns totaling 100 percent', () => {
-    expect(MONITORING_COLUMN_WIDTHS).toEqual([8, 12, 8, 10, 6, 10, 6, 12, 15, 9, 4]);
+    expect(MONITORING_COLUMN_WIDTHS).toEqual([8, 11, 10, 9, 6, 10, 6, 12, 15, 9, 4]);
     expect(MONITORING_COLUMN_WIDTHS).toHaveLength(11);
     expect(MONITORING_COLUMN_WIDTHS.reduce((sum, width) => sum + width, 0)).toBe(100);
   });

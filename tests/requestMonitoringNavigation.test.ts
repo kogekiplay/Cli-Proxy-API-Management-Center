@@ -171,6 +171,18 @@ describe('request monitoring navigation', () => {
     );
   });
 
+  test('does not let detail card typography override the status badge', () => {
+    const styles = read('src/pages/UsageAnalyticsPage.module.scss');
+    const detailItemStyles = styles.slice(
+      styles.indexOf('.detailItem {'),
+      styles.indexOf('.failureSection')
+    );
+
+    expect(detailItemStyles).toContain('  > span {');
+    expect(detailItemStyles).toContain('  > strong {');
+    expect(detailItemStyles).not.toContain('\n  span {');
+  });
+
   test('shows the upstream model in the detail drawer only when it differs from the alias', () => {
     const page = read('src/pages/UsageAnalyticsPage.tsx');
 

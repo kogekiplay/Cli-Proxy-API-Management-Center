@@ -1908,14 +1908,14 @@
   border-radius: $radius-md;
   background: var(--bg-secondary);
 
-  span {
+  > span {
     display: block;
     margin-bottom: 5px;
     color: var(--text-tertiary);
     font-size: 12px;
   }
 
-  strong {
+  > strong {
     display: block;
     min-width: 0;
     color: var(--text-primary);
