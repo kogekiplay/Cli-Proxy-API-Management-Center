@@ -1343,6 +1343,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-align: center;
     color: var(--text-secondary);
     background: color-mix(in srgb, var(--bg-secondary) 48%, transparent);
     font-size: 12px;
@@ -1440,10 +1441,16 @@
 
 .monitoringProviderCell {
   align-items: center;
+  justify-items: center;
 
   .identityBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     max-width: 100%;
+    min-height: 24px;
     overflow: hidden;
+    line-height: 1;
     text-overflow: ellipsis;
   }
 }

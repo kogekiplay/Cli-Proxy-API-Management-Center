@@ -162,6 +162,31 @@ describe('request monitoring navigation', () => {
     );
   });
 
+  test('centers provider badge text inside the monitoring column', () => {
+    const styles = read('src/pages/UsageAnalyticsPage.module.scss');
+    const providerCellStart = styles.indexOf('.monitoringProviderCell {');
+    const providerCellStyles = styles.slice(
+      providerCellStart,
+      styles.indexOf('\n.monitoringModelCell {', providerCellStart)
+    );
+
+    expect(providerCellStyles).toContain('justify-items: center;');
+    expect(providerCellStyles).toContain('display: inline-flex;');
+    expect(providerCellStyles).toContain('align-items: center;');
+    expect(providerCellStyles).toContain('justify-content: center;');
+    expect(providerCellStyles).toContain('min-height: 24px;');
+    expect(providerCellStyles).toContain('line-height: 1;');
+  });
+
+  test('centers every request monitoring table header', () => {
+    const styles = read('src/pages/UsageAnalyticsPage.module.scss');
+    const tableStart = styles.indexOf('.monitoringTable {');
+    const headerStart = styles.indexOf('  th {', tableStart);
+    const headerStyles = styles.slice(headerStart, styles.indexOf('\n  td {', headerStart));
+
+    expect(headerStyles).toContain('text-align: center;');
+  });
+
   test('shows the selected request status only once in the detail sheet', () => {
     const page = read('src/pages/UsageAnalyticsPage.tsx');
 

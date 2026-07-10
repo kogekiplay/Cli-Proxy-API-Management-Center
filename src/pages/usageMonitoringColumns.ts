@@ -1,4 +1,4 @@
-export const MONITORING_COLUMN_WIDTHS = [8, 11, 10, 9, 6, 10, 6, 12, 15, 9, 4] as const;
+export const MONITORING_COLUMN_WIDTHS = [8, 11, 10, 9, 6, 10, 6, 12, 14, 9, 5] as const;
 
 export type ReasoningEffortTone = 'none' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
