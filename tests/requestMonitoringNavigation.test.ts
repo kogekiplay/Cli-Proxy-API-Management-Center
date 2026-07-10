@@ -42,6 +42,12 @@ describe('request monitoring navigation', () => {
     expect(styles).toContain('.monitoringSearch');
     expect(styles).toContain('.monitoringTableCard');
     expect(styles).toContain('.monitoringPagination');
+    expect(styles).toContain('min-width: 1440px;');
+    expect(styles).toContain('padding: 13px 12px;');
+    expect(styles).toContain('.monitoringModelCell');
+    expect(styles).toContain('.monitoringErrorCell');
+    expect(styles).toContain('.monitoringProviderCell {\n  align-items: center;');
+    expect(styles).toContain('.monitoringErrorCell {\n  min-height: 24px;');
   });
 
   test('keeps successful status cells compact without empty error rows', () => {

@@ -1327,13 +1327,13 @@
 
 .monitoringTable {
   width: 100%;
-  min-width: 1580px;
+  min-width: 1440px;
   table-layout: fixed;
   border-collapse: collapse;
 
   th,
   td {
-    padding: 15px 18px;
+    padding: 13px 12px;
     border-bottom: 1px solid color-mix(in srgb, var(--ops-panel-border) 84%, transparent);
     text-align: left;
     vertical-align: middle;
@@ -1384,8 +1384,10 @@
 
 .monitoringRequestCell,
 .monitoringProviderCell,
+.monitoringModelCell,
 .monitoringCredentialCell,
 .monitoringStatusCell,
+.monitoringErrorCell,
 .monitoringLatencyCell,
 .monitoringUsageCell,
 .monitoringCostCell {
@@ -1436,9 +1438,17 @@
 }
 
 .monitoringProviderCell {
-  grid-template-columns: auto minmax(80px, 1fr);
   align-items: center;
-  gap: 8px;
+
+  .identityBadge {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.monitoringModelCell {
+  align-content: center;
 
   strong {
     min-width: 0;
@@ -1458,6 +1468,15 @@
   justify-items: center;
 }
 
+.monitoringErrorCell {
+  min-height: 24px;
+  align-content: center;
+
+  .errorHint {
+    max-width: 100%;
+  }
+}
+
 .reasoningEffortBadge {
   display: inline-flex;
   min-width: 58px;
@@ -1474,7 +1493,7 @@
 }
 
 .monitoringCostCell {
-  min-width: 92px;
+  min-width: 0;
 
   strong {
     font-variant-numeric: tabular-nums;
