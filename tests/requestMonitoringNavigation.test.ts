@@ -62,14 +62,19 @@ describe('request monitoring navigation', () => {
     expect(statusBadge).toContain('const hasError = row.failed && Boolean(error.summary || error.title || error.detail);');
     expect(statusBadge).toContain('tabIndex={hasError ? 0 : undefined}');
     expect(statusBadge).toContain('aria-describedby={hasError ? tooltipId : undefined}');
-    expect(statusBadge).toContain('onPointerEnter={open}');
-    expect(statusBadge).toContain('onPointerLeave={close}');
-    expect(statusBadge).toContain('onFocus={open}');
-    expect(statusBadge).toContain('onBlur={close}');
+    expect(statusBadge).toContain("from './usageStatusBadgeTooltip';");
+    expect(statusBadge).toContain('isUsageStatusTooltipVisible({ hovered, focused })');
+    expect(statusBadge).toContain('onPointerEnter={() => setHovered(true)}');
+    expect(statusBadge).toContain('onPointerLeave={() => setHovered(false)}');
+    expect(statusBadge).toContain('onFocus={() => setFocused(true)}');
+    expect(statusBadge).toContain('onBlur={() => setFocused(false)}');
+    expect(statusBadge).toContain('isUsageStatusBadgeActivationKey(event.key)');
+    expect(statusBadge).toContain('event.stopPropagation()');
     expect(statusBadge).toContain('role="tooltip"');
     expect(statusBadge).toContain('createPortal(');
     expect(statusBadge).toContain("window.addEventListener('scroll', updatePosition, true);");
     expect(statusBadgeStyles).toContain('position: fixed;');
+    expect(statusBadgeStyles).toContain('z-index: 2001;');
     expect(statusBadgeStyles).toContain('max-width: min(360px, calc(100vw - 24px));');
     expect(statusBadgeStyles).toContain('max-height: 240px;');
     expect(statusBadgeStyles).toContain('width: 56px;');
@@ -144,7 +149,7 @@ describe('request monitoring navigation', () => {
     expect(page).toContain("from './usageMonitoringColumns';");
     expect(page).toContain('{monitoringProviderLabel(row.provider)}');
     expect(page).toContain('title={row.provider}');
-    expect(page).toContain('value={providerLabel(selectedEvent.provider)}');
+    expect(page).toContain("value={selectedEvent.provider || '-'}");
   });
 
   test('shows the upstream model in the detail drawer only when it differs from the alias', () => {

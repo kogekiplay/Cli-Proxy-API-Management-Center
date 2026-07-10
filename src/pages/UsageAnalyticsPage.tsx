@@ -2475,7 +2475,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
             />
             <DetailItem
               label={t('usage_analytics.provider')}
-              value={providerLabel(selectedEvent.provider)}
+              value={selectedEvent.provider || '-'}
             />
             <DetailItem label={t('usage_analytics.model')} value={selectedEvent.model || '-'} />
             {selectedEvent.upstream_model && selectedEvent.upstream_model !== selectedEvent.model ? (
