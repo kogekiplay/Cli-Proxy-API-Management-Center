@@ -5,7 +5,12 @@
 import { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AuthFileItem } from '@/types';
-import { useAuthStore, useQuotaStore } from '@/stores';
+import {
+  captureQuotaCacheGeneration,
+  commitIfQuotaCacheCurrent,
+  useAuthStore,
+  useQuotaStore,
+} from '@/stores';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import { getStatusFromError } from '@/utils/quota';
 import type { QuotaConfig } from './quotaConfigs';
@@ -59,6 +64,7 @@ export function useQuotaLoader<TState, TData>(config: QuotaConfig<TState, TData>
       if (loadingRef.current) return;
       loadingRef.current = true;
       const requestId = ++requestIdRef.current;
+      const cacheGeneration = captureQuotaCacheGeneration();
       setLoading(true);
 
       try {
@@ -88,19 +94,21 @@ export function useQuotaLoader<TState, TData>(config: QuotaConfig<TState, TData>
 
         if (requestId !== requestIdRef.current) return;
 
-        setQuota((prev) => {
-          const nextState = { ...prev };
-          results.forEach((result) => {
-            if (result.status === 'success') {
-              nextState[result.key] = config.buildSuccessState(result.data as TData);
-            } else {
-              nextState[result.key] = config.buildErrorState(
-                result.error || t('common.unknown_error'),
-                result.errorStatus
-              );
-            }
+        commitIfQuotaCacheCurrent(cacheGeneration, () => {
+          setQuota((prev) => {
+            const nextState = { ...prev };
+            results.forEach((result) => {
+              if (result.status === 'success') {
+                nextState[result.key] = config.buildSuccessState(result.data as TData);
+              } else {
+                nextState[result.key] = config.buildErrorState(
+                  result.error || t('common.unknown_error'),
+                  result.errorStatus
+                );
+              }
+            });
+            return nextState;
           });
-          return nextState;
         });
       } finally {
         if (requestId === requestIdRef.current) {

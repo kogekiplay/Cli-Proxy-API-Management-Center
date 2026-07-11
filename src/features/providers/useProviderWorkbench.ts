@@ -276,85 +276,35 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
 
   /* ------------------- mutations ------------------- */
 
-  const persistGeminiKeys = useCallback(
-    async (next: GeminiKeyConfig[]) => {
-      await providersApi.saveGeminiKeys(next);
-      updateConfigValue('gemini-api-key', next);
-    },
-    [updateConfigValue]
-  );
-
-  const persistCodexConfigs = useCallback(
-    async (next: ProviderKeyConfig[]) => {
-      await providersApi.saveCodexConfigs(next);
-      updateConfigValue('codex-api-key', next);
-    },
-    [updateConfigValue]
-  );
-
-  const persistClaudeConfigs = useCallback(
-    async (next: ProviderKeyConfig[]) => {
-      await providersApi.saveClaudeConfigs(next);
-      updateConfigValue('claude-api-key', next);
-    },
-    [updateConfigValue]
-  );
-
-  const persistVertexConfigs = useCallback(
-    async (next: ProviderKeyConfig[]) => {
-      await providersApi.saveVertexConfigs(next);
-      updateConfigValue('vertex-api-key', next);
-    },
-    [updateConfigValue]
-  );
-
-  const persistOpenAIConfigs = useCallback(
-    async (next: OpenAIProviderConfig[]) => {
-      await providersApi.saveOpenAIProviders(next);
-      updateConfigValue('openai-compatibility', next);
-    },
-    [updateConfigValue]
-  );
-
   const createProvider = useCallback(
     async (brand: ProviderBrand, input: ProviderEntryFormInput) => {
       setMutating(true);
       try {
         if (brand === 'gemini') {
-          const next = [...(config?.geminiApiKeys ?? [])];
-          next.push(buildProviderKeyConfig('gemini', input) as GeminiKeyConfig);
-          await persistGeminiKeys(next);
+          await providersApi.createGeminiKey(
+            buildProviderKeyConfig('gemini', input) as GeminiKeyConfig
+          );
         } else if (brand === 'codex') {
-          const next = [...(config?.codexApiKeys ?? [])];
-          next.push(buildProviderKeyConfig('codex', input) as ProviderKeyConfig);
-          await persistCodexConfigs(next);
+          await providersApi.createCodexConfig(
+            buildProviderKeyConfig('codex', input) as ProviderKeyConfig
+          );
         } else if (brand === 'claude') {
-          const next = [...(config?.claudeApiKeys ?? [])];
-          next.push(buildProviderKeyConfig('claude', input) as ProviderKeyConfig);
-          await persistClaudeConfigs(next);
+          await providersApi.createClaudeConfig(
+            buildProviderKeyConfig('claude', input) as ProviderKeyConfig
+          );
         } else if (brand === 'vertex') {
-          const next = [...(config?.vertexApiKeys ?? [])];
-          next.push(buildProviderKeyConfig('vertex', input) as ProviderKeyConfig);
-          await persistVertexConfigs(next);
+          await providersApi.createVertexConfig(
+            buildProviderKeyConfig('vertex', input) as ProviderKeyConfig
+          );
         } else if (brand === 'openaiCompatibility') {
-          const next = [...(config?.openaiCompatibility ?? [])];
-          next.push(buildOpenAIConfig(input));
-          await persistOpenAIConfigs(next);
+          await providersApi.createOpenAIProvider(buildOpenAIConfig(input));
         }
-        refreshSnapshot();
+        await refetch();
       } finally {
         setMutating(false);
       }
     },
-    [
-      config,
-      persistClaudeConfigs,
-      persistCodexConfigs,
-      persistGeminiKeys,
-      persistOpenAIConfigs,
-      persistVertexConfigs,
-      refreshSnapshot,
-    ]
+    [refetch]
   );
 
   const updateProvider = useCallback(
@@ -362,47 +312,48 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       setMutating(true);
       try {
         const brand = resource.brand;
-        const idx = resource.originalIndex;
-        if (brand === 'gemini') {
-          const list = [...(config?.geminiApiKeys ?? [])];
-          const existing = list[idx];
-          list[idx] = buildProviderKeyConfig('gemini', input, existing) as GeminiKeyConfig;
-          await persistGeminiKeys(list);
-        } else if (brand === 'codex') {
-          const list = [...(config?.codexApiKeys ?? [])];
-          const existing = list[idx];
-          list[idx] = buildProviderKeyConfig('codex', input, existing) as ProviderKeyConfig;
-          await persistCodexConfigs(list);
-        } else if (brand === 'claude') {
-          const list = [...(config?.claudeApiKeys ?? [])];
-          const existing = list[idx];
-          list[idx] = buildProviderKeyConfig('claude', input, existing) as ProviderKeyConfig;
-          await persistClaudeConfigs(list);
-        } else if (brand === 'vertex') {
-          const list = [...(config?.vertexApiKeys ?? [])];
-          const existing = list[idx];
-          list[idx] = buildProviderKeyConfig('vertex', input, existing) as ProviderKeyConfig;
-          await persistVertexConfigs(list);
-        } else if (brand === 'openaiCompatibility') {
-          const list = [...(config?.openaiCompatibility ?? [])];
-          const existing = list[idx];
-          list[idx] = buildOpenAIConfig(input, existing);
-          await persistOpenAIConfigs(list);
+        const selector = resource.selector;
+        if (brand === 'gemini' && selector.brand === 'gemini') {
+          const existing = resource.raw as GeminiKeyConfig;
+          await providersApi.updateGeminiKey(
+            selector.apiKey,
+            selector.baseUrl,
+            buildProviderKeyConfig('gemini', input, existing) as GeminiKeyConfig
+          );
+        } else if (brand === 'codex' && selector.brand === 'codex') {
+          const existing = resource.raw as ProviderKeyConfig;
+          await providersApi.updateCodexConfig(
+            selector.apiKey,
+            selector.baseUrl,
+            buildProviderKeyConfig('codex', input, existing) as ProviderKeyConfig
+          );
+        } else if (brand === 'claude' && selector.brand === 'claude') {
+          const existing = resource.raw as ProviderKeyConfig;
+          await providersApi.updateClaudeConfig(
+            selector.apiKey,
+            selector.baseUrl,
+            buildProviderKeyConfig('claude', input, existing) as ProviderKeyConfig
+          );
+        } else if (brand === 'vertex' && selector.brand === 'vertex') {
+          const existing = resource.raw as ProviderKeyConfig;
+          await providersApi.updateVertexConfig(
+            selector.apiKey,
+            selector.baseUrl,
+            buildProviderKeyConfig('vertex', input, existing) as ProviderKeyConfig
+          );
+        } else if (brand === 'openaiCompatibility' && selector.brand === 'openaiCompatibility') {
+          await providersApi.updateOpenAIProvider(
+            selector.name,
+            selector.index,
+            buildOpenAIConfig(input, resource.raw as OpenAIProviderConfig)
+          );
         }
-        refreshSnapshot();
+        await refetch();
       } finally {
         setMutating(false);
       }
     },
-    [
-      config,
-      persistClaudeConfigs,
-      persistCodexConfigs,
-      persistGeminiKeys,
-      persistOpenAIConfigs,
-      persistVertexConfigs,
-      refreshSnapshot,
-    ]
+    [refetch]
   );
 
   const deleteProvider = useCallback(
@@ -431,16 +382,12 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           const next = (config?.openaiCompatibility ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('openai-compatibility', next);
         }
-        refreshSnapshot();
+        await refetch();
       } finally {
         setMutating(false);
       }
     },
-    [
-      config,
-      refreshSnapshot,
-      updateConfigValue,
-    ]
+    [config, refetch, updateConfigValue]
   );
 
   const toggleDisabled = useCallback(
@@ -448,56 +395,42 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       setMutating(true);
       try {
         const brand = resource.brand;
-        const idx = resource.originalIndex;
-        if (brand === 'gemini') {
-          const list = [...(config?.geminiApiKeys ?? [])];
-          const current = list[idx];
-          if (!current) return;
+        const selector = resource.selector;
+        if (brand === 'gemini' && selector.brand === 'gemini') {
+          const current = resource.raw as GeminiKeyConfig;
           const excluded = disabled
             ? withDisableAllModelsRule(current.excludedModels)
             : withoutDisableAllModelsRule(current.excludedModels);
-          list[idx] = { ...current, excludedModels: excluded };
-          await persistGeminiKeys(list);
-        } else if (brand === 'codex' || brand === 'claude' || brand === 'vertex') {
-          const key =
-            brand === 'codex'
-              ? 'codexApiKeys'
-              : brand === 'claude'
-                ? 'claudeApiKeys'
-                : 'vertexApiKeys';
-          const list = [...((config?.[key] as ProviderKeyConfig[] | undefined) ?? [])];
-          const current = list[idx];
-          if (!current) return;
+          await providersApi.updateGeminiKey(selector.apiKey, selector.baseUrl, {
+            ...current,
+            excludedModels: excluded,
+          });
+        } else if (
+          (brand === 'codex' && selector.brand === 'codex') ||
+          (brand === 'claude' && selector.brand === 'claude') ||
+          (brand === 'vertex' && selector.brand === 'vertex')
+        ) {
+          const current = resource.raw as ProviderKeyConfig;
           const excluded = disabled
             ? withDisableAllModelsRule(current.excludedModels)
             : withoutDisableAllModelsRule(current.excludedModels);
-          list[idx] = { ...current, excludedModels: excluded };
-          if (brand === 'codex') await persistCodexConfigs(list);
-          else if (brand === 'claude') await persistClaudeConfigs(list);
-          else await persistVertexConfigs(list);
-        } else if (brand === 'openaiCompatibility') {
-          await providersApi.updateOpenAIProviderDisabled(idx, disabled);
-          const list = [...(config?.openaiCompatibility ?? [])];
-          const current = list[idx];
-          if (current) {
-            list[idx] = { ...current, disabled };
-            updateConfigValue('openai-compatibility', list);
+          const next = { ...current, excludedModels: excluded };
+          if (selector.brand === 'codex') {
+            await providersApi.updateCodexConfig(selector.apiKey, selector.baseUrl, next);
+          } else if (selector.brand === 'claude') {
+            await providersApi.updateClaudeConfig(selector.apiKey, selector.baseUrl, next);
+          } else if (selector.brand === 'vertex') {
+            await providersApi.updateVertexConfig(selector.apiKey, selector.baseUrl, next);
           }
+        } else if (brand === 'openaiCompatibility' && selector.brand === 'openaiCompatibility') {
+          await providersApi.updateOpenAIProviderDisabled(selector.index, disabled);
         }
-        refreshSnapshot();
+        await refetch();
       } finally {
         setMutating(false);
       }
     },
-    [
-      config,
-      persistClaudeConfigs,
-      persistCodexConfigs,
-      persistGeminiKeys,
-      persistVertexConfigs,
-      refreshSnapshot,
-      updateConfigValue,
-    ]
+    [refetch]
   );
 
   return {

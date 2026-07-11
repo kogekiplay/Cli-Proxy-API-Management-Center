@@ -32,6 +32,7 @@ import { usageAnalyticsApi, type UsageAnalyticsResponse } from '@/services/api/u
 import { useApiKeysForModels } from '@/hooks/useApiKeysForModels';
 import { formatDateValue } from '@/utils/format';
 import { getErrorMessage } from '@/utils/helpers';
+import { getDashboardModelsStatValue } from '@/utils/dashboard';
 import styles from './DashboardPage.module.scss';
 
 interface QuickStat {
@@ -87,6 +88,7 @@ export function DashboardPage() {
 
   const models = useModelsStore((state) => state.models);
   const modelsLoading = useModelsStore((state) => state.loading);
+  const modelsError = useModelsStore((state) => state.error);
   const fetchModelsFromStore = useModelsStore((state) => state.fetchModels);
 
   const [authFilesCount, setAuthFilesCount] = useState<number | null>(null);
@@ -294,7 +296,7 @@ export function DashboardPage() {
     },
     {
       label: t('dashboard.available_models'),
-      value: modelsLoading ? '-' : models.length,
+      value: getDashboardModelsStatValue(models.length, modelsLoading, modelsError),
       icon: <IconSatellite size={24} />,
       path: '/system',
       loading: modelsLoading,
