@@ -546,9 +546,7 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
 
       const idPrefix = normalizeWindowId(limitName) || `additional-${index + 1}`;
       const usageModel = normalizeUsageModel(limitName);
-      const additionalPrimaryWindow = rateInfo.primary_window ?? rateInfo.primaryWindow ?? null;
-      const additionalSecondaryWindow =
-        rateInfo.secondary_window ?? rateInfo.secondaryWindow ?? null;
+      const additionalWindows = pickClassifiedWindows(rateInfo);
       const additionalLimitReached = rateInfo.limit_reached ?? rateInfo.limitReached;
       const additionalAllowed = rateInfo.allowed;
 
@@ -559,12 +557,12 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
         { name: limitName },
         usageModel,
         undefined,
-        additionalPrimaryWindow,
+        additionalWindows.fiveHourWindow,
         additionalLimitReached,
         additionalAllowed
       );
       const additionalSecondaryMeta = selectSecondaryWindowMeta(
-        additionalSecondaryWindow,
+        additionalWindows.weeklyWindow,
         { id: 'weekly', labelKey: 'codex_quota.additional_secondary_window' },
         { id: 'monthly', labelKey: 'codex_quota.additional_team_secondary_window' }
       );
@@ -575,7 +573,7 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
         { name: limitName },
         usageModel,
         undefined,
-        additionalSecondaryWindow,
+        additionalWindows.weeklyWindow,
         additionalLimitReached,
         additionalAllowed
       );
