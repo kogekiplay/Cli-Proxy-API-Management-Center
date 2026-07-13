@@ -1,4 +1,12 @@
-import { type ChangeEvent, type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  type ChangeEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -697,6 +705,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   const [opencodeAccounts, setOpenCodeAccounts] = useState<OpenCodeGoAccount[]>([]);
   const [clientAPIKeyOptions, setClientAPIKeyOptions] = useState<SelectOption[]>([]);
   const [loading, setLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [eventsLoadingMore, setEventsLoadingMore] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [error, setError] = useState('');
@@ -706,6 +715,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   const [monitoringSearch, setMonitoringSearch] = useState('');
   const [monitoringPageSize, setMonitoringPageSize] = useState('20');
   const [monitoringPage, setMonitoringPage] = useState(1);
+  const loadRequestRef = useRef(0);
   const isCompleteAnalysisView = !isMonitoringView && analysisMode === 'complete';
 
   useEffect(() => {
@@ -784,7 +794,8 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     (
       limit: number,
       cursor?: { beforeMs?: number; beforeID?: number },
-      includeStats = true
+      includeStats = true,
+      includeEvents = true
     ): UsageAnalyticsRequest => {
       const to = resolveAnalyticsToMs(dateFilter);
       const from = to - RANGE_MS[range];
@@ -804,11 +815,13 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
           model_stats: includeStats,
           api_key_stats: includeStats,
           credential_stats: includeStats,
-          events_page: {
-            limit,
-            before_ms: cursor?.beforeMs,
-            before_id: cursor?.beforeID,
-          },
+          events_page: includeEvents
+            ? {
+                limit,
+                before_ms: cursor?.beforeMs,
+                before_id: cursor?.beforeID,
+              }
+            : undefined,
         },
       };
     },
@@ -816,17 +829,47 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   );
 
   const load = useCallback(async () => {
+    const requestID = ++loadRequestRef.current;
     setLoading(true);
+    setStatsLoading(false);
     setError('');
     try {
-      const response = await usageAnalyticsApi.query(buildAnalyticsRequest(EVENT_LIMIT));
-      setData(response);
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
+      if (!isMonitoringView) {
+        const response = await usageAnalyticsApi.query(buildAnalyticsRequest(EVENT_LIMIT));
+        if (requestID === loadRequestRef.current) setData(response);
+        return;
+      }
+
+      const eventsResponse = await usageAnalyticsApi.query(
+        buildAnalyticsRequest(EVENT_LIMIT, undefined, false)
+      );
+      if (requestID !== loadRequestRef.current) return;
+      setData(eventsResponse);
       setLoading(false);
+      setStatsLoading(true);
+
+      try {
+        const statsResponse = await usageAnalyticsApi.query(
+          buildAnalyticsRequest(EVENT_LIMIT, undefined, true, false)
+        );
+        if (requestID !== loadRequestRef.current) return;
+        setData((current) => ({
+          ...statsResponse,
+          events: current?.events ?? eventsResponse.events,
+        }));
+      } catch (err) {
+        if (requestID === loadRequestRef.current) {
+          showNotification(`汇总统计加载失败：${getErrorMessage(err)}`, 'warning');
+        }
+      } finally {
+        if (requestID === loadRequestRef.current) setStatsLoading(false);
+      }
+    } catch (err) {
+      if (requestID === loadRequestRef.current) setError(getErrorMessage(err));
+    } finally {
+      if (requestID === loadRequestRef.current) setLoading(false);
     }
-  }, [buildAnalyticsRequest]);
+  }, [buildAnalyticsRequest, isMonitoringView, showNotification]);
 
   useEffect(() => {
     void load();
@@ -2105,22 +2148,24 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
 
   const renderMonitoringKpiCards = () => {
     const failureRate = totalCalls > 0 ? `${((failureCalls / totalCalls) * 100).toFixed(1)}%` : '-';
+    const missingSummary = !summary;
+    const summaryStatus = statsLoading ? '统计加载中' : '统计暂不可用';
     return (
       <div className={styles.monitoringKpiGrid}>
         <Card className={styles.monitoringKpiCard}>
           <span>总请求数</span>
-          <strong>{formatNumber(totalCalls)}</strong>
+          <strong>{missingSummary ? '-' : formatNumber(totalCalls)}</strong>
           <small>过去 {currentRangeLabel}</small>
         </Card>
         <Card className={styles.monitoringKpiCard}>
           <span>成功请求</span>
-          <strong>{formatNumber(successCalls)}</strong>
-          <small>{successRate(successCalls, totalCalls)}</small>
+          <strong>{missingSummary ? '-' : formatNumber(successCalls)}</strong>
+          <small>{missingSummary ? summaryStatus : successRate(successCalls, totalCalls)}</small>
         </Card>
         <Card className={styles.monitoringKpiCard}>
           <span>错误请求</span>
-          <strong>{formatNumber(failureCalls)}</strong>
-          <small>{failureRate}</small>
+          <strong>{missingSummary ? '-' : formatNumber(failureCalls)}</strong>
+          <small>{missingSummary ? summaryStatus : failureRate}</small>
         </Card>
         <Card className={styles.monitoringKpiCard}>
           <span>P50 延迟</span>
@@ -2134,7 +2179,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
         </Card>
         <Card className={styles.monitoringKpiCard}>
           <span>总 Token</span>
-          <strong>{formatCompactNumber(totalTokens)}</strong>
+          <strong>{missingSummary ? '-' : formatCompactNumber(totalTokens)}</strong>
           <small>过去 {currentRangeLabel}</small>
         </Card>
       </div>
@@ -2491,7 +2536,8 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
               value={monitoringProviderLabel(selectedEvent.provider, selectedEvent.auth_type)}
             />
             <DetailItem label={t('usage_analytics.model')} value={selectedEvent.model || '-'} />
-            {selectedEvent.upstream_model && selectedEvent.upstream_model !== selectedEvent.model ? (
+            {selectedEvent.upstream_model &&
+            selectedEvent.upstream_model !== selectedEvent.model ? (
               <DetailItem
                 label={t('usage_analytics.upstream_model')}
                 value={selectedEvent.upstream_model}

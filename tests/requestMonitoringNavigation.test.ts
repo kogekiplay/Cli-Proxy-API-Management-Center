@@ -48,18 +48,35 @@ describe('request monitoring navigation', () => {
     expect(styles).toContain('.monitoringProviderCell {\n  align-items: center;');
   });
 
+  test('loads recent monitoring events before the heavier aggregate statistics', () => {
+    const page = read('src/pages/UsageAnalyticsPage.tsx');
+
+    const eventsQuery = 'buildAnalyticsRequest(EVENT_LIMIT, undefined, false)';
+    const statsQuery = 'buildAnalyticsRequest(EVENT_LIMIT, undefined, true, false)';
+    expect(page).toContain(eventsQuery);
+    expect(page).toContain(statsQuery);
+    expect(page.indexOf(eventsQuery)).toBeLessThan(page.indexOf(statsQuery));
+    expect(page).toContain('events: current?.events ?? eventsResponse.events');
+    expect(page).toContain('const loadRequestRef = useRef(0);');
+    expect(page).toContain('const missingSummary = !summary;');
+  });
+
   test('uses the status tooltip without rendering an error column', () => {
     const page = read('src/pages/UsageAnalyticsPage.tsx');
     const styles = read('src/pages/UsageAnalyticsPage.module.scss');
     const statusBadge = read('src/features/usageAnalytics/UsageStatusBadge.tsx');
     const statusBadgeStyles = read('src/features/usageAnalytics/UsageStatusBadge.module.scss');
 
-    expect(page).toContain("import { UsageStatusBadge } from '@/features/usageAnalytics/UsageStatusBadge';");
+    expect(page).toContain(
+      "import { UsageStatusBadge } from '@/features/usageAnalytics/UsageStatusBadge';"
+    );
     expect(page).toContain('<UsageStatusBadge row={row} />');
-    expect(page).not.toContain('<th>{t(\'usage_analytics.error_message\')}</th>');
+    expect(page).not.toContain("<th>{t('usage_analytics.error_message')}</th>");
     expect(page).not.toContain('monitoringErrorCell');
     expect(styles).not.toContain('.monitoringErrorCell');
-    expect(statusBadge).toContain('const hasError = row.failed && Boolean(error.summary || error.title || error.detail);');
+    expect(statusBadge).toContain(
+      'const hasError = row.failed && Boolean(error.summary || error.title || error.detail);'
+    );
     expect(statusBadge).toContain('tabIndex={hasError ? 0 : undefined}');
     expect(statusBadge).toContain('aria-describedby={hasError ? tooltipId : undefined}');
     expect(statusBadge).toContain("from './usageStatusBadgeTooltip';");
@@ -91,12 +108,15 @@ describe('request monitoring navigation', () => {
 
   test('keeps provider, model, and status as independent compact columns', () => {
     const page = read('src/pages/UsageAnalyticsPage.tsx');
-    const locales = ['en', 'ru', 'zh-CN', 'zh-TW'].map((locale) => [
-      locale,
-      JSON.parse(read(`src/i18n/locales/${locale}.json`)) as {
-        usage_analytics: Record<string, string>;
-      },
-    ] as const);
+    const locales = ['en', 'ru', 'zh-CN', 'zh-TW'].map(
+      (locale) =>
+        [
+          locale,
+          JSON.parse(read(`src/i18n/locales/${locale}.json`)) as {
+            usage_analytics: Record<string, string>;
+          },
+        ] as const
+    );
     const zhCN = locales.find(([locale]) => locale === 'zh-CN')![1];
 
     expect(page).toContain("<th>{t('usage_analytics.provider')}</th>");
