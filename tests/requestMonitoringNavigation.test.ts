@@ -50,6 +50,7 @@ describe('request monitoring navigation', () => {
 
   test('loads recent monitoring events before the heavier aggregate statistics', () => {
     const page = read('src/pages/UsageAnalyticsPage.tsx');
+    const api = read('src/services/api/usageAnalytics.ts');
 
     const eventsQuery = 'buildAnalyticsRequest(EVENT_LIMIT, undefined, false)';
     const statsQuery = 'buildAnalyticsRequest(EVENT_LIMIT, undefined, true, false)';
@@ -58,6 +59,11 @@ describe('request monitoring navigation', () => {
     expect(page.indexOf(eventsQuery)).toBeLessThan(page.indexOf(statsQuery));
     expect(page).toContain('events: current?.events ?? eventsResponse.events');
     expect(page).toContain('const loadRequestRef = useRef(0);');
+    expect(page).toContain('const loadAbortRef = useRef<AbortController | null>(null);');
+    expect(page).toContain('loadAbortRef.current?.abort();');
+    expect(page).toContain('signal: controller.signal');
+    expect(api).toContain('config?: AxiosRequestConfig');
+    expect(api).toContain("apiClient.post<UsageAnalyticsResponse>('/usage-analytics', request, config)");
     expect(page).toContain('const missingSummary = !summary;');
   });
 

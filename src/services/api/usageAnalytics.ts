@@ -1,3 +1,4 @@
+import type { AxiosRequestConfig } from 'axios';
 import { apiClient } from './client';
 
 export interface UsageAnalyticsTokens {
@@ -143,7 +144,10 @@ export interface UsageAnalyticsRequest {
 }
 
 export const usageAnalyticsApi = {
-  query(request: UsageAnalyticsRequest): Promise<UsageAnalyticsResponse> {
-    return apiClient.post<UsageAnalyticsResponse>('/usage-analytics', request);
+  query(
+    request: UsageAnalyticsRequest,
+    config?: AxiosRequestConfig
+  ): Promise<UsageAnalyticsResponse> {
+    return apiClient.post<UsageAnalyticsResponse>('/usage-analytics', request, config);
   },
 };

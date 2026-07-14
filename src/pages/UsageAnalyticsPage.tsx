@@ -716,6 +716,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   const [monitoringPageSize, setMonitoringPageSize] = useState('20');
   const [monitoringPage, setMonitoringPage] = useState(1);
   const loadRequestRef = useRef(0);
+  const loadAbortRef = useRef<AbortController | null>(null);
   const isCompleteAnalysisView = !isMonitoringView && analysisMode === 'complete';
 
   useEffect(() => {
@@ -829,50 +830,66 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   );
 
   const load = useCallback(async () => {
+    loadAbortRef.current?.abort();
+    const controller = new AbortController();
+    loadAbortRef.current = controller;
     const requestID = ++loadRequestRef.current;
+    const isCurrentRequest = () =>
+      requestID === loadRequestRef.current &&
+      loadAbortRef.current === controller &&
+      !controller.signal.aborted;
+
     setLoading(true);
     setStatsLoading(false);
     setError('');
     try {
       if (!isMonitoringView) {
-        const response = await usageAnalyticsApi.query(buildAnalyticsRequest(EVENT_LIMIT));
-        if (requestID === loadRequestRef.current) setData(response);
+        const response = await usageAnalyticsApi.query(buildAnalyticsRequest(EVENT_LIMIT), {
+          signal: controller.signal,
+        });
+        if (isCurrentRequest()) setData(response);
         return;
       }
 
       const eventsResponse = await usageAnalyticsApi.query(
-        buildAnalyticsRequest(EVENT_LIMIT, undefined, false)
+        buildAnalyticsRequest(EVENT_LIMIT, undefined, false),
+        { signal: controller.signal }
       );
-      if (requestID !== loadRequestRef.current) return;
+      if (!isCurrentRequest()) return;
       setData(eventsResponse);
       setLoading(false);
       setStatsLoading(true);
 
       try {
         const statsResponse = await usageAnalyticsApi.query(
-          buildAnalyticsRequest(EVENT_LIMIT, undefined, true, false)
+          buildAnalyticsRequest(EVENT_LIMIT, undefined, true, false),
+          { signal: controller.signal }
         );
-        if (requestID !== loadRequestRef.current) return;
+        if (!isCurrentRequest()) return;
         setData((current) => ({
           ...statsResponse,
           events: current?.events ?? eventsResponse.events,
         }));
       } catch (err) {
-        if (requestID === loadRequestRef.current) {
+        if (isCurrentRequest()) {
           showNotification(`汇总统计加载失败：${getErrorMessage(err)}`, 'warning');
         }
       } finally {
-        if (requestID === loadRequestRef.current) setStatsLoading(false);
+        if (isCurrentRequest()) setStatsLoading(false);
       }
     } catch (err) {
-      if (requestID === loadRequestRef.current) setError(getErrorMessage(err));
+      if (isCurrentRequest()) setError(getErrorMessage(err));
     } finally {
-      if (requestID === loadRequestRef.current) setLoading(false);
+      if (isCurrentRequest()) setLoading(false);
+      if (loadAbortRef.current === controller) loadAbortRef.current = null;
     }
   }, [buildAnalyticsRequest, isMonitoringView, showNotification]);
 
   useEffect(() => {
     void load();
+    return () => {
+      loadAbortRef.current?.abort();
+    };
   }, [load]);
 
   useEffect(() => {
