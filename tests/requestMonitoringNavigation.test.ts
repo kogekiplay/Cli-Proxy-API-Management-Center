@@ -161,6 +161,8 @@ describe('request monitoring navigation', () => {
     expect(page).toContain('resolveAnalyticsToMs(dateFilter)');
     expect(page).toContain('type="date"');
     expect(page).toContain('handleDateFilterChange');
+    expect(page).toContain('max={maxDateFilter}');
+    expect(page).not.toContain('max={formatDateInputValue(Date.now())}');
     expect(page).toContain('aria-label="选择日期"');
     expect(styles).toContain('minmax(250px, 0.95fr)');
     expect(styles).toContain('.monitoringDatePicker');

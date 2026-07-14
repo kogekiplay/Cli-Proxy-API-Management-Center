@@ -695,6 +695,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   const showNotification = useNotificationStore((state) => state.showNotification);
   const [range, setRange] = useState<RangeKey>('24h');
   const [dateFilter, setDateFilter] = useState(() => formatDateInputValue(Date.now()));
+  const [maxDateFilter] = useState(() => formatDateInputValue(Date.now()));
   const [providerFilter, setProviderFilter] = useState('');
   const [modelFilter, setModelFilter] = useState('');
   const [authIndexFilter, setAuthIndexFilter] = useState('');
@@ -2225,7 +2226,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
           <input
             type="date"
             value={dateFilter}
-            max={formatDateInputValue(Date.now())}
+            max={maxDateFilter}
             onChange={handleDateFilterChange}
             aria-label="选择日期"
           />
