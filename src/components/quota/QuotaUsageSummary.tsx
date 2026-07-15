@@ -26,10 +26,6 @@ export function QuotaUsageSummary({ summary }: QuotaUsageSummaryProps) {
 
   const tokens = summary.tokens;
   const totalTokens = tokens?.total_tokens ?? 0;
-  const cacheReadTokens =
-    (tokens?.cache_read_tokens ?? 0) > 0
-      ? (tokens?.cache_read_tokens ?? 0)
-      : (tokens?.cached_tokens ?? 0);
   if (totalTokens <= 0 && summary.request_count <= 0) return null;
 
   const estimatedCost =
@@ -59,9 +55,14 @@ export function QuotaUsageSummary({ summary }: QuotaUsageSummaryProps) {
       value: formatUsageTokens(tokens?.output_tokens ?? 0),
     },
     {
+      key: 'cached',
+      label: t('quota_usage.cached_tokens'),
+      value: formatUsageTokens(tokens?.cached_tokens ?? 0),
+    },
+    {
       key: 'cache-read',
       label: t('quota_usage.cache_read_tokens'),
-      value: formatUsageTokens(cacheReadTokens),
+      value: formatUsageTokens(tokens?.cache_read_tokens ?? 0),
     },
     {
       key: 'cache-creation',

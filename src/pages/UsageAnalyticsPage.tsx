@@ -44,6 +44,7 @@ import {
   maskUsageAnalyticsClientAPIKey,
   resolveUsageAnalyticsAPIKeyDisplay,
 } from '@/features/usageAnalytics/usageAnalyticsLabels';
+import { calculateCacheHitRate } from '@/features/usageAnalytics/cacheMetrics';
 import { apiKeysApi, authFilesApi } from '@/services/api';
 import { opencodeGoApi } from '@/services/api/opencodeGo';
 import {
@@ -291,6 +292,7 @@ const tokenSummary = (row: UsageAnalyticsEventRow) => {
     `I ${formatCompactNumber(tokens?.input_tokens)}`,
     `O ${formatCompactNumber(tokens?.output_tokens)}`,
     tokens?.reasoning_tokens ? `R ${formatCompactNumber(tokens.reasoning_tokens)}` : '',
+    tokens?.cached_tokens ? `C ${formatCompactNumber(tokens.cached_tokens)}` : '',
     tokens?.cache_read_tokens ? `CR ${formatCompactNumber(tokens.cache_read_tokens)}` : '',
     tokens?.cache_creation_tokens ? `CW ${formatCompactNumber(tokens.cache_creation_tokens)}` : '',
   ]
@@ -1300,8 +1302,11 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
         'failed',
         'total_tokens',
         'input_tokens',
+        'uncached_input_tokens',
+        'total_input_tokens',
         'output_tokens',
         'reasoning_tokens',
+        'cached_tokens',
         'cache_read_tokens',
         'cache_creation_tokens',
         'estimated_cost_usd',
@@ -1323,8 +1328,11 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
           row.failed ? 'true' : 'false',
           row.tokens?.total_tokens ?? 0,
           row.tokens?.input_tokens ?? 0,
+          row.tokens?.uncached_input_tokens ?? 0,
+          row.tokens?.total_input_tokens ?? row.tokens?.input_tokens ?? 0,
           row.tokens?.output_tokens ?? 0,
           row.tokens?.reasoning_tokens ?? 0,
+          row.tokens?.cached_tokens ?? 0,
           row.tokens?.cache_read_tokens ?? 0,
           row.tokens?.cache_creation_tokens ?? 0,
           row.estimated_cost_usd ?? '',
@@ -1524,6 +1532,15 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   const successCalls = summary?.success_calls ?? 0;
   const totalTokens = summary?.total_tokens ?? 0;
   const totalCost = summary?.total_cost ?? 0;
+  const cacheHitRate =
+    summary?.cache_hit_rate === undefined
+      ? calculateCacheHitRate(summary)
+      : Math.min(100, Math.max(0, summary.cache_hit_rate * 100));
+  const tokenSummaryMeta = `${t('usage_analytics.summary_token_full', {
+    value: formatNumber(totalTokens),
+  })} · ${t('usage_analytics.summary_cache_hit', {
+    value: cacheHitRate === null ? '-' : `${cacheHitRate.toFixed(1)}%`,
+  })}`;
   const tokenTrendRows = useMemo(
     () => deriveTokenTrendRows(timeline, events, range),
     [events, range, timeline]
@@ -1720,7 +1737,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
         icon={<IconFileText size={18} />}
         label={t('usage_analytics.tokens')}
         value={formatCompactNumber(totalTokens)}
-        meta={t('usage_analytics.summary_token_full', { value: formatNumber(totalTokens) })}
+        meta={tokenSummaryMeta}
       />
     </div>
   );
@@ -1881,7 +1898,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
         icon={<IconFileText size={18} />}
         label={t('usage_analytics.tokens')}
         value={formatCompactNumber(totalTokens)}
-        meta={t('usage_analytics.summary_token_full', { value: formatNumber(totalTokens) })}
+        meta={tokenSummaryMeta}
       />
       <SummaryCard
         accent="amber"
@@ -2609,12 +2626,20 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                 value={formatNumber(selectedEvent.tokens?.input_tokens)}
               />
               <DetailItem
+                label={t('usage_analytics.uncached_input_tokens')}
+                value={formatNumber(selectedEvent.tokens?.uncached_input_tokens)}
+              />
+              <DetailItem
                 label={t('usage_analytics.output_tokens')}
                 value={formatNumber(selectedEvent.tokens?.output_tokens)}
               />
               <DetailItem
                 label={t('usage_analytics.reasoning_tokens')}
                 value={formatNumber(selectedEvent.tokens?.reasoning_tokens)}
+              />
+              <DetailItem
+                label={t('usage_analytics.cached_tokens')}
+                value={formatNumber(selectedEvent.tokens?.cached_tokens)}
               />
               <DetailItem
                 label={t('usage_analytics.cache_read_tokens')}

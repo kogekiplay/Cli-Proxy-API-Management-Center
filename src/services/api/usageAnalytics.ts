@@ -3,6 +3,8 @@ import { apiClient } from './client';
 
 export interface UsageAnalyticsTokens {
   input_tokens: number;
+  uncached_input_tokens?: number;
+  total_input_tokens?: number;
   output_tokens: number;
   reasoning_tokens: number;
   cached_tokens: number;
@@ -16,12 +18,15 @@ export interface UsageAnalyticsSummary {
   success_calls: number;
   failure_calls: number;
   input_tokens: number;
+  uncached_input_tokens?: number;
+  total_input_tokens?: number;
   output_tokens: number;
   reasoning_tokens: number;
   cached_tokens: number;
   cache_read_tokens: number;
   cache_creation_tokens: number;
   total_tokens: number;
+  cache_hit_rate?: number;
   total_cost?: number | null;
 }
 
@@ -30,7 +35,16 @@ export interface UsageAnalyticsTimelinePoint {
   calls: number;
   success: number;
   failure: number;
+  input_tokens?: number;
+  uncached_input_tokens?: number;
+  total_input_tokens?: number;
+  output_tokens?: number;
+  reasoning_tokens?: number;
+  cached_tokens?: number;
+  cache_read_tokens?: number;
+  cache_creation_tokens?: number;
   total_tokens: number;
+  cache_hit_rate?: number;
   cost?: number | null;
 }
 
@@ -39,7 +53,16 @@ export interface UsageAnalyticsModelStat {
   calls: number;
   success_calls: number;
   failure_calls: number;
+  input_tokens?: number;
+  uncached_input_tokens?: number;
+  total_input_tokens?: number;
+  output_tokens?: number;
+  reasoning_tokens?: number;
+  cached_tokens?: number;
+  cache_read_tokens?: number;
+  cache_creation_tokens?: number;
   total_tokens: number;
+  cache_hit_rate?: number;
   cost?: number | null;
 }
 
@@ -52,7 +75,16 @@ export interface UsageAnalyticsAPIKeyStat {
   calls: number;
   success_calls: number;
   failure_calls: number;
+  input_tokens?: number;
+  uncached_input_tokens?: number;
+  total_input_tokens?: number;
+  output_tokens?: number;
+  reasoning_tokens?: number;
+  cached_tokens?: number;
+  cache_read_tokens?: number;
+  cache_creation_tokens?: number;
   total_tokens: number;
+  cache_hit_rate?: number;
   cost?: number | null;
 }
 
@@ -65,7 +97,16 @@ export interface UsageAnalyticsCredentialStat {
   calls: number;
   success_calls: number;
   failure_calls: number;
+  input_tokens?: number;
+  uncached_input_tokens?: number;
+  total_input_tokens?: number;
+  output_tokens?: number;
+  reasoning_tokens?: number;
+  cached_tokens?: number;
+  cache_read_tokens?: number;
+  cache_creation_tokens?: number;
   total_tokens: number;
+  cache_hit_rate?: number;
   cost?: number | null;
 }
 
@@ -84,7 +125,9 @@ export interface UsageAnalyticsEventRow {
   credential_key_hash?: string;
   account_ref: string;
   auth_type?: string;
+  executor_type?: string;
   service_tier: string;
+  cache_input_mode?: string;
   reasoning_effort?: string;
   status_code?: number;
   latency_ms?: number | null;

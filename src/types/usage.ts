@@ -1,5 +1,7 @@
 export interface TokenUsage {
   input_tokens: number;
+  uncached_input_tokens?: number;
+  total_input_tokens?: number;
   output_tokens: number;
   reasoning_tokens: number;
   cached_tokens: number;
