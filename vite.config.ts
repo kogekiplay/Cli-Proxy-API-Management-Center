@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { viteSingleFile } from 'vite-plugin-singlefile';
 import path from 'path';
 import { execSync } from 'child_process';
 import fs from 'fs';
@@ -14,7 +13,10 @@ function getVersion(): string {
 
   // 2. Try git tag
   try {
-    const gitTag = execSync('git describe --tags --exact-match 2>/dev/null || git describe --tags 2>/dev/null || echo ""', { encoding: 'utf8' }).trim();
+    const gitTag = execSync(
+      'git describe --tags --exact-match 2>/dev/null || git describe --tags 2>/dev/null || echo ""',
+      { encoding: 'utf8' }
+    ).trim();
     if (gitTag) {
       return gitTag;
     }
@@ -35,43 +37,43 @@ function getVersion(): string {
   return 'dev';
 }
 
+function getAssetVersion(): string {
+  const normalized = getVersion()
+    .trim()
+    .replace(/[^A-Za-z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return normalized || 'dev';
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    react(),
-    viteSingleFile({
-      removeViteModuleLoader: true
-    })
-  ],
+  plugins: [react()],
+  base: '/',
   define: {
-    __APP_VERSION__: JSON.stringify(getVersion())
+    __APP_VERSION__: JSON.stringify(getVersion()),
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
-    }
+      '@': path.resolve(__dirname, './src'),
+    },
   },
   css: {
     modules: {
       localsConvention: 'camelCase',
-      generateScopedName: '[name]__[local]___[hash:base64:5]'
+      generateScopedName: '[name]__[local]___[hash:base64:5]',
     },
     preprocessorOptions: {
       scss: {
-        additionalData: `@use "@/styles/variables.scss" as *;`
-      }
-    }
+        additionalData: `@use "@/styles/variables.scss" as *;`,
+      },
+    },
   },
   build: {
     target: 'es2020',
     outDir: 'dist',
-    assetsInlineLimit: 100000000,
-    chunkSizeWarningLimit: 100000000,
-    cssCodeSplit: false,
-    rolldownOptions: {
-      output: {
-        codeSplitting: false
-      }
-    }
-  }
+    assetsDir: `management-assets/${getAssetVersion()}`,
+    assetsInlineLimit: 4096,
+    chunkSizeWarningLimit: 700,
+    cssCodeSplit: true,
+  },
 });

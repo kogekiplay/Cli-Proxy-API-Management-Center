@@ -32,16 +32,19 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build all-in-one HTML
-        run: bun run build
+      - name: Build management bundle and standalone fallback
+        run: bun run build:release
         env:
           VERSION: ${{ github.ref_name }}
 
       - name: Prepare release assets
         run: |
-          cd dist
-          mv index.html management.html
-          ls -lh management.html
+          set -euo pipefail
+          mv dist/index.html dist/management.html
+          mkdir -p dist-release
+          tar -C dist -czf dist-release/management-bundle.tar.gz management.html management-assets
+          cp dist-standalone/index.html dist-release/management.html
+          ls -lh dist-release/management.html dist-release/management-bundle.tar.gz
 
       - name: Generate release notes
         run: |
@@ -60,7 +63,9 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/management.html
+          files: |
+            dist-release/management.html
+            dist-release/management-bundle.tar.gz
           body_path: release-notes.md
           draft: false
           prerelease: false

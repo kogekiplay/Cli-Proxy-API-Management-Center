@@ -62,8 +62,11 @@ describe('request monitoring navigation', () => {
     expect(page).toContain('const loadAbortRef = useRef<AbortController | null>(null);');
     expect(page).toContain('loadAbortRef.current?.abort();');
     expect(page).toContain('signal: controller.signal');
+    expect(page).toContain('include_total_count: false');
     expect(api).toContain('config?: AxiosRequestConfig');
-    expect(api).toContain("apiClient.post<UsageAnalyticsResponse>('/usage-analytics', request, config)");
+    expect(api).toContain(
+      "apiClient.post<UsageAnalyticsResponse>('/usage-analytics', request, config)"
+    );
     expect(page).toContain('const missingSummary = !summary;');
   });
 

@@ -23,7 +23,7 @@ import { useApiKeysForModels } from '@/hooks/useApiKeysForModels';
 import { formatDateTimeValue } from '@/utils/format';
 import { classifyModels } from '@/utils/models';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
-import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
+import logoImage from '@/assets/logo.jpg';
 import iconGemini from '@/assets/icons/gemini.svg';
 import iconClaude from '@/assets/icons/claude.svg';
 import iconOpenaiLight from '@/assets/icons/openai-light.svg';
@@ -341,7 +341,7 @@ export function SystemPage() {
           <h2>{t('system_info.overview_title', { defaultValue: '系统概览' })}</h2>
 
           <div className={styles.heroIdentity}>
-            <img src={INLINE_LOGO_JPEG} alt="CPAMC" className={styles.heroLogo} />
+            <img src={logoImage} alt="CPAMC" className={styles.heroLogo} />
             <div>
               <h3>{t('system_info.about_title')}</h3>
               <p>

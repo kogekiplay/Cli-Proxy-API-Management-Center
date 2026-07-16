@@ -52,7 +52,11 @@
 
     &:hover {
       background:
-        linear-gradient(180deg, color-mix(in srgb, var(--primary-color) 5%, transparent), transparent),
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--primary-color) 5%, transparent),
+          transparent
+        ),
         color-mix(in srgb, var(--bg-hover, var(--bg-tertiary)) 82%, var(--bg-primary));
       border-color: var(--border-hover);
     }
@@ -300,7 +304,11 @@ select {
   box-shadow: var(--floating-shadow);
   border: 1px solid var(--floating-border);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--floating-surface) 92%, transparent), transparent),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--floating-surface) 92%, transparent),
+      transparent
+    ),
     var(--floating-surface);
   color: var(--text-primary);
   display: flex;
@@ -376,6 +384,12 @@ select {
   width: 16px;
   height: 16px;
   animation: spin 0.8s linear infinite;
+}
+
+.route-loading {
+  min-height: min(40vh, 320px);
+  display: grid;
+  place-items: center;
 }
 
 @supports (color: color-mix(in srgb, currentColor 22%, transparent)) {
@@ -615,7 +629,11 @@ select {
   border-radius: 10px;
   padding: $spacing-lg;
   background:
-    radial-gradient(circle at 0 0, color-mix(in srgb, var(--primary-color) 8%, transparent), transparent 34%),
+    radial-gradient(
+      circle at 0 0,
+      color-mix(in srgb, var(--primary-color) 8%, transparent),
+      transparent 34%
+    ),
     color-mix(in srgb, var(--bg-secondary) 76%, var(--bg-primary));
   display: flex;
   justify-content: space-between;

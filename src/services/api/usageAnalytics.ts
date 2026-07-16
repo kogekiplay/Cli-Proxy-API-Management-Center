@@ -182,6 +182,7 @@ export interface UsageAnalyticsRequest {
       limit?: number;
       before_ms?: number;
       before_id?: number;
+      include_total_count?: boolean;
     };
   };
 }

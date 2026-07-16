@@ -1,20 +1,63 @@
+import { lazy, Suspense, useMemo } from 'react';
 import { Navigate, useRoutes, type Location } from 'react-router-dom';
 import { DashboardPage } from '@/pages/DashboardPage';
-import { ProvidersWorkbenchPage } from '@/features/providers/ProvidersWorkbenchPage';
-import { AuthFilesPage } from '@/pages/AuthFilesPage';
-import { AuthFilesOAuthExcludedEditPage } from '@/pages/AuthFilesOAuthExcludedEditPage';
-import { AuthFilesOAuthModelAliasEditPage } from '@/pages/AuthFilesOAuthModelAliasEditPage';
-import { OAuthPage } from '@/pages/OAuthPage';
-import { QuotaPage } from '@/pages/QuotaPage';
-import { RequestMonitoringPage } from '@/pages/RequestMonitoringPage';
-import { UsageAnalyticsPage } from '@/pages/UsageAnalyticsPage';
-import { PluginResourcePage } from '@/features/plugins/PluginResourcePage';
-import { PluginsPage } from '@/features/plugins/PluginsPage';
-import { PluginStorePage } from '@/features/plugins/PluginStorePage';
-import { ConfigPage } from '@/pages/ConfigPage';
-import { LogsPage } from '@/pages/LogsPage';
-import { SystemPage } from '@/pages/SystemPage';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuthStore } from '@/stores';
+
+const ProvidersWorkbenchPage = lazy(() =>
+  import('@/features/providers/ProvidersWorkbenchPage').then((module) => ({
+    default: module.ProvidersWorkbenchPage,
+  }))
+);
+const AuthFilesPage = lazy(() =>
+  import('@/pages/AuthFilesPage').then((module) => ({ default: module.AuthFilesPage }))
+);
+const AuthFilesOAuthExcludedEditPage = lazy(() =>
+  import('@/pages/AuthFilesOAuthExcludedEditPage').then((module) => ({
+    default: module.AuthFilesOAuthExcludedEditPage,
+  }))
+);
+const AuthFilesOAuthModelAliasEditPage = lazy(() =>
+  import('@/pages/AuthFilesOAuthModelAliasEditPage').then((module) => ({
+    default: module.AuthFilesOAuthModelAliasEditPage,
+  }))
+);
+const OAuthPage = lazy(() =>
+  import('@/pages/OAuthPage').then((module) => ({ default: module.OAuthPage }))
+);
+const QuotaPage = lazy(() =>
+  import('@/pages/QuotaPage').then((module) => ({ default: module.QuotaPage }))
+);
+const RequestMonitoringPage = lazy(() =>
+  import('@/pages/RequestMonitoringPage').then((module) => ({
+    default: module.RequestMonitoringPage,
+  }))
+);
+const UsageAnalyticsPage = lazy(() =>
+  import('@/pages/UsageAnalyticsPage').then((module) => ({ default: module.UsageAnalyticsPage }))
+);
+const PluginResourcePage = lazy(() =>
+  import('@/features/plugins/PluginResourcePage').then((module) => ({
+    default: module.PluginResourcePage,
+  }))
+);
+const PluginsPage = lazy(() =>
+  import('@/features/plugins/PluginsPage').then((module) => ({ default: module.PluginsPage }))
+);
+const PluginStorePage = lazy(() =>
+  import('@/features/plugins/PluginStorePage').then((module) => ({
+    default: module.PluginStorePage,
+  }))
+);
+const ConfigPage = lazy(() =>
+  import('@/pages/ConfigPage').then((module) => ({ default: module.ConfigPage }))
+);
+const LogsPage = lazy(() =>
+  import('@/pages/LogsPage').then((module) => ({ default: module.LogsPage }))
+);
+const SystemPage = lazy(() =>
+  import('@/pages/SystemPage').then((module) => ({ default: module.SystemPage }))
+);
 
 const createMainRoutes = (supportsPlugin: boolean) => [
   { path: '/', element: <DashboardPage /> },
@@ -50,5 +93,18 @@ const createMainRoutes = (supportsPlugin: boolean) => [
 
 export function MainRoutes({ location }: { location?: Location }) {
   const supportsPlugin = useAuthStore((state) => state.supportsPlugin);
-  return useRoutes(createMainRoutes(supportsPlugin), location);
+  const routes = useMemo(() => createMainRoutes(supportsPlugin), [supportsPlugin]);
+  const routeElement = useRoutes(routes, location);
+
+  return (
+    <Suspense
+      fallback={
+        <div className="route-loading" aria-busy="true">
+          <LoadingSpinner size={24} />
+        </div>
+      }
+    >
+      {routeElement}
+    </Suspense>
+  );
 }

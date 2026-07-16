@@ -1,7 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import '@/styles/global.scss';
-import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
+import logoImage from '@/assets/logo.jpg';
+import { initializeI18n } from '@/i18n';
 import App from './App.tsx';
 
 document.title = 'CLI Proxy API Management Center';
@@ -10,18 +11,23 @@ document.documentElement.classList.add('notranslate');
 
 const faviconEl = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
 if (faviconEl) {
-  faviconEl.href = INLINE_LOGO_JPEG;
+  faviconEl.href = logoImage;
   faviconEl.type = 'image/jpeg';
 } else {
   const newFavicon = document.createElement('link');
   newFavicon.rel = 'icon';
   newFavicon.type = 'image/jpeg';
-  newFavicon.href = INLINE_LOGO_JPEG;
+  newFavicon.href = logoImage;
   document.head.appendChild(newFavicon);
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+async function bootstrap() {
+  await initializeI18n();
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>
+  );
+}
+
+void bootstrap();

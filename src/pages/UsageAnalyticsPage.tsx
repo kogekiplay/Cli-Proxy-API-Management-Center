@@ -124,11 +124,37 @@ const RANGE_MS: Record<RangeKey, number> = {
 const EVENT_LIMIT = 80;
 const EXPORT_EVENT_LIMIT = 50000;
 const EMPTY_EVENTS: UsageAnalyticsEventRow[] = [];
+const EMPTY_TOKEN_TREND_ROWS: TokenTrendRow[] = [];
+const EMPTY_NAMED_STATS: NamedStatRow[] = [];
+const EMPTY_HEATMAP_CELLS: HeatmapCell[] = [];
 
 const numberFormatter = new Intl.NumberFormat();
 const compactNumberFormatter = new Intl.NumberFormat(undefined, {
   notation: 'compact',
   maximumFractionDigits: 1,
+});
+const usdFormatter = new Intl.NumberFormat(undefined, {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+const monitoringDateTimeFormatter = new Intl.DateTimeFormat(undefined, {
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+});
+const fullDateTimeFormatter = new Intl.DateTimeFormat(undefined, {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
 });
 
 const formatNumber = (value: number | undefined | null) => numberFormatter.format(value ?? 0);
@@ -137,38 +163,16 @@ const formatCompactNumber = (value: number | undefined | null) =>
   compactNumberFormatter.format(value ?? 0);
 
 const formatCost = (value: number | undefined | null) =>
-  value === undefined || value === null
-    ? '-'
-    : new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(value);
+  value === undefined || value === null ? '-' : usdFormatter.format(value);
 
 const formatMonitoringDateTime = (value: number | undefined | null) => {
   if (!value) return '-';
-  return new Date(value).toLocaleString(undefined, {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  });
+  return monitoringDateTimeFormatter.format(value);
 };
 
 const formatFullDateTime = (value: number | undefined | null) => {
   if (!value) return '-';
-  return new Date(value).toLocaleString(undefined, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  });
+  return fullDateTimeFormatter.format(value);
 };
 
 const formatDateInputValue = (value: number) => {
@@ -262,21 +266,35 @@ const accountIdFromRef = (value: string | undefined | null) => {
 const eventRowKey = (row: UsageAnalyticsEventRow) =>
   String(row.id || row.request_id || `${row.timestamp_ms}:${row.provider}:${row.model}`);
 
-const percentile = (values: Array<number | null | undefined>, ratio: number) => {
-  const sorted = values
-    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
-    .sort((left, right) => left - right);
-  if (sorted.length === 0) return null;
-  const index = Math.min(sorted.length - 1, Math.ceil(sorted.length * ratio) - 1);
-  return sorted[index] ?? null;
-};
+const calculateEventMetrics = (events: UsageAnalyticsEventRow[]) => {
+  const latencyValues: number[] = [];
+  const ttftValues: number[] = [];
+  let latencyTotal = 0;
 
-const average = (values: Array<number | null | undefined>) => {
-  const valid = values.filter(
-    (value): value is number => typeof value === 'number' && Number.isFinite(value)
-  );
-  if (valid.length === 0) return null;
-  return valid.reduce((sum, value) => sum + value, 0) / valid.length;
+  events.forEach((row) => {
+    if (typeof row.latency_ms === 'number' && Number.isFinite(row.latency_ms)) {
+      latencyValues.push(row.latency_ms);
+      latencyTotal += row.latency_ms;
+    }
+    if (typeof row.ttft_ms === 'number' && Number.isFinite(row.ttft_ms)) {
+      ttftValues.push(row.ttft_ms);
+    }
+  });
+
+  latencyValues.sort((left, right) => left - right);
+  ttftValues.sort((left, right) => left - right);
+  const valueAtPercentile = (values: number[], ratio: number) => {
+    if (values.length === 0) return null;
+    const index = Math.min(values.length - 1, Math.ceil(values.length * ratio) - 1);
+    return values[index] ?? null;
+  };
+
+  return {
+    averageLatencyMs: latencyValues.length > 0 ? latencyTotal / latencyValues.length : null,
+    p50LatencyMs: valueAtPercentile(latencyValues, 0.5),
+    p95LatencyMs: valueAtPercentile(latencyValues, 0.95),
+    p95TtftMs: valueAtPercentile(ttftValues, 0.95),
+  };
 };
 
 const formatTokensPerSecond = (row: UsageAnalyticsEventRow) => {
@@ -824,6 +842,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
                 limit,
                 before_ms: cursor?.beforeMs,
                 before_id: cursor?.beforeID,
+                include_total_count: false,
               }
             : undefined,
         },
@@ -942,24 +961,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   const events = data?.events?.items ?? EMPTY_EVENTS;
   const timeline = useMemo(() => data?.timeline ?? [], [data?.timeline]);
 
-  const eventMetrics = useMemo(
-    () => ({
-      averageLatencyMs: average(events.map((row) => row.latency_ms)),
-      p50LatencyMs: percentile(
-        events.map((row) => row.latency_ms),
-        0.5
-      ),
-      p95LatencyMs: percentile(
-        events.map((row) => row.latency_ms),
-        0.95
-      ),
-      p95TtftMs: percentile(
-        events.map((row) => row.ttft_ms),
-        0.95
-      ),
-    }),
-    [events]
-  );
+  const eventMetrics = useMemo(() => calculateEventMetrics(events), [events]);
 
   const authFileByIndex = useMemo(() => {
     const map = new Map<string, AuthFileItem>();
@@ -1542,8 +1544,9 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     value: cacheHitRate === null ? '-' : `${cacheHitRate.toFixed(1)}%`,
   })}`;
   const tokenTrendRows = useMemo(
-    () => deriveTokenTrendRows(timeline, events, range),
-    [events, range, timeline]
+    () =>
+      isMonitoringView ? EMPTY_TOKEN_TREND_ROWS : deriveTokenTrendRows(timeline, events, range),
+    [events, isMonitoringView, range, timeline]
   );
   const trendMaxTokens = useMemo(
     () => Math.max(...tokenTrendRows.map((row) => row.total), 1),
@@ -1557,11 +1560,20 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     return previous > 0 ? ((current - previous) / previous) * 100 : null;
   }, [tokenTrendRows]);
   const providerStats = useMemo(
-    () => buildProviderStats(data?.credential_stats ?? [], events),
-    [data?.credential_stats, events]
+    () =>
+      isMonitoringView
+        ? EMPTY_NAMED_STATS
+        : buildProviderStats(data?.credential_stats ?? [], events),
+    [data?.credential_stats, events, isMonitoringView]
   );
-  const failureStats = useMemo(() => buildFailureStats(events), [events]);
-  const heatmapCells = useMemo(() => buildHeatmapCells(events), [events]);
+  const failureStats = useMemo(
+    () => (isMonitoringView ? EMPTY_NAMED_STATS : buildFailureStats(events)),
+    [events, isMonitoringView]
+  );
+  const heatmapCells = useMemo(
+    () => (isMonitoringView ? EMPTY_HEATMAP_CELLS : buildHeatmapCells(events)),
+    [events, isMonitoringView]
+  );
   const topTrendRow = useMemo(
     () =>
       tokenTrendRows.reduce<TokenTrendRow | null>(
@@ -1573,20 +1585,25 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   const topProvider = providerStats[0];
   const topFailure = failureStats[0];
   const donutGradient = useMemo(() => buildDonutGradient(providerStats), [providerStats]);
-  const lineCalls = buildLinePoints(
-    tokenTrendRows.map((row) => row.calls),
-    640,
-    220
-  );
-  const lineTokens = buildLinePoints(
-    tokenTrendRows.map((row) => row.total),
-    640,
-    220
-  );
-  const lineCost = buildLinePoints(
-    tokenTrendRows.map((row) => row.cost),
-    640,
-    220
+  const { lineCalls, lineTokens, lineCost } = useMemo(
+    () => ({
+      lineCalls: buildLinePoints(
+        tokenTrendRows.map((row) => row.calls),
+        640,
+        220
+      ),
+      lineTokens: buildLinePoints(
+        tokenTrendRows.map((row) => row.total),
+        640,
+        220
+      ),
+      lineCost: buildLinePoints(
+        tokenTrendRows.map((row) => row.cost),
+        640,
+        220
+      ),
+    }),
+    [tokenTrendRows]
   );
   const currentRangeLabel = rangeLabel(range);
   const usageTrendText = comparisonText(`较前 ${currentRangeLabel}`, trendChangePercent);
