@@ -6,14 +6,15 @@ import { PublicUsageLayout } from '@/components/layout/PublicUsageLayout';
 import { publicUsageViewerApi } from '@/services/api/usageAnalytics';
 import { useAuthStore } from '@/stores';
 import { detectApiBaseFromLocation } from '@/utils/connection';
-import type { UsageAnalyticsView } from '@/pages/UsageAnalyticsPage';
+import { usageViewerViewForPathname } from '@/router/usageViewerRouting';
 
 const STARTUP_FEEDBACK_DELAY_MS = 600;
 
 type ViewerState = 'checking' | 'authenticated' | 'public' | 'denied';
 
-export function UsageViewerRoute({ view }: { view: UsageAnalyticsView }) {
+export function UsageViewerRoute() {
   const location = useLocation();
+  const view = usageViewerViewForPathname(location.pathname);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const managementKey = useAuthStore((state) => state.managementKey);
   const storedApiBase = useAuthStore((state) => state.apiBase);

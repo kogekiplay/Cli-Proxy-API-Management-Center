@@ -5,6 +5,7 @@ import { NotificationContainer } from '@/components/common/NotificationContainer
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
+import { createUsageViewerRoute } from '@/router/usageViewerRouting';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useLanguageStore, useThemeStore } from '@/stores';
 
@@ -12,7 +13,7 @@ const UsageViewerRoute = lazy(() =>
   import('@/router/UsageViewerRoute').then((module) => ({ default: module.UsageViewerRoute }))
 );
 
-const renderUsageViewerRoute = (view: 'analytics' | 'monitoring') => (
+const renderUsageViewerRoute = () => (
   <Suspense
     fallback={
       <div className="main-content" aria-busy="true">
@@ -20,7 +21,7 @@ const renderUsageViewerRoute = (view: 'analytics' | 'monitoring') => (
       </div>
     }
   >
-    <UsageViewerRoute view={view} />
+    <UsageViewerRoute />
   </Suspense>
 );
 
@@ -39,8 +40,7 @@ const router = createHashRouter([
     element: <RootShell />,
     children: [
       { path: '/login', element: <LoginPage /> },
-      { path: '/usage-analytics', element: renderUsageViewerRoute('analytics') },
-      { path: '/monitoring', element: renderUsageViewerRoute('monitoring') },
+      createUsageViewerRoute(renderUsageViewerRoute()),
       {
         path: '/*',
         element: (
