@@ -218,6 +218,12 @@
     "title": "請求監控",
     "subtitle": "查看 CPA 最近請求、狀態碼、延遲、TTFT、Token 和錯誤詳情。"
   },
+  "public_usage_viewer": {
+    "title": "公開用量中心",
+    "readonly": "公開唯讀",
+    "admin_login": "管理員登入",
+    "notice": "僅顯示去識別化後的唯讀統計；設定、金鑰、認證檔案路徑與原始錯誤內容不會公開。"
+  },
   "opencode_go": {
     "title": "OpenCode Go 帳號",
     "subtitle": "從瀏覽器助手同步帳號、API key 和 Cookie，並寫入 OpenAI-compatible 供應商。",
@@ -1000,6 +1006,8 @@
           "disable_panel_desc": "停用內建的 Web 控制面板",
           "disable_auto_update_panel": "停用面板自動更新",
           "disable_auto_update_panel_desc": "首次缺失時仍可下載，但不再從 GitHub 背景自動更新",
+          "public_usage_viewer": "公開用量檢視",
+          "public_usage_viewer_desc": "無需管理金鑰開放請求監控與用量分析；僅提供去識別化唯讀資料",
           "secret_key": "管理金鑰",
           "secret_key_placeholder": "設定管理金鑰",
           "panel_repo": "面板儲存庫"

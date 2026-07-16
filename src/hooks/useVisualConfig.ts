@@ -875,6 +875,7 @@ function getNextDirtyFields(
   (
     [
       'rmDisableAutoUpdatePanel',
+      'rmPublicUsageViewer',
       'errorLogsMaxFiles',
       'usageStatisticsEnabled',
       'redisUsageQueueRetentionSeconds',
@@ -1103,6 +1104,7 @@ export function useVisualConfig() {
             : '',
         rmDisableControlPanel: Boolean(remoteManagement?.['disable-control-panel']),
         rmDisableAutoUpdatePanel: Boolean(remoteManagement?.['disable-auto-update-panel']),
+        rmPublicUsageViewer: Boolean(remoteManagement?.['public-usage-viewer']),
         rmPanelRepo:
           typeof remoteManagement?.['panel-github-repository'] === 'string'
             ? remoteManagement['panel-github-repository']
@@ -1246,6 +1248,7 @@ export function useVisualConfig() {
           dirtyFields.has('rmSecretKey') ||
           dirtyFields.has('rmDisableControlPanel') ||
           dirtyFields.has('rmDisableAutoUpdatePanel') ||
+          dirtyFields.has('rmPublicUsageViewer') ||
           dirtyFields.has('rmPanelRepo');
         if (remoteManagementDirty) {
           ensureMapInDoc(doc, ['remote-management']);
@@ -1267,6 +1270,13 @@ export function useVisualConfig() {
               doc,
               ['remote-management', 'disable-auto-update-panel'],
               values.rmDisableAutoUpdatePanel
+            );
+          }
+          if (dirtyFields.has('rmPublicUsageViewer')) {
+            setBooleanInDoc(
+              doc,
+              ['remote-management', 'public-usage-viewer'],
+              values.rmPublicUsageViewer
             );
           }
           if (dirtyFields.has('rmPanelRepo')) {

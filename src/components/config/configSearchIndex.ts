@@ -6,13 +6,7 @@
 // JSX in <FieldAnchor fieldId="..."> using the same `fieldId`).
 
 export type VisualSectionId =
-  | 'connectivity'
-  | 'network'
-  | 'logging'
-  | 'quota'
-  | 'streaming'
-  | 'advanced'
-  | 'payload';
+  'connectivity' | 'network' | 'logging' | 'quota' | 'streaming' | 'advanced' | 'payload';
 
 export interface ConfigFieldSearchEntry {
   /** Stable anchor id; matches FieldAnchor's `fieldId` and the rendered DOM id. */
@@ -107,6 +101,14 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     sectionId: 'connectivity',
     labelKey: L('sections.remote.disable_auto_update_panel'),
     yamlKeys: ['remote-management', 'disable-auto-update-panel'],
+  },
+  {
+    fieldId: 'rmPublicUsageViewer',
+    sectionId: 'connectivity',
+    labelKey: L('sections.remote.public_usage_viewer'),
+    hintKey: L('sections.remote.public_usage_viewer_desc'),
+    yamlKeys: ['remote-management', 'public-usage-viewer'],
+    keywords: ['public', 'anonymous', 'readonly', 'usage', 'monitoring'],
   },
   {
     fieldId: 'rmSecretKey',

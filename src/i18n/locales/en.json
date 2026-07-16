@@ -218,6 +218,12 @@
     "title": "Request Monitoring",
     "subtitle": "Inspect recent CPA requests, status codes, latency, TTFT, tokens, and error details."
   },
+  "public_usage_viewer": {
+    "title": "Public Usage Center",
+    "readonly": "Public read-only",
+    "admin_login": "Admin sign in",
+    "notice": "Only redacted read-only statistics are shown. Configuration, secrets, auth paths, and raw error bodies stay private."
+  },
   "opencode_go": {
     "title": "OpenCode Go Accounts",
     "subtitle": "Sync accounts, API keys, and cookies from the browser helper into an OpenAI-compatible provider.",
@@ -1012,6 +1018,8 @@
           "disable_panel_desc": "Disable the built-in web control panel",
           "disable_auto_update_panel": "Disable Panel Auto Updates",
           "disable_auto_update_panel_desc": "Download the panel when first missing, but never auto-update it from GitHub",
+          "public_usage_viewer": "Public Usage Viewer",
+          "public_usage_viewer_desc": "Expose redacted, read-only request monitoring and usage analytics without a management key",
           "secret_key": "Management Key",
           "secret_key_placeholder": "Set management key",
           "panel_repo": "Panel Repository"

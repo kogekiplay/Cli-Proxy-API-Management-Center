@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import type { AxiosRequestConfig } from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -48,6 +49,7 @@ import { calculateCacheHitRate } from '@/features/usageAnalytics/cacheMetrics';
 import { apiKeysApi, authFilesApi } from '@/services/api';
 import { opencodeGoApi } from '@/services/api/opencodeGo';
 import {
+  publicUsageViewerApi,
   usageAnalyticsApi,
   type UsageAnalyticsAPIKeyStat,
   type UsageAnalyticsCredentialStat,
@@ -75,7 +77,7 @@ import {
 } from './usageMonitoringColumns';
 
 type RangeKey = '24h' | '7d' | '30d';
-type UsageAnalyticsView = 'analytics' | 'monitoring';
+export type UsageAnalyticsView = 'analytics' | 'monitoring';
 type SummaryAccent = 'blue' | 'green' | 'red' | 'amber' | 'teal' | 'cyan';
 type AnalysisTrendBucket = 'hour' | 'day';
 type MonitoringStatusFilter = '' | 'success' | 'failed' | '4xx' | '5xx';
@@ -709,7 +711,15 @@ function DetailItem({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyticsView } = {}) {
+export function UsageAnalyticsPage({
+  view = 'analytics',
+  publicMode = false,
+  publicApiBase = '',
+}: {
+  view?: UsageAnalyticsView;
+  publicMode?: boolean;
+  publicApiBase?: string;
+} = {}) {
   const { t } = useTranslation();
   const isMonitoringView = view === 'monitoring';
   const showNotification = useNotificationStore((state) => state.showNotification);
@@ -739,6 +749,14 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   const loadRequestRef = useRef(0);
   const loadAbortRef = useRef<AbortController | null>(null);
   const isCompleteAnalysisView = !isMonitoringView && analysisMode === 'complete';
+
+  const queryAnalytics = useCallback(
+    (request: UsageAnalyticsRequest, config?: AxiosRequestConfig) =>
+      publicMode
+        ? publicUsageViewerApi.query(publicApiBase, request, config)
+        : usageAnalyticsApi.query(request, config),
+    [publicApiBase, publicMode]
+  );
 
   useEffect(() => {
     if (!isCompleteAnalysisView) return undefined;
@@ -866,14 +884,14 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     setError('');
     try {
       if (!isMonitoringView) {
-        const response = await usageAnalyticsApi.query(buildAnalyticsRequest(EVENT_LIMIT), {
+        const response = await queryAnalytics(buildAnalyticsRequest(EVENT_LIMIT), {
           signal: controller.signal,
         });
         if (isCurrentRequest()) setData(response);
         return;
       }
 
-      const eventsResponse = await usageAnalyticsApi.query(
+      const eventsResponse = await queryAnalytics(
         buildAnalyticsRequest(EVENT_LIMIT, undefined, false),
         { signal: controller.signal }
       );
@@ -883,7 +901,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
       setStatsLoading(true);
 
       try {
-        const statsResponse = await usageAnalyticsApi.query(
+        const statsResponse = await queryAnalytics(
           buildAnalyticsRequest(EVENT_LIMIT, undefined, true, false),
           { signal: controller.signal }
         );
@@ -905,7 +923,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
       if (isCurrentRequest()) setLoading(false);
       if (loadAbortRef.current === controller) loadAbortRef.current = null;
     }
-  }, [buildAnalyticsRequest, isMonitoringView, showNotification]);
+  }, [buildAnalyticsRequest, isMonitoringView, queryAnalytics, showNotification]);
 
   useEffect(() => {
     void load();
@@ -915,6 +933,11 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
   }, [load]);
 
   useEffect(() => {
+    if (publicMode) {
+      setAuthFiles([]);
+      setOpenCodeAccounts([]);
+      return undefined;
+    }
     let cancelled = false;
     void Promise.allSettled([authFilesApi.list(), opencodeGoApi.list()]).then((results) => {
       if (cancelled) return;
@@ -929,9 +952,13 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [publicMode]);
 
   useEffect(() => {
+    if (publicMode) {
+      setClientAPIKeyOptions([]);
+      return undefined;
+    }
     let cancelled = false;
     void apiKeysApi
       .list()
@@ -955,7 +982,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [publicMode]);
 
   const summary = data?.summary;
   const events = data?.events?.items ?? EMPTY_EVENTS;
@@ -1352,7 +1379,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     setExportLoading(true);
     setError('');
     try {
-      const response = await usageAnalyticsApi.query(
+      const response = await queryAnalytics(
         buildAnalyticsRequest(EXPORT_EVENT_LIMIT, undefined, false)
       );
       const rows = response.events?.items ?? [];
@@ -1367,7 +1394,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     } finally {
       setExportLoading(false);
     }
-  }, [buildAnalyticsRequest, buildEventsCSV]);
+  }, [buildAnalyticsRequest, buildEventsCSV, queryAnalytics]);
 
   const handleLoadMoreEvents = useCallback(async () => {
     const cursor = data?.events;
@@ -1375,7 +1402,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     setEventsLoadingMore(true);
     setError('');
     try {
-      const response = await usageAnalyticsApi.query(
+      const response = await queryAnalytics(
         buildAnalyticsRequest(
           EVENT_LIMIT,
           {
@@ -1409,7 +1436,7 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
     } finally {
       setEventsLoadingMore(false);
     }
-  }, [buildAnalyticsRequest, data?.events, eventsLoadingMore]);
+  }, [buildAnalyticsRequest, data?.events, eventsLoadingMore, queryAnalytics]);
 
   const handleMonitoringNextPage = useCallback(async () => {
     if (safeMonitoringPage < monitoringPageCount) {
@@ -2712,10 +2739,16 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
             </Button>
           </div>
           <div className={styles.headerActions}>
-            <Button variant="secondary" onClick={() => void handleExport()} loading={exportLoading}>
-              <IconDownload size={16} />
-              导出报告
-            </Button>
+            {!publicMode ? (
+              <Button
+                variant="secondary"
+                onClick={() => void handleExport()}
+                loading={exportLoading}
+              >
+                <IconDownload size={16} />
+                导出报告
+              </Button>
+            ) : null}
             <Button onClick={() => void load()} loading={loading}>
               <IconRefreshCw size={16} />
               刷新数据
@@ -2736,10 +2769,16 @@ export function UsageAnalyticsPage({ view = 'analytics' }: { view?: UsageAnalyti
             </p>
           </div>
           <div className={styles.headerActions}>
-            <Button variant="secondary" onClick={() => void handleExport()} loading={exportLoading}>
-              <IconDownload size={16} />
-              {t('usage_analytics.export')}
-            </Button>
+            {!publicMode ? (
+              <Button
+                variant="secondary"
+                onClick={() => void handleExport()}
+                loading={exportLoading}
+              >
+                <IconDownload size={16} />
+                {t('usage_analytics.export')}
+              </Button>
+            ) : null}
             <Button onClick={() => void load()} loading={loading}>
               <IconRefreshCw size={16} />
               {isMonitoringView ? '刷新数据' : t('common.refresh')}

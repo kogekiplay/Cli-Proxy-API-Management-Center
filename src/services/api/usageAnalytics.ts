@@ -1,5 +1,7 @@
-import type { AxiosRequestConfig } from 'axios';
+import axios, { type AxiosRequestConfig } from 'axios';
 import { apiClient } from './client';
+import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
+import { REQUEST_TIMEOUT_MS } from '@/utils/constants';
 
 export interface UsageAnalyticsTokens {
   input_tokens: number;
@@ -193,5 +195,41 @@ export const usageAnalyticsApi = {
     config?: AxiosRequestConfig
   ): Promise<UsageAnalyticsResponse> {
     return apiClient.post<UsageAnalyticsResponse>('/usage-analytics', request, config);
+  },
+};
+
+export const buildPublicUsageViewerURL = (apiBase: string, path: string): string => {
+  const base = normalizeApiBase(apiBase || detectApiBaseFromLocation());
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${base}/v0/public${normalizedPath}`;
+};
+
+export const publicUsageViewerApi = {
+  async status(apiBase = ''): Promise<{ enabled: boolean }> {
+    const response = await axios.get<{ enabled: boolean }>(
+      buildPublicUsageViewerURL(apiBase, '/usage-viewer'),
+      { timeout: REQUEST_TIMEOUT_MS }
+    );
+    return response.data;
+  },
+
+  async query(
+    apiBase: string,
+    request: UsageAnalyticsRequest,
+    config?: AxiosRequestConfig
+  ): Promise<UsageAnalyticsResponse> {
+    const response = await axios.post<UsageAnalyticsResponse>(
+      buildPublicUsageViewerURL(apiBase, '/usage-analytics'),
+      request,
+      {
+        ...config,
+        timeout: config?.timeout ?? REQUEST_TIMEOUT_MS,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(config?.headers ?? {}),
+        },
+      }
+    );
+    return response.data;
   },
 };

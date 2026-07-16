@@ -218,6 +218,12 @@
     "title": "请求监控",
     "subtitle": "查看 CPA 最近请求、状态码、延迟、TTFT、Token 和错误详情。"
   },
+  "public_usage_viewer": {
+    "title": "公开用量中心",
+    "readonly": "公开只读",
+    "admin_login": "管理员登录",
+    "notice": "仅展示脱敏后的只读统计；配置、密钥、认证文件路径与原始错误体不会公开。"
+  },
   "opencode_go": {
     "title": "OpenCode Go 账号",
     "subtitle": "从浏览器助手同步账号、API key 和 Cookie，并写入 OpenAI-compatible 提供商。",
@@ -1012,6 +1018,8 @@
           "disable_panel_desc": "禁用内置的 Web 控制面板",
           "disable_auto_update_panel": "禁用面板自动更新",
           "disable_auto_update_panel_desc": "首次缺失时仍可下载，但不再从 GitHub 后台自动更新",
+          "public_usage_viewer": "公开用量查看",
+          "public_usage_viewer_desc": "无需管理密钥开放请求监控与用量分析；仅提供脱敏只读数据",
           "secret_key": "管理密钥",
           "secret_key_placeholder": "设置管理密钥",
           "panel_repo": "面板仓库"

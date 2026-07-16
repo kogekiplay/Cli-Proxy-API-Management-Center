@@ -1149,6 +1149,17 @@ export function VisualConfigEditor({
                           }
                         />
                       </FieldAnchor>
+                      <FieldAnchor fieldId="rmPublicUsageViewer">
+                        <ToggleRow
+                          title={t('config_management.visual.sections.remote.public_usage_viewer')}
+                          description={t(
+                            'config_management.visual.sections.remote.public_usage_viewer_desc'
+                          )}
+                          checked={values.rmPublicUsageViewer}
+                          disabled={disabled}
+                          onChange={(rmPublicUsageViewer) => onChange({ rmPublicUsageViewer })}
+                        />
+                      </FieldAnchor>
                     </SectionGrid>
                     <SectionGrid>
                       <FieldAnchor fieldId="rmSecretKey">

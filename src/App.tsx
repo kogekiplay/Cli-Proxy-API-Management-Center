@@ -1,11 +1,28 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Outlet, RouterProvider, createHashRouter } from 'react-router-dom';
 import { LoginPage } from '@/pages/LoginPage';
 import { NotificationContainer } from '@/components/common/NotificationContainer';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useLanguageStore, useThemeStore } from '@/stores';
+
+const UsageViewerRoute = lazy(() =>
+  import('@/router/UsageViewerRoute').then((module) => ({ default: module.UsageViewerRoute }))
+);
+
+const renderUsageViewerRoute = (view: 'analytics' | 'monitoring') => (
+  <Suspense
+    fallback={
+      <div className="main-content" aria-busy="true">
+        <LoadingSpinner size={24} />
+      </div>
+    }
+  >
+    <UsageViewerRoute view={view} />
+  </Suspense>
+);
 
 function RootShell() {
   return (
@@ -22,6 +39,8 @@ const router = createHashRouter([
     element: <RootShell />,
     children: [
       { path: '/login', element: <LoginPage /> },
+      { path: '/usage-analytics', element: renderUsageViewerRoute('analytics') },
+      { path: '/monitoring', element: renderUsageViewerRoute('monitoring') },
       {
         path: '/*',
         element: (
