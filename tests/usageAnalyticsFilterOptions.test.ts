@@ -3,6 +3,8 @@ import {
   buildUsageAPIKeyOptions,
   buildUsageAuthIndexOptions,
   buildUsageModelOptions,
+  buildPublicUsageAPIKeySources,
+  buildPublicUsageAuthFileSources,
   buildUsageProviderOptions,
   type UsageFilterSelection,
   type UsageFilterSource,
@@ -59,6 +61,42 @@ const authFiles = [
 ];
 
 describe('usage analytics filter options', () => {
+  test('builds guest credential choices from redacted analytics stats', () => {
+    const publicAuthFiles = buildPublicUsageAuthFileSources([
+      {
+        provider: 'codex',
+        auth_index: 'public-codex-q',
+        credential_display_name: 'q***@outlook.com',
+      },
+    ]);
+    const options = buildUsageAuthIndexOptions({
+      allLabel: '全部认证文件',
+      authFiles: publicAuthFiles,
+      selection: {},
+      usageRows: [
+        { provider: 'codex', authIndex: 'public-codex-q', authLabel: 'q***@outlook.com' },
+      ],
+    });
+
+    expect(optionValues(options)).toEqual(['', 'public-codex-q']);
+    expect(optionLabels(options)).toEqual(['全部认证文件', 'q***@outlook.com']);
+  });
+
+  test('builds guest API key choices from masked analytics previews', () => {
+    const publicAPIKeys = buildPublicUsageAPIKeySources([
+      { api_key_hash: 'hash-public-key-1', api_key_preview: 'sk-test...0001' },
+    ]);
+    const options = buildUsageAPIKeyOptions({
+      allLabel: '全部 API Key',
+      configuredAPIKeys: publicAPIKeys,
+      selection: {},
+      usageRows: [{ provider: 'codex', apiKeyHash: 'hash-public-key-1' }],
+    });
+
+    expect(optionValues(options)).toEqual(['', 'hash-public-key-1']);
+    expect(optionLabels(options)).toEqual(['全部 API Key', 'sk-test...0001']);
+  });
+
   test('scopes API key choices to the selected provider instead of showing every configured key', () => {
     const options = buildUsageAPIKeyOptions({
       allLabel: '全部 API Key',

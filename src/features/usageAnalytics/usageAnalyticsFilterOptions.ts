@@ -31,12 +31,56 @@ export interface UsageAPIKeyFilterSource {
   label?: string | null;
 }
 
+export interface PublicUsageCredentialStatSource {
+  provider?: string | null;
+  auth_index?: string | null;
+  credential_display_name?: string | null;
+}
+
+export interface PublicUsageAPIKeyStatSource {
+  api_key_hash?: string | null;
+  api_key_preview?: string | null;
+}
+
 type FilterDimension = keyof UsageFilterSelection;
 
 const EMPTY_VALUE = '';
 
 const clean = (value: string | null | undefined) => value?.trim() ?? '';
 const normalize = (value: string | null | undefined) => clean(value).toLowerCase();
+const compactOpaqueValue = (value: string) =>
+  value.length > 16 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
+
+export function buildPublicUsageAuthFileSources(
+  stats: PublicUsageCredentialStatSource[]
+): UsageAuthFileFilterSource[] {
+  const sources = new Map<string, UsageAuthFileFilterSource>();
+  stats.forEach((row) => {
+    const authIndex = clean(row.auth_index);
+    if (!authIndex || sources.has(authIndex)) return;
+    sources.set(authIndex, {
+      provider: clean(row.provider),
+      authIndex,
+      label: clean(row.credential_display_name) || compactOpaqueValue(authIndex),
+    });
+  });
+  return Array.from(sources.values());
+}
+
+export function buildPublicUsageAPIKeySources(
+  stats: PublicUsageAPIKeyStatSource[]
+): UsageAPIKeyFilterSource[] {
+  const sources = new Map<string, UsageAPIKeyFilterSource>();
+  stats.forEach((row) => {
+    const value = clean(row.api_key_hash);
+    if (!value || sources.has(value)) return;
+    sources.set(value, {
+      value,
+      label: clean(row.api_key_preview) || compactOpaqueValue(value),
+    });
+  });
+  return Array.from(sources.values());
+}
 
 const selectionValue = (selection: UsageFilterSelection, dimension: FilterDimension) => {
   switch (dimension) {

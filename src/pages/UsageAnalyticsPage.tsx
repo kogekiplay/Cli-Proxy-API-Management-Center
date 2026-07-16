@@ -36,6 +36,8 @@ import {
   buildUsageAPIKeyOptions,
   buildUsageAuthIndexOptions,
   buildUsageModelOptions,
+  buildPublicUsageAPIKeySources,
+  buildPublicUsageAuthFileSources,
   buildUsageProviderOptions,
   type UsageFilterSelection,
   type UsageFilterSource,
@@ -1085,13 +1087,23 @@ export function UsageAnalyticsPage({
     [apiKeyHashFilter, authIndexFilter, modelFilter, providerFilter]
   );
 
+  const apiKeyFilterSources = useMemo(
+    () =>
+      publicMode
+        ? buildPublicUsageAPIKeySources(data?.api_key_stats ?? [])
+        : clientAPIKeyOptions,
+    [clientAPIKeyOptions, data?.api_key_stats, publicMode]
+  );
+
   const clientAPIKeyLabelByHash = useMemo(() => {
     const map = new Map<string, string>();
-    clientAPIKeyOptions.forEach((option) => {
-      if (option.value && !map.has(option.value)) map.set(option.value, option.label);
+    apiKeyFilterSources.forEach((option) => {
+      if (option.value && !map.has(option.value)) {
+        map.set(option.value, option.label?.trim() || option.value);
+      }
     });
     return map;
-  }, [clientAPIKeyOptions]);
+  }, [apiKeyFilterSources]);
 
   const resolveEventAPIKeyDisplay = useCallback(
     (row: UsageAnalyticsEventRow) =>
@@ -1158,13 +1170,17 @@ export function UsageAnalyticsPage({
   ]);
 
   const authFileFilterSources = useMemo(
-    () =>
-      authFiles.map((file) => ({
+    () => {
+      if (publicMode) {
+        return buildPublicUsageAuthFileSources(data?.credential_stats ?? []);
+      }
+      return authFiles.map((file) => ({
         provider: resolveAuthProvider(file),
         authIndex: authIndexOf(file),
         label: authFileDisplayName(file),
-      })),
-    [authFiles]
+      }));
+    },
+    [authFiles, data?.credential_stats, publicMode]
   );
 
   const providerFilterOptions = useMemo(
@@ -1205,12 +1221,12 @@ export function UsageAnalyticsPage({
     () =>
       buildUsageAPIKeyOptions({
         allLabel: t('usage_analytics.all_api_keys', { defaultValue: '全部 API Key' }),
-        configuredAPIKeys: clientAPIKeyOptions,
+        configuredAPIKeys: apiKeyFilterSources,
         selectedValue: apiKeyHashFilter,
         selection: usageFilterSelection,
         usageRows: usageFilterRows,
       }),
-    [apiKeyHashFilter, clientAPIKeyOptions, t, usageFilterRows, usageFilterSelection]
+    [apiKeyFilterSources, apiKeyHashFilter, t, usageFilterRows, usageFilterSelection]
   );
 
   const monitoringStatusOptions = useMemo<SelectOption[]>(
