@@ -90,6 +90,11 @@ export interface UsageAnalyticsAPIKeyStat {
   cost?: number | null;
 }
 
+export interface UsageAnalyticsAPIKeyOption {
+  api_key_hash: string;
+  api_key_preview: string;
+}
+
 export interface UsageAnalyticsCredentialStat {
   provider: string;
   auth_index: string;
@@ -157,6 +162,7 @@ export interface UsageAnalyticsResponse {
   timeline?: UsageAnalyticsTimelinePoint[];
   model_stats?: UsageAnalyticsModelStat[];
   api_key_stats?: UsageAnalyticsAPIKeyStat[];
+  client_api_key_options?: UsageAnalyticsAPIKeyOption[];
   credential_stats?: UsageAnalyticsCredentialStat[];
   events?: UsageAnalyticsEventsResponse;
 }

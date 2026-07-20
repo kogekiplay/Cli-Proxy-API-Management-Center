@@ -1090,9 +1090,13 @@ export function UsageAnalyticsPage({
   const apiKeyFilterSources = useMemo(
     () =>
       publicMode
-        ? buildPublicUsageAPIKeySources(data?.api_key_stats ?? [])
+        ? buildPublicUsageAPIKeySources(
+            data?.client_api_key_options?.length
+              ? data.client_api_key_options
+              : (data?.api_key_stats ?? [])
+          )
         : clientAPIKeyOptions,
-    [clientAPIKeyOptions, data?.api_key_stats, publicMode]
+    [clientAPIKeyOptions, data, publicMode]
   );
 
   const clientAPIKeyLabelByHash = useMemo(() => {
