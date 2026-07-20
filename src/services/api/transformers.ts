@@ -231,7 +231,10 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
   return config;
 };
 
-const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null => {
+const normalizeOpenAIProvider = (
+  provider: unknown,
+  sourceIndex?: number
+): OpenAIProviderConfig | null => {
   if (!isRecord(provider)) return null;
   const name = provider.name;
   const baseUrl = provider['base-url'];
@@ -266,6 +269,7 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
   if (testModel) result.testModel = String(testModel);
   const authIndex = normalizeAuthIndex(provider['auth-index']);
   if (authIndex) result.authIndex = authIndex;
+  if (sourceIndex !== undefined) result.sourceIndex = sourceIndex;
   return result;
 };
 
@@ -356,6 +360,13 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
       .filter(Boolean) as ProviderKeyConfig[];
   }
 
+  const xaiList = raw['xai-api-key'];
+  if (Array.isArray(xaiList)) {
+    config.xaiApiKeys = xaiList
+      .map((item) => normalizeProviderKeyConfig(item))
+      .filter(Boolean) as ProviderKeyConfig[];
+  }
+
   const claudeList = raw['claude-api-key'];
   if (Array.isArray(claudeList)) {
     config.claudeApiKeys = claudeList
@@ -373,7 +384,7 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   const openaiList = raw['openai-compatibility'];
   if (Array.isArray(openaiList)) {
     config.openaiCompatibility = openaiList
-      .map((item) => normalizeOpenAIProvider(item))
+      .map((item, index) => normalizeOpenAIProvider(item, index))
       .filter(Boolean) as OpenAIProviderConfig[];
   }
 
