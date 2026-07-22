@@ -213,13 +213,24 @@ function buildStatsRow(
   resetAt: string | null | undefined
 ): KimiQuotaRow | null {
   if (percent == null || !Number.isFinite(percent)) return null;
+  const remainingPercent = Math.max(0, Math.min(100, 100 - percent));
   return {
     id,
     labelKey,
-    used: percent,
+    used: remainingPercent,
     limit: 100,
-    usedPercent: percent,
+    usedPercent: remainingPercent,
     resetHint: resetAt ? formatKimiResetDate(resetAt) : undefined,
+  };
+}
+
+function toKimiRemainingRow(
+  row: KimiRowLabel & { used: number; limit: number; resetHint?: string }
+): KimiRowLabel & { used: number; limit: number; resetHint?: string } {
+  const remaining = Math.max(0, Math.min(row.limit, row.limit - row.used));
+  return {
+    ...row,
+    used: remaining,
   };
 }
 
@@ -247,7 +258,7 @@ export function buildKimiQuotaData(
           labelKey: 'kimi_quota.five_hour_usage',
         });
         if (row) {
-          rows.push({ id: 'five-hour', ...row });
+          rows.push({ id: 'five-hour', ...toKimiRemainingRow(row) });
         }
       }
     });
@@ -260,7 +271,7 @@ export function buildKimiQuotaData(
       labelKey: 'kimi_quota.seven_day_usage',
     });
     if (row) {
-      rows.push({ id: 'weekly', ...row });
+      rows.push({ id: 'weekly', ...toKimiRemainingRow(row) });
     }
   }
 
@@ -286,7 +297,7 @@ export function buildKimiQuotaData(
         labelKey: 'kimi_quota.total_usage',
       });
       if (row) {
-        rows.push({ id: 'total', ...row });
+        rows.push({ id: 'total', ...toKimiRemainingRow(row) });
       }
     }
   }
