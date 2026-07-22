@@ -440,6 +440,28 @@
   }
 }
 
+.kimiGrid {
+  display: grid;
+  gap: $spacing-md;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  @include tablet {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+
+  // Kimi official quota progress color.
+  .quotaBarFill,
+  .quotaBarFillHigh,
+  .quotaBarFillMedium,
+  .quotaBarFillLow {
+    background-color: #2b6aff;
+  }
+}
+
 // 卡片渐变背景 — subtle tint only
 .antigravityCard {
   background-image: linear-gradient(180deg, rgba(224, 247, 250, 0.06), transparent);

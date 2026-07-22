@@ -274,6 +274,8 @@ export interface KimiAuthentication {
 export interface KimiUsagePayload {
   usage?: KimiUsageDetail;
   limits?: KimiLimitItem[];
+  totalQuota?: KimiUsageDetail;
+  total_quota?: KimiUsageDetail;
   user?: KimiUser;
   authentication?: KimiAuthentication;
   domain?: string;

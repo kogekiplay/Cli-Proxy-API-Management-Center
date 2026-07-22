@@ -18,6 +18,7 @@ import type {
   XaiProductUsageSummary,
 } from '@/types';
 import { normalizeNumberValue, normalizeQuotaFraction, normalizeStringValue } from './parsers';
+import { formatKimiResetDate } from './formatters';
 
 const ANTIGRAVITY_BUCKET_WINDOW_ORDER = new Map<string, number>([
   ['5h', 0],
@@ -105,29 +106,16 @@ function toInt(value: unknown): number | null {
 }
 
 type KimiRowLabel = Pick<KimiQuotaRow, 'label' | 'labelKey' | 'labelParams'>;
+type KimiResetSource = Record<string, unknown>;
 
-function kimiResetHint(data: Record<string, unknown>): string | undefined {
+function kimiResetHint(data: KimiResetSource): string | undefined {
   const absoluteKeys = ['reset_at', 'resetAt', 'reset_time', 'resetTime'];
   for (const key of absoluteKeys) {
     const raw = data[key];
     if (typeof raw === 'string' && raw.trim()) {
-      try {
-        const truncated = raw.replace(/(\.\d{6})\d+/, '$1');
-        const date = new Date(truncated);
-        if (Number.isNaN(date.getTime())) continue;
-        const now = Date.now();
-        const delta = date.getTime() - now;
-        if (delta <= 0) return undefined;
-        const totalMinutes = Math.floor(delta / 60000);
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
-        if (hours > 0) return `${hours}h`;
-        if (minutes > 0) return `${minutes}m`;
-        return '<1m';
-      } catch {
-        continue;
-      }
+      const truncated = raw.replace(/(\.\d{6})\d+/, '$1');
+      const formatted = formatKimiResetDate(truncated);
+      if (formatted) return formatted;
     }
   }
 
@@ -145,54 +133,6 @@ function kimiResetHint(data: Record<string, unknown>): string | undefined {
   }
 
   return undefined;
-}
-
-function kimiDurationToken(duration: number, rawTimeUnit: unknown): string {
-  const unit = typeof rawTimeUnit === 'string' ? rawTimeUnit.trim().toUpperCase() : '';
-  if (unit === 'SECONDS' || unit === 'SECOND') return `${duration}s`;
-  if (!unit || unit === 'MINUTES' || unit === 'MINUTE') {
-    return duration % 60 === 0 ? `${duration / 60}h` : `${duration}m`;
-  }
-  if (unit === 'HOURS' || unit === 'HOUR') return `${duration}h`;
-  if (unit === 'DAYS' || unit === 'DAY') return `${duration}d`;
-  return duration % 60 === 0 ? `${duration / 60}h` : `${duration}m`;
-}
-
-function kimiLimitLabel(
-  item: KimiLimitItem,
-  detail: KimiUsageDetail | KimiLimitItem,
-  window: KimiLimitWindow,
-  index: number
-): KimiRowLabel {
-  for (const key of ['name', 'title', 'scope'] as const) {
-    const val = (item as Record<string, unknown>)[key] ?? (detail as Record<string, unknown>)[key];
-    if (typeof val === 'string' && val.trim()) return { label: val.trim() };
-  }
-
-  const duration =
-    toInt(window.duration) ??
-    toInt((item as Record<string, unknown>).duration) ??
-    toInt((detail as Record<string, unknown>).duration);
-  const timeUnit =
-    (window as Record<string, unknown>).timeUnit ??
-    (item as Record<string, unknown>).timeUnit ??
-    (detail as Record<string, unknown>).timeUnit;
-
-  if (duration !== null && duration > 0) {
-    return {
-      labelKey: 'kimi_quota.limit_window',
-      labelParams: {
-        duration: kimiDurationToken(duration, timeUnit),
-      },
-    };
-  }
-
-  return {
-    labelKey: 'kimi_quota.limit_index',
-    labelParams: {
-      index: index + 1,
-    },
-  };
 }
 
 function toKimiUsageRow(
@@ -233,34 +173,76 @@ export interface KimiQuotaData {
   subType: string | null;
 }
 
+function kimiWindowSeconds(
+  window: KimiLimitWindow,
+  item: KimiLimitItem,
+  detail: KimiUsageDetail | KimiLimitItem
+): number | null {
+  const duration =
+    toInt(window.duration) ??
+    toInt((item as Record<string, unknown>).duration) ??
+    toInt((detail as Record<string, unknown>).duration);
+  if (duration === null) return null;
+
+  const unit = ((window.timeUnit ??
+    (item as Record<string, unknown>).timeUnit ??
+    (detail as Record<string, unknown>).timeUnit) as string | undefined)
+    ?.trim()
+    .toUpperCase() ?? '';
+
+  if (unit === 'SECONDS' || unit === 'SECOND') return duration;
+  if (unit === 'MINUTES' || unit === 'MINUTE') return duration * 60;
+  if (unit === 'HOURS' || unit === 'HOUR') return duration * 3600;
+  if (unit === 'DAYS' || unit === 'DAY') return duration * 86400;
+  return duration * 60;
+}
+
 export function buildKimiQuotaData(payload: KimiUsagePayload): KimiQuotaData {
   const rows: KimiQuotaRow[] = [];
 
-  const usage = payload.usage;
-  if (usage && typeof usage === 'object') {
-    const summary = toKimiUsageRow(usage as Record<string, unknown>, {
-      labelKey: 'kimi_quota.weekly_limit',
+  // 1. Total usage (matches Kimi's "总使用量").
+  const totalQuota = payload.totalQuota ?? payload.total_quota;
+  if (totalQuota && typeof totalQuota === 'object') {
+    const row = toKimiUsageRow(totalQuota as Record<string, unknown>, {
+      labelKey: 'kimi_quota.total_usage',
     });
-    if (summary) {
-      rows.push({ id: 'summary', ...summary });
+    if (row) {
+      rows.push({ id: 'total', ...row });
     }
   }
 
+  // 2. Short-term limits: prefer the 5-hour window (matches "5 小时用量").
   const limits = payload.limits;
   if (Array.isArray(limits)) {
-    limits.forEach((item, idx) => {
+    limits.forEach((item) => {
       const detail = (item.detail && typeof item.detail === 'object' ? item.detail : item) as
         | KimiUsageDetail
         | KimiLimitItem;
       const window = (
         item.window && typeof item.window === 'object' ? item.window : {}
       ) as KimiLimitWindow;
-      const fallbackLabel = kimiLimitLabel(item, detail, window, idx);
-      const row = toKimiUsageRow(detail as Record<string, unknown>, fallbackLabel);
-      if (row) {
-        rows.push({ id: `limit-${idx}`, ...row });
+      const seconds = kimiWindowSeconds(window, item, detail);
+      // 5 hours = 18000 seconds. Allow a small tolerance.
+      if (seconds !== null && seconds > 0 && seconds <= 6 * 3600) {
+        const row = toKimiUsageRow(detail as Record<string, unknown>, {
+          labelKey: 'kimi_quota.five_hour_usage',
+        });
+        if (row) {
+          rows.push({ id: 'five-hour', ...row });
+        }
       }
     });
+  }
+
+  // 3. Weekly / 7-day usage (matches "7 天用量").
+  const usage = payload.usage;
+  if (usage && typeof usage === 'object') {
+    const row = toKimiUsageRow(usage as Record<string, unknown>, {
+      labelKey: 'kimi_quota.seven_day_usage',
+    });
+    if (row) {
+      rows.push({ id: 'weekly', ...row });
+    }
   }
 
   const normalizeString = (value: unknown): string | null => {
