@@ -453,12 +453,21 @@
     grid-template-columns: 1fr;
   }
 
-  // Kimi official quota progress color.
+  // Kimi official quota progress color (#1783ff light / #1a88ff dark).
   .quotaBarFill,
   .quotaBarFillHigh,
   .quotaBarFillMedium,
   .quotaBarFillLow {
-    background-color: #2b6aff;
+    background-color: #1783ff;
+  }
+}
+
+:global([data-theme='dark']) .kimiGrid {
+  .quotaBarFill,
+  .quotaBarFillHigh,
+  .quotaBarFillMedium,
+  .quotaBarFillLow {
+    background-color: #1a88ff;
   }
 }
 
@@ -698,6 +707,16 @@
   font-weight: 600;
   color: var(--text-primary);
   text-transform: capitalize;
+  min-width: 0;
+}
+
+.kimiPlanValue {
+  // Match Kimi official global font stack.
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto, 'Noto Sans',
+    Ubuntu, Cantarell, 'Helvetica Neue', sans-serif, Arial, 'PingFang SC', 'Source Han Sans SC',
+    'Microsoft YaHei UI', 'Microsoft YaHei', 'Noto Sans CJK SC';
+  font-weight: 600;
+  color: var(--text-primary);
   min-width: 0;
 }
 

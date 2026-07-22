@@ -1574,22 +1574,22 @@ const renderKimiItems = (
   if (planLabel || scopeLabel) {
     const planNodes: ReactNode[] = [];
 
-    const appendPlanItem = (key: string, label: string, value: string) => {
+    const appendPlanItem = (key: string, label: string, value: string, valueClass?: string) => {
       planNodes.push(
         h(
           'span',
           { key, className: styleMap.codexPlanItem },
           h('span', { className: styleMap.codexPlanLabel }, label),
-          h('span', { className: styleMap.codexPlanValue }, value)
+          h('span', { className: valueClass ?? styleMap.codexPlanValue }, value)
         )
       );
     };
 
     if (planLabel) {
-      appendPlanItem('plan-type', t('kimi_quota.plan_label'), planLabel);
+      appendPlanItem('plan-type', t('kimi_quota.plan_label'), planLabel, styleMap.kimiPlanValue);
     }
     if (scopeLabel) {
-      appendPlanItem('plan-scope', t('kimi_quota.scope_label'), scopeLabel);
+      appendPlanItem('plan-scope', t('kimi_quota.scope_label'), scopeLabel, styleMap.kimiPlanValue);
     }
 
     nodes.push(h('div', { key: 'plan', className: styleMap.codexPlan }, ...planNodes));
