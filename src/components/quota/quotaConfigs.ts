@@ -1514,14 +1514,44 @@ const fetchKimiQuota = async (file: AuthFileItem, t: TFunction): Promise<KimiQuo
   return buildKimiQuotaData(payload);
 };
 
-const getKimiPlanLabel = (level: string | null | undefined): string | null => {
-  if (!level) return null;
-  const normalized = level.trim().toUpperCase();
-  if (normalized === 'LEVEL_FREE') return 'Free';
-  if (normalized === 'LEVEL_BASIC') return 'Basic';
-  if (normalized === 'LEVEL_ADVANCED') return 'Advanced';
-  if (normalized === 'LEVEL_PRO') return 'Pro';
-  return level.replace(/^LEVEL_/i, '').replace(/_/g, ' ');
+const getKimiPlanLabel = (
+  subType: string | null | undefined,
+  membershipLevel: string | null | undefined
+): string | null => {
+  const sub = (subType ?? '').trim().toUpperCase();
+  const level = (membershipLevel ?? '').trim().toUpperCase();
+
+  // Marketing tier names from Kimi subscription page.
+  // The public /usages API only exposes `subType` + `membership.level`;
+  // exact mapping for paid tiers below Allegro is not yet confirmed.
+  if (sub === 'TYPE_FREE' || level === 'LEVEL_FREE') {
+    return 'Adagio 免费版';
+  }
+  if (sub === 'TYPE_PURCHASE') {
+    if (level === 'LEVEL_ADVANCED') return 'Allegro';
+    if (level === 'LEVEL_BASIC') return 'Andante';
+    if (level === 'LEVEL_STANDARD') return 'Moderato';
+    if (level === 'LEVEL_PREMIUM') return 'Allegretto';
+    if (level) {
+      return `付费订阅 (${level.replace(/^LEVEL_/i, '').replace(/_/g, ' ')})`;
+    }
+    return '付费订阅';
+  }
+
+  const raw = sub || level;
+  if (!raw) return null;
+  return raw.replace(/^TYPE_|^LEVEL_/i, '').replace(/_/g, ' ');
+};
+
+const getKimiScopeLabel = (scope: string | null | undefined): string | null => {
+  if (!scope) return null;
+  const normalized = scope.trim().toUpperCase();
+  if (normalized === 'FEATURE_CODING') return 'Kimi Code';
+  return scope
+    .replace(/^FEATURE_/i, '')
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
 const renderKimiItems = (
@@ -1536,14 +1566,8 @@ const renderKimiItems = (
   const membershipLevel = quota.membershipLevel ?? null;
   const scope = quota.scope ?? null;
 
-  const planLabel = getKimiPlanLabel(planType ?? membershipLevel);
-  const scopeLabel = scope
-    ? scope
-        .replace(/^FEATURE_/i, '')
-        .replace(/_/g, ' ')
-        .toLowerCase()
-        .replace(/\b\w/g, (c) => c.toUpperCase())
-    : null;
+  const planLabel = getKimiPlanLabel(planType, membershipLevel);
+  const scopeLabel = getKimiScopeLabel(scope);
 
   const nodes: ReactNode[] = [];
 
