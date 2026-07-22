@@ -606,7 +606,9 @@
     "weekly_limit": "周限额",
     "limit_window": "{{duration}} 限额",
     "limit_index": "限额 #{{index}}",
-    "reset_hint": "{{hint}} 后重置"
+    "reset_hint": "{{hint}} 后重置",
+    "plan_label": "套餐",
+    "scope_label": "产品"
   },
   "xai_quota": {
     "title": "Grok 额度",

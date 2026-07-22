@@ -555,7 +555,9 @@
     "weekly_limit": "Недельный лимит",
     "limit_window": "Лимит {{duration}}",
     "limit_index": "Лимит #{{index}}",
-    "reset_hint": "сброс через {{hint}}"
+    "reset_hint": "сброс через {{hint}}",
+    "plan_label": "Тариф",
+    "scope_label": "Продукт"
   },
   "xai_quota": {
     "title": "Квота Grok",

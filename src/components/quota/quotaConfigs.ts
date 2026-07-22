@@ -68,7 +68,7 @@ import {
   formatQuotaResetTime,
   formatKimiResetHint,
   buildAntigravityQuotaGroups,
-  buildKimiQuotaRows,
+  buildKimiQuotaData,
   buildXaiBillingSummary,
   mergeXaiBillingSummaries,
   createStatusError,
@@ -1479,7 +1479,16 @@ export const CODEX_CONFIG: QuotaConfig<CodexQuotaState, CodexQuotaData> = {
   renderQuotaItems: renderCodexItems,
 };
 
-const fetchKimiQuota = async (file: AuthFileItem, t: TFunction): Promise<KimiQuotaRow[]> => {
+type KimiQuotaData = {
+  rows: KimiQuotaRow[];
+  planType: string | null;
+  membershipLevel: string | null;
+  scope: string | null;
+  domain: string | null;
+  subType: string | null;
+};
+
+const fetchKimiQuota = async (file: AuthFileItem, t: TFunction): Promise<KimiQuotaData> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
@@ -1502,7 +1511,17 @@ const fetchKimiQuota = async (file: AuthFileItem, t: TFunction): Promise<KimiQuo
     throw new Error(t('kimi_quota.empty_data'));
   }
 
-  return buildKimiQuotaRows(payload);
+  return buildKimiQuotaData(payload);
+};
+
+const getKimiPlanLabel = (level: string | null | undefined): string | null => {
+  if (!level) return null;
+  const normalized = level.trim().toUpperCase();
+  if (normalized === 'LEVEL_FREE') return 'Free';
+  if (normalized === 'LEVEL_BASIC') return 'Basic';
+  if (normalized === 'LEVEL_ADVANCED') return 'Advanced';
+  if (normalized === 'LEVEL_PRO') return 'Pro';
+  return level.replace(/^LEVEL_/i, '').replace(/_/g, ' ');
 };
 
 const renderKimiItems = (
@@ -1511,14 +1530,53 @@ const renderKimiItems = (
   helpers: QuotaRenderHelpers
 ): ReactNode => {
   const { styles: styleMap, QuotaProgressBar } = helpers;
-  const { createElement: h } = React;
+  const { createElement: h, Fragment } = React;
   const rows = quota.rows ?? [];
+  const planType = quota.planType ?? null;
+  const membershipLevel = quota.membershipLevel ?? null;
+  const scope = quota.scope ?? null;
 
-  if (rows.length === 0) {
-    return h('div', { className: styleMap.quotaMessage }, t('kimi_quota.empty_data'));
+  const planLabel = getKimiPlanLabel(planType ?? membershipLevel);
+  const scopeLabel = scope
+    ? scope
+        .replace(/^FEATURE_/i, '')
+        .replace(/_/g, ' ')
+        .toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+    : null;
+
+  const nodes: ReactNode[] = [];
+
+  if (planLabel || scopeLabel) {
+    const planNodes: ReactNode[] = [];
+
+    const appendPlanItem = (key: string, label: string, value: string) => {
+      planNodes.push(
+        h(
+          'span',
+          { key, className: styleMap.codexPlanItem },
+          h('span', { className: styleMap.codexPlanLabel }, label),
+          h('span', { className: styleMap.codexPlanValue }, value)
+        )
+      );
+    };
+
+    if (planLabel) {
+      appendPlanItem('plan-type', t('kimi_quota.plan_label'), planLabel);
+    }
+    if (scopeLabel) {
+      appendPlanItem('plan-scope', t('kimi_quota.scope_label'), scopeLabel);
+    }
+
+    nodes.push(h('div', { key: 'plan', className: styleMap.codexPlan }, ...planNodes));
   }
 
-  return rows.map((row) => {
+  if (rows.length === 0) {
+    nodes.push(h('div', { key: 'empty', className: styleMap.quotaMessage }, t('kimi_quota.empty_data')));
+    return h(Fragment, null, ...nodes);
+  }
+
+  rows.forEach((row) => {
     const limit = row.limit;
     const used = row.used;
     const remaining =
@@ -1533,27 +1591,31 @@ const renderKimiItems = (
       : (row.label ?? '');
     const resetLabel = formatKimiResetHint(t, row.resetHint);
 
-    return h(
-      'div',
-      { key: row.id, className: styleMap.quotaRow },
+    nodes.push(
       h(
         'div',
-        { className: styleMap.quotaRowHeader },
-        h('span', { className: styleMap.quotaModel }, rowLabel),
+        { key: row.id, className: styleMap.quotaRow },
         h(
           'div',
-          { className: styleMap.quotaMeta },
-          h('span', { className: styleMap.quotaPercent }, percentLabel),
-          resetLabel ? h('span', { className: styleMap.quotaReset }, resetLabel) : null
-        )
-      ),
-      h(QuotaProgressBar, {
-        percent: remaining,
-        highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
-        mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
-      })
+          { className: styleMap.quotaRowHeader },
+          h('span', { className: styleMap.quotaModel }, rowLabel),
+          h(
+            'div',
+            { className: styleMap.quotaMeta },
+            h('span', { className: styleMap.quotaPercent }, percentLabel),
+            resetLabel ? h('span', { className: styleMap.quotaReset }, resetLabel) : null
+          )
+        ),
+        h(QuotaProgressBar, {
+          percent: remaining,
+          highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
+          mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
+        })
+      )
     );
   });
+
+  return h(Fragment, null, ...nodes);
 };
 
 const toXaiRecord = (value: unknown): Record<string, unknown> | null => {
@@ -1880,7 +1942,7 @@ const renderXaiItems = (
   );
 };
 
-export const KIMI_CONFIG: QuotaConfig<KimiQuotaState, KimiQuotaRow[]> = {
+export const KIMI_CONFIG: QuotaConfig<KimiQuotaState, KimiQuotaData> = {
   type: 'kimi',
   i18nPrefix: 'kimi_quota',
   filterFn: (file) => isKimiFile(file) && !isDisabledAuthFile(file),
@@ -1888,7 +1950,15 @@ export const KIMI_CONFIG: QuotaConfig<KimiQuotaState, KimiQuotaRow[]> = {
   storeSelector: (state) => state.kimiQuota,
   storeSetter: 'setKimiQuota',
   buildLoadingState: () => ({ status: 'loading', rows: [] }),
-  buildSuccessState: (rows) => ({ status: 'success', rows }),
+  buildSuccessState: (data) => ({
+    status: 'success',
+    rows: data.rows,
+    planType: data.planType,
+    membershipLevel: data.membershipLevel,
+    scope: data.scope,
+    domain: data.domain,
+    subType: data.subType,
+  }),
   buildErrorState: (message, status) => ({
     status: 'error',
     rows: [],

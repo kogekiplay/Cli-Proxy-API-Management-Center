@@ -221,6 +221,19 @@ function toKimiUsageRow(
 }
 
 export function buildKimiQuotaRows(payload: KimiUsagePayload): KimiQuotaRow[] {
+  return buildKimiQuotaData(payload).rows;
+}
+
+export interface KimiQuotaData {
+  rows: KimiQuotaRow[];
+  planType: string | null;
+  membershipLevel: string | null;
+  scope: string | null;
+  domain: string | null;
+  subType: string | null;
+}
+
+export function buildKimiQuotaData(payload: KimiUsagePayload): KimiQuotaData {
   const rows: KimiQuotaRow[] = [];
 
   const usage = payload.usage;
@@ -250,7 +263,22 @@ export function buildKimiQuotaRows(payload: KimiUsagePayload): KimiQuotaRow[] {
     });
   }
 
-  return rows;
+  const normalizeString = (value: unknown): string | null => {
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed || null;
+    }
+    return null;
+  };
+
+  return {
+    rows,
+    planType: normalizeString(payload.subType),
+    membershipLevel: normalizeString(payload.user?.membership?.level),
+    scope: normalizeString(payload.authentication?.scope),
+    domain: normalizeString(payload.domain),
+    subType: normalizeString(payload.subType),
+  };
 }
 
 function normalizeXaiCentValue(value: XaiBillingConfig['monthlyLimit']): number | null {

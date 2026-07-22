@@ -255,9 +255,29 @@ export interface KimiLimitItem {
   ttl?: number;
 }
 
+export interface KimiMembership {
+  level?: string;
+}
+
+export interface KimiUser {
+  userId?: string;
+  region?: string;
+  membership?: KimiMembership;
+  businessId?: string;
+}
+
+export interface KimiAuthentication {
+  method?: string;
+  scope?: string;
+}
+
 export interface KimiUsagePayload {
   usage?: KimiUsageDetail;
   limits?: KimiLimitItem[];
+  user?: KimiUser;
+  authentication?: KimiAuthentication;
+  domain?: string;
+  subType?: string;
 }
 
 export interface KimiQuotaRow {
@@ -273,6 +293,11 @@ export interface KimiQuotaRow {
 export interface KimiQuotaState {
   status: 'idle' | 'loading' | 'success' | 'error';
   rows: KimiQuotaRow[];
+  planType?: string | null;
+  membershipLevel?: string | null;
+  scope?: string | null;
+  domain?: string | null;
+  subType?: string | null;
   error?: string;
   errorStatus?: number;
 }
