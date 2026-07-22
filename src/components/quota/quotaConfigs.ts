@@ -35,6 +35,8 @@ import {
   getApiCallErrorMessage,
   type AntigravitySubscriptionSummary,
   usageSummaryApi,
+  kimiSubscriptionStatsApi,
+  type KimiSubscriptionStatsResponse,
 } from '@/services/api';
 import {
   ANTIGRAVITY_QUOTA_URLS,
@@ -1495,23 +1497,41 @@ const fetchKimiQuota = async (file: AuthFileItem, t: TFunction): Promise<KimiQuo
     throw new Error(t('kimi_quota.missing_auth_index'));
   }
 
-  const result = await apiCallApi.request({
-    authIndex,
-    method: 'GET',
-    url: KIMI_USAGE_URL,
-    header: { ...KIMI_REQUEST_HEADERS },
-  });
+  const [usageResult, statsResult] = await Promise.allSettled([
+    apiCallApi.request({
+      authIndex,
+      method: 'GET',
+      url: KIMI_USAGE_URL,
+      header: { ...KIMI_REQUEST_HEADERS },
+    }),
+    kimiSubscriptionStatsApi.request({ authIndex }),
+  ]);
 
-  if (result.statusCode < 200 || result.statusCode >= 300) {
+  let payload: import('@/types').KimiUsagePayload | null = null;
+  if (usageResult.status === 'fulfilled') {
+    const result = usageResult.value;
+    if (result.statusCode >= 200 && result.statusCode < 300) {
+      payload = parseKimiUsagePayload(result.body ?? result.bodyText);
+    }
+  }
+
+  if (!payload) {
+    if (usageResult.status === 'rejected') {
+      throw usageResult.reason;
+    }
+    const result = usageResult.value;
     throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
   }
 
-  const payload = parseKimiUsagePayload(result.body ?? result.bodyText);
-  if (!payload) {
-    throw new Error(t('kimi_quota.empty_data'));
+  let stats: KimiSubscriptionStatsResponse | null = null;
+  if (statsResult.status === 'fulfilled') {
+    const value = statsResult.value;
+    if (!value.error) {
+      stats = value;
+    }
   }
 
-  return buildKimiQuotaData(payload);
+  return buildKimiQuotaData(payload, stats);
 };
 
 const getKimiPlanLabel = (
@@ -1603,13 +1623,15 @@ const renderKimiItems = (
   rows.forEach((row) => {
     const limit = row.limit;
     const used = row.used;
-    const remaining =
-      limit > 0
-        ? Math.max(0, Math.min(100, Math.round(((limit - used) / limit) * 100)))
-        : used > 0
-          ? 0
-          : null;
-    const percentLabel = remaining === null ? '--' : `${remaining}%`;
+    const usedPercent =
+      row.usedPercent != null && Number.isFinite(row.usedPercent)
+        ? Math.max(0, Math.min(100, row.usedPercent))
+        : limit > 0
+          ? Math.max(0, Math.min(100, (used / limit) * 100))
+          : used > 0
+            ? 100
+            : null;
+    const percentLabel = usedPercent === null ? '--' : `${Math.round(usedPercent)}%`;
     const rowLabel = row.labelKey
       ? t(row.labelKey, (row.labelParams ?? {}) as Record<string, string | number>)
       : (row.label ?? '');
@@ -1631,9 +1653,10 @@ const renderKimiItems = (
           )
         ),
         h(QuotaProgressBar, {
-          percent: remaining,
+          percent: usedPercent,
           highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
           mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
+          fillClassName: styleMap.kimiQuotaBarFill,
         })
       )
     );

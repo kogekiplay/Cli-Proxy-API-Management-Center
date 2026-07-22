@@ -291,6 +291,7 @@ export interface KimiQuotaRow {
   labelParams?: Record<string, string | number>;
   used: number;
   limit: number;
+  usedPercent?: number | null;
   resetHint?: string;
 }
 

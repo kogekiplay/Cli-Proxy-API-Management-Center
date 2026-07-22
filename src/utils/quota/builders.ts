@@ -173,6 +173,15 @@ export interface KimiQuotaData {
   subType: string | null;
 }
 
+export interface KimiSubscriptionStatsInput {
+  total_usage_percent?: number | null;
+  total_reset_at?: string | null;
+  five_hour_code_percent?: number | null;
+  five_hour_reset_at?: string | null;
+  weekly_code_percent?: number | null;
+  weekly_reset_at?: string | null;
+}
+
 function kimiWindowSeconds(
   window: KimiLimitWindow,
   item: KimiLimitItem,
@@ -197,27 +206,31 @@ function kimiWindowSeconds(
   return duration * 60;
 }
 
-export function buildKimiQuotaData(payload: KimiUsagePayload): KimiQuotaData {
+function buildStatsRow(
+  id: string,
+  labelKey: string,
+  percent: number | null | undefined,
+  resetAt: string | null | undefined
+): KimiQuotaRow | null {
+  if (percent == null || !Number.isFinite(percent)) return null;
+  return {
+    id,
+    labelKey,
+    used: percent,
+    limit: 100,
+    usedPercent: percent,
+    resetHint: resetAt ? formatKimiResetDate(resetAt) : undefined,
+  };
+}
+
+export function buildKimiQuotaData(
+  payload: KimiUsagePayload,
+  stats?: KimiSubscriptionStatsInput | null
+): KimiQuotaData {
   const rows: KimiQuotaRow[] = [];
 
-  // 1. Total usage (matches Kimi's "总使用量").
-  // The coding API has used both camelCase and snake_case; web payloads may
-  // also expose it as totalUsage/total_usage. Try all common keys.
-  const totalQuota =
-    payload.totalQuota ??
-    payload.total_quota ??
-    (payload as Record<string, unknown>).totalUsage ??
-    (payload as Record<string, unknown>).total_usage;
-  if (totalQuota && typeof totalQuota === 'object') {
-    const row = toKimiUsageRow(totalQuota as Record<string, unknown>, {
-      labelKey: 'kimi_quota.total_usage',
-    });
-    if (row) {
-      rows.push({ id: 'total', ...row });
-    }
-  }
-
-  // 2. Short-term limits: prefer the 5-hour window (matches "5 小时用量").
+  // 1. Short-term limits: prefer the 5-hour window (matches "5 小时用量").
+  // The official Kimi UI shows the 5-hour usage first, then 7-day usage, then total usage.
   const limits = payload.limits;
   if (Array.isArray(limits)) {
     limits.forEach((item) => {
@@ -240,7 +253,7 @@ export function buildKimiQuotaData(payload: KimiUsagePayload): KimiQuotaData {
     });
   }
 
-  // 3. Weekly / 7-day usage (matches "7 天用量").
+  // 2. Weekly / 7-day usage (matches "7 天用量").
   const usage = payload.usage;
   if (usage && typeof usage === 'object') {
     const row = toKimiUsageRow(usage as Record<string, unknown>, {
@@ -248,6 +261,33 @@ export function buildKimiQuotaData(payload: KimiUsagePayload): KimiQuotaData {
     });
     if (row) {
       rows.push({ id: 'weekly', ...row });
+    }
+  }
+
+  // 3. Total usage (matches Kimi's "总使用量").
+  // Prefer the web subscription stats endpoint; fall back to payload.totalQuota
+  // for compatibility with older coding-token-only flows.
+  const statsTotal = buildStatsRow(
+    'total',
+    'kimi_quota.total_usage',
+    stats?.total_usage_percent,
+    stats?.total_reset_at
+  );
+  if (statsTotal) {
+    rows.push(statsTotal);
+  } else {
+    const totalQuota =
+      payload.totalQuota ??
+      payload.total_quota ??
+      (payload as Record<string, unknown>).totalUsage ??
+      (payload as Record<string, unknown>).total_usage;
+    if (totalQuota && typeof totalQuota === 'object') {
+      const row = toKimiUsageRow(totalQuota as Record<string, unknown>, {
+        labelKey: 'kimi_quota.total_usage',
+      });
+      if (row) {
+        rows.push({ id: 'total', ...row });
+      }
     }
   }
 

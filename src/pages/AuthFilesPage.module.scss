@@ -591,6 +591,14 @@
   background-color: var(--danger-color);
 }
 
+.kimiQuotaBarFill {
+  background-color: #1783ff !important;
+}
+
+:global([data-theme='dark']) .kimiQuotaBarFill {
+  background-color: #1a88ff !important;
+}
+
 .quotaMeta {
   display: flex;
   align-items: center;
@@ -711,10 +719,9 @@
 }
 
 .kimiPlanValue {
-  // Match Kimi official global font stack.
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto, 'Noto Sans',
-    Ubuntu, Cantarell, 'Helvetica Neue', sans-serif, Arial, 'PingFang SC', 'Source Han Sans SC',
-    'Microsoft YaHei UI', 'Microsoft YaHei', 'Noto Sans CJK SC';
+  // Kimi membership page renders tier names (e.g. Allegro) with an elegant
+  // serif-like marketing typeface. Use a serif stack to approximate it.
+  font-family: Georgia, 'Times New Roman', 'Songti SC', 'STSong', 'SimSun', serif;
   font-weight: 600;
   color: var(--text-primary);
   min-width: 0;

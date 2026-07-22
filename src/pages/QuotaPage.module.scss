@@ -361,6 +361,14 @@
   background-color: var(--danger-color);
 }
 
+.kimiQuotaBarFill {
+  background-color: #1783ff !important;
+}
+
+:global([data-theme='dark']) .kimiQuotaBarFill {
+  background-color: #1a88ff !important;
+}
+
 .quotaMeta {
   display: flex;
   align-items: center;
