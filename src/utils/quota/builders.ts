@@ -201,7 +201,13 @@ export function buildKimiQuotaData(payload: KimiUsagePayload): KimiQuotaData {
   const rows: KimiQuotaRow[] = [];
 
   // 1. Total usage (matches Kimi's "总使用量").
-  const totalQuota = payload.totalQuota ?? payload.total_quota;
+  // The coding API has used both camelCase and snake_case; web payloads may
+  // also expose it as totalUsage/total_usage. Try all common keys.
+  const totalQuota =
+    payload.totalQuota ??
+    payload.total_quota ??
+    (payload as Record<string, unknown>).totalUsage ??
+    (payload as Record<string, unknown>).total_usage;
   if (totalQuota && typeof totalQuota === 'object') {
     const row = toKimiUsageRow(totalQuota as Record<string, unknown>, {
       labelKey: 'kimi_quota.total_usage',

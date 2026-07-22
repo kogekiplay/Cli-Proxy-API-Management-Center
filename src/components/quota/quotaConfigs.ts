@@ -1589,7 +1589,7 @@ const renderKimiItems = (
       appendPlanItem('plan-type', t('kimi_quota.plan_label'), planLabel, styleMap.kimiPlanValue);
     }
     if (scopeLabel) {
-      appendPlanItem('plan-scope', t('kimi_quota.scope_label'), scopeLabel, styleMap.kimiPlanValue);
+      appendPlanItem('plan-scope', t('kimi_quota.scope_label'), scopeLabel, styleMap.kimiScopeValue);
     }
 
     nodes.push(h('div', { key: 'plan', className: styleMap.codexPlan }, ...planNodes));
