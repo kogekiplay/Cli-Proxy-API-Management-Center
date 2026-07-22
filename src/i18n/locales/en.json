@@ -603,7 +603,7 @@
     "empty_data": "No quota data available",
     "refresh_button": "Refresh Quota",
     "fetch_all": "Fetch All",
-    "total_usage": "Total usage",
+    "total_usage": "Total remaining",
     "five_hour_usage": "5h limit",
     "seven_day_usage": "Weekly limit",
     "weekly_limit": "Weekly limit",

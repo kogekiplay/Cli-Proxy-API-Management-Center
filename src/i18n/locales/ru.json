@@ -552,7 +552,7 @@
     "empty_data": "Данные по квоте отсутствуют",
     "refresh_button": "Обновить квоту",
     "fetch_all": "Получить все",
-    "total_usage": "Общее использование",
+    "total_usage": "Общий остаток",
     "five_hour_usage": "Лимит 5ч",
     "seven_day_usage": "Недельный лимит",
     "weekly_limit": "Недельный лимит",
